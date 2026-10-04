@@ -1,7 +1,7 @@
 # fyde-scripts
 
 The canonical home for the Lua scraper scripts run by `fyde-sdk`'s `scrapers` domain
-(`scripts/didaxis.lua`, `scripts/impots.lua`), plus a standalone CLI runner — ported from
+(`scripts/scripts/didaxis/script.lua`, `scripts/scripts/impots/script.lua`), plus a standalone CLI runner — ported from
 `demo-rust-fyde` — that drives them through `fyde-sdk`'s `ScrapersService::run` directly,
 without a full `Client`/server connection.
 
@@ -9,8 +9,8 @@ without a full `Client`/server connection.
 
 ```sh
 cp secret.json.example secret.json  # then fill in real credentials, never commit it
-cargo run                           # scripts/didaxis.lua by default
-cargo run -- --script scripts/impots.lua
+cargo run                           # scripts/didaxis/script.lua by default
+cargo run -- --script scripts/impots/script.lua
 ```
 
 Downloaded documents are written under `--documents-dir` (default `documents/`, gitignored).

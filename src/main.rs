@@ -23,7 +23,7 @@ use report::Report;
 #[derive(Parser)]
 struct Args {
     /// Path to the Lua scraper script to run.
-    #[arg(long, default_value = "scripts/didaxis.lua")]
+    #[arg(long, default_value = "scripts/didaxis/script.lua")]
     script: PathBuf,
 
     /// Directory documents get saved into (gitignored).
@@ -42,8 +42,8 @@ struct Args {
     report_dir: PathBuf,
 
     /// JSON file to read each scraper's parameters from, keyed by scraper
-    /// name (the script's file stem). Gitignored - never commit real
-    /// credentials in it.
+    /// name (the script's parent directory name). Gitignored - never commit
+    /// real credentials in it.
     #[arg(long, default_value = "secret.json")]
     secrets: PathBuf,
 }
@@ -77,7 +77,8 @@ async fn main() -> Result<()> {
 
     let scraper_name = args
         .script
-        .file_stem()
+        .parent()
+        .and_then(|dir| dir.file_name())
         .and_then(|name| name.to_str())
         .unwrap_or("scraper")
         .to_string();

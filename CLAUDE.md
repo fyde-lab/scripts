@@ -6,7 +6,7 @@ repository.
 ## What this is
 
 `fyde-scripts` is the canonical home for the Lua scraper scripts run by `fyde-sdk`'s
-`scrapers` domain (`scripts/*.lua`), plus `fyde-scripts` itself — a thin Rust CLI (ported from
+`scrapers` domain (`scripts/scripts/<name>/script.lua`), plus `fyde-scripts` itself — a thin Rust CLI (ported from
 the standalone `demo-rust-fyde` repo) that runs one of those scripts through
 `fyde-sdk`'s public `ScrapersService::run`, outside of a full `Client`.
 
@@ -38,15 +38,16 @@ repo — `fyde_sdk::init_dev_scrapers` is the one function this program calls to
 
 ```sh
 cargo build
-cargo run                                     # scripts/didaxis.lua by default
-cargo run -- --script scripts/impots.lua --documents-dir documents
+cargo run                                     # scripts/didaxis/script.lua by default
+cargo run -- --script scripts/impots/script.lua --documents-dir documents
 ```
 
 There is no test suite here — the logic worth testing (the dev documents service, the
 scrapers service itself) lives in and is tested by `../sdk`.
 
 Config: each scraper's parameters come from `--secrets` (default `secret.json`, gitignored),
-a JSON map keyed by scraper name (the script's file stem, e.g. `"didaxis"`, `"impots"`), each
+a JSON map keyed by scraper name (the script's parent directory name, e.g. `"didaxis"`,
+`"impots"`), each
 value a `{"parameters": {...}}` object. `parameters` is injected into the script's
 `run(parameters)` call as-is (as a Lua table) — this program never looks inside it, so a
 script is free to read whatever fields it needs (conventionally `username`/`password`) back
@@ -79,7 +80,7 @@ was deliberately dropped when the scrapers domain was ported into the sdk (out o
 there — a GUI/mobile `Client` consumer renders its own progress, it doesn't need a report
 file).
 
-### `scripts/didaxis.lua` / `scripts/impots.lua`
+### `scripts/scripts/didaxis/script.lua` / `scripts/scripts/impots/script.lua`
 
 Unmodified from `demo-rust-fyde` (beyond updated comments pointing at `../sdk`'s host
 instead of a local one that no longer exists here) — see each file's header comment for what
