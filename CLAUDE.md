@@ -90,3 +90,13 @@ it scrapes and how. Any new per-site script must follow the same contract: retur
 with a single `run(parameters)` function, and only call into the `fyde` host table (`fyde.log`,
 `fyde.http`, `fyde.html`, `fyde.json`, `fyde.progress`, `fyde.input`, `fyde.save_document`,
 `fyde.session`) — see `../sdk/src/domains/scrapers/host/`.
+
+### `scripts/scripts/ameli/script.lua`
+
+Scaffold for the "compte ameli" personal space (assure.ameli.fr, Assurance Maladie/CPAM) —
+**unverified**, unlike the two scripts above: `assure.ameli.fr` returns a bot-protection
+"Request Rejected" page to plain HTTP requests, and there's no test account to reverse-engineer
+the real login/document flow by hand through a browser the way didaxis/impots were. The login
+URL, form fields, and document selectors are marked `TODO` in the file's header comment and
+need confirming against the live site with a real account before this script will actually
+work.
