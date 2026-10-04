@@ -15,8 +15,10 @@ use report::Report;
 
 /// Runs a Lua scraper script against `fyde-sdk`'s `scrapers` service,
 /// outside of a full `Client`/server connection: cookies and session data
-/// persist to a local SQLite database, and scraped documents are saved as
-/// plain files instead of being encrypted and uploaded. Ported from
+/// persist as JSON files (`fyde_sdk::init_dev_scrapers` always selects its
+/// `scrapers::StorageConfig::File` backend — there is no local SQLite
+/// database here to pick `Sqlite` instead), and scraped documents are saved
+/// as plain files instead of being encrypted and uploaded. Ported from
 /// `demo-rust-fyde`.
 #[derive(Parser)]
 struct Args {
@@ -28,9 +30,10 @@ struct Args {
     #[arg(long, default_value = "documents")]
     documents_dir: PathBuf,
 
-    /// SQLite database scraper cookies/session data persist to across runs
-    /// (gitignored; created on first run).
-    #[arg(long, default_value = "data/scrapers.db")]
+    /// Directory scraper cookies/session data persist to across runs, as
+    /// one JSON file per scraper per sub-domain (gitignored; created on
+    /// first run).
+    #[arg(long, default_value = "data/")]
     storage: PathBuf,
 
     /// Directory the per-run debug report gets written into (gitignored).
