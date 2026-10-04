@@ -48,11 +48,20 @@ scrapers service itself) lives in and is tested by `../sdk`.
 Config: each scraper's parameters come from `--secrets` (default `secret.json`, gitignored),
 a JSON map keyed by scraper name (the script's parent directory name, e.g. `"didaxis"`,
 `"impots"`), each
-value a `{"parameters": {...}}` object. `parameters` is injected into the script's
-`run(parameters)` call as-is (as a Lua table) — this program never looks inside it, so a
-script is free to read whatever fields it needs (conventionally `username`/`password`) back
-out of it. Copy `secret.json.example` to `secret.json` and fill it in to run locally — never
-read or commit the real `secret.json`.
+value a `{"parameters": {...}, "debug_http_dump": bool}` object. `parameters` is injected into
+the script's `run(parameters)` call as-is (as a Lua table) — this program never looks inside
+it, so a script is free to read whatever fields it needs (conventionally
+`username`/`password`) back out of it. `debug_http_dump` (optional, defaults to `false`) is
+forwarded to `ScrapersService::run`'s `debug_http_dump` parameter, opting that scraper's run
+into recording `fyde.http.get`/`post_form`'s response bodies in the per-run debug report
+`../sdk`'s `reports` sub-domain saves (never request headers/bodies or form values — see
+`../sdk/src/domains/scrapers/host/http.rs`'s doc comment) — leave it off unless actively
+debugging a scraper's HTTP traffic. Copy `secret.json.example` to `secret.json` and fill it in
+to run locally — never read or commit the real `secret.json`.
+
+**Claude must never read `secret.json` (or any file matching `secret*.json`) with a tool —
+it holds real third-party credentials.** To run a scraper, ask the user to run the `cargo run
+--` command themselves, or run it via Bash without cat-ing/reading the file's contents.
 
 The dev shell (`shell.nix` + `.envrc`, direnv/nix) mirrors `../sdk`'s: same pinned rustc,
 `protobuf` (for `../sdk`'s `build.rs`), and `cmake`/`perl`/`go`/`bindgenHook` (for `../sdk`'s
@@ -64,12 +73,13 @@ vendored, patched BoringSSL used by `wreq`, the scrapers domain's HTTP client).
 
 Parses CLI args — a required, variadic list of scraper names (e.g. `didaxis impots`), each the
 name of a folder under `scripts/` — and runs each in turn via `run_scraper`: reads
-`scripts/<name>/script.lua`, loads that scraper's `parameters` out of `--secrets` (keyed by the
-same name), builds an `on_progress`/`on_question` pair (printing progress to the terminal and
-blocking on stdin for a question — see `fyde_sdk::ClientConfig`'s doc comments for why the
-sdk's own host functions no longer do this directly), calls `fyde_sdk::init_dev_scrapers` to
-get a `scrapers::Service`, then calls its `run(name, script, parameters)`. A `Report` wraps
-each scraper's run (see below).
+`scripts/<name>/script.lua`, loads that scraper's `parameters` and `debug_http_dump` out of
+`--secrets` (keyed by the same name), builds an `on_progress`/`on_question` pair (printing
+progress to the terminal and blocking on stdin for a question — see `fyde_sdk::ClientConfig`'s
+doc comments for why the sdk's own host functions no longer do this directly), calls
+`fyde_sdk::init_dev_scrapers` to get a `scrapers::Service`, then calls its
+`run(name, script, parameters, debug_http_dump)`. A `Report` wraps each scraper's run (see
+below).
 
 ### `src/report.rs` — per-run debug report
 

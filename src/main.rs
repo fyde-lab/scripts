@@ -57,6 +57,8 @@ struct Args {
 #[derive(Deserialize)]
 struct ScraperConfig {
     parameters: Value,
+    #[serde(default)]
+    debug_http_dump: bool,
 }
 
 #[tokio::main]
@@ -97,7 +99,7 @@ async fn run_scraper(args: &Args, scraper_name: &str) -> Result<()> {
     let script = std::fs::read_to_string(&script_path)
         .with_context(|| format!("reading Lua script {}", script_path.display()))?;
 
-    let parameters = load_parameters(&args.secrets, scraper_name)?;
+    let (parameters, debug_http_dump) = load_parameters(&args.secrets, scraper_name)?;
 
     let report = Report::start(&args.report_dir, scraper_name);
     report.record(
@@ -121,7 +123,9 @@ async fn run_scraper(args: &Args, scraper_name: &str) -> Result<()> {
     .await
     .context("initializing the scrapers service")?;
 
-    let result = scrapers.run(scraper_name, &script, parameters).await;
+    let result = scrapers
+        .run(scraper_name, &script, parameters, debug_http_dump)
+        .await;
 
     match &result {
         Ok(()) => report.record("run_finished", json!({ "status": "ok" })),
@@ -131,10 +135,11 @@ async fn run_scraper(args: &Args, scraper_name: &str) -> Result<()> {
     result.context("running the scraper's `run` function")
 }
 
-/// Reads `--secrets` (a map of scraper name -> `{"parameters": {...}}`) and
-/// returns the `parameters` value for `scraper_name`, ready to inject into
-/// the script as-is.
-fn load_parameters(path: &PathBuf, scraper_name: &str) -> Result<Value> {
+/// Reads `--secrets` (a map of scraper name -> `{"parameters": {...},
+/// "debug_http_dump": bool}`) and returns `scraper_name`'s `parameters`
+/// value (ready to inject into the script as-is) alongside its
+/// `debug_http_dump` flag (`false` when the entry omits it).
+fn load_parameters(path: &PathBuf, scraper_name: &str) -> Result<(Value, bool)> {
     let text = std::fs::read_to_string(path).with_context(|| {
         format!(
             "reading {} (create it with a \"{{scraper_name}}\": {{\"parameters\": {{...}}}} entry for {})",
@@ -153,7 +158,7 @@ fn load_parameters(path: &PathBuf, scraper_name: &str) -> Result<Value> {
         )
     })?;
 
-    Ok(config.parameters)
+    Ok((config.parameters, config.debug_http_dump))
 }
 
 /// Prints `fyde.progress.step`/`fyde.progress.update` calls to the
