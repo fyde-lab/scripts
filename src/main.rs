@@ -31,8 +31,8 @@ struct Args {
     documents_dir: PathBuf,
 
     /// Directory scraper cookies/session data persist to across runs, as
-    /// one JSON file per scraper per sub-domain (gitignored; created on
-    /// first run).
+    /// one JSON file per scraper under a `cookies`/`session` subdirectory
+    /// respectively (gitignored; created on first run).
     #[arg(long, default_value = "data/")]
     storage: PathBuf,
 
@@ -149,12 +149,12 @@ fn load_parameters(path: &PathBuf, scraper_name: &str) -> Result<Value> {
 /// that callback.
 fn print_progress(event: &ProgressEvent) {
     match event {
-        ProgressEvent::Step { name } => println!("==> {name}"),
+        ProgressEvent::Step { name } => tracing::info!("==> {name}"),
         ProgressEvent::Update {
             current,
             total,
             message,
-        } => println!("    [{current}/{total}] {message}"),
+        } => tracing::info!("    [{current}/{total}] {message}"),
     }
 }
 

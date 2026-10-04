@@ -22,8 +22,8 @@ which builds just the `scrapers::Service`, injecting:
 
 - `scrapers::StorageConfig::File` (a directory this program controls via `--storage`) instead
   of the `StorageConfig::Sqlite` pool a full `Client` manages under the XDG data directory —
-  cookies/session data persist as one JSON file per scraper per sub-domain under `--storage`
-  rather than in a SQLite database;
+  cookies/session data persist as one JSON file per scraper under `--storage/cookies` and
+  `--storage/session` respectively, rather than in a SQLite database;
 - `fyde_sdk`'s dev `DocumentsService` implementation (`DevDocumentsClient`, in `../sdk/src/
   domains/documents/dev.rs`) instead of the real encrypted-upload one `Client` builds: a
   script's `fyde.save_document` call just writes the file under `--documents-dir` as plain
