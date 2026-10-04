@@ -38,8 +38,8 @@ repo — `fyde_sdk::init_dev_scrapers` is the one function this program calls to
 
 ```sh
 cargo build
-cargo run                                     # scripts/didaxis/script.lua by default
-cargo run -- --script scripts/impots/script.lua --documents-dir documents
+cargo run -- didaxis                          # runs scripts/didaxis/script.lua
+cargo run -- didaxis impots --documents-dir documents  # runs both, in order
 ```
 
 There is no test suite here — the logic worth testing (the dev documents service, the
@@ -62,12 +62,14 @@ vendored, patched BoringSSL used by `wreq`, the scrapers domain's HTTP client).
 
 ### `src/main.rs`
 
-Parses CLI args, loads the matching scraper's `parameters` out of `--secrets` (keyed by
-scraper name), reads the script file, builds an `on_progress`/`on_question` pair (printing
-progress to the terminal and blocking on stdin for a question — see `fyde_sdk::ClientConfig`'s
-doc comments for why the sdk's own host functions no longer do this directly), calls
-`fyde_sdk::init_dev_scrapers` to get a `scrapers::Service`, then calls its `run(name, script,
-parameters)`. A `Report` wraps the whole run (see below).
+Parses CLI args — a required, variadic list of scraper names (e.g. `didaxis impots`), each the
+name of a folder under `scripts/` — and runs each in turn via `run_scraper`: reads
+`scripts/<name>/script.lua`, loads that scraper's `parameters` out of `--secrets` (keyed by the
+same name), builds an `on_progress`/`on_question` pair (printing progress to the terminal and
+blocking on stdin for a question — see `fyde_sdk::ClientConfig`'s doc comments for why the
+sdk's own host functions no longer do this directly), calls `fyde_sdk::init_dev_scrapers` to
+get a `scrapers::Service`, then calls its `run(name, script, parameters)`. A `Report` wraps
+each scraper's run (see below).
 
 ### `src/report.rs` — per-run debug report
 

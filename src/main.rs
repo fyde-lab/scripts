@@ -6,25 +6,27 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use fyde_sdk::{ProgressEvent, init_dev_scrapers};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
 use report::Report;
 
-/// Runs a Lua scraper script against `fyde-sdk`'s `scrapers` service,
-/// outside of a full `Client`/server connection: cookies and session data
-/// persist as JSON files (`fyde_sdk::init_dev_scrapers` always selects its
-/// `scrapers::StorageConfig::File` backend — there is no local SQLite
-/// database here to pick `Sqlite` instead), and scraped documents are saved
-/// as plain files instead of being encrypted and uploaded. Ported from
+/// Runs one or more Lua scraper scripts against `fyde-sdk`'s `scrapers`
+/// service, outside of a full `Client`/server connection: cookies and
+/// session data persist as JSON files (`fyde_sdk::init_dev_scrapers` always
+/// selects its `scrapers::StorageConfig::File` backend — there is no local
+/// SQLite database here to pick `Sqlite` instead), and scraped documents are
+/// saved as plain files instead of being encrypted and uploaded. Ported from
 /// `demo-rust-fyde`.
 #[derive(Parser)]
 struct Args {
-    /// Path to the Lua scraper script to run.
-    #[arg(long, default_value = "scripts/didaxis/script.lua")]
-    script: PathBuf,
+    /// Names of the scrapers to run, each the name of a folder under
+    /// `scripts/` containing a `script.lua` (e.g. `didaxis impots` runs
+    /// `scripts/didaxis/script.lua` and `scripts/impots/script.lua`, in
+    /// order). Prints the full `--help` text if none are given.
+    scrapers: Vec<String>,
 
     /// Directory documents get saved into (gitignored).
     #[arg(long, default_value = "documents")]
@@ -72,23 +74,35 @@ async fn main() -> Result<()> {
 
     let args = Args::parse();
 
-    let script = std::fs::read_to_string(&args.script)
-        .with_context(|| format!("reading Lua script {}", args.script.display()))?;
+    if args.scrapers.is_empty() {
+        Args::command().print_help()?;
+        return Ok(());
+    }
 
-    let scraper_name = args
-        .script
-        .parent()
-        .and_then(|dir| dir.file_name())
-        .and_then(|name| name.to_str())
-        .unwrap_or("scraper")
-        .to_string();
+    for scraper_name in &args.scrapers {
+        run_scraper(&args, scraper_name).await?;
+    }
 
-    let parameters = load_parameters(&args.secrets, &scraper_name)?;
+    Ok(())
+}
 
-    let report = Report::start(&args.report_dir, &scraper_name);
+/// Runs a single scraper by name: reads `scripts/<scraper_name>/script.lua`,
+/// loads its parameters from `--secrets`, and runs it through its own
+/// `fyde_sdk::init_dev_scrapers` instance, wrapping the whole thing in a
+/// `Report`.
+async fn run_scraper(args: &Args, scraper_name: &str) -> Result<()> {
+    let script_path = PathBuf::from("scripts")
+        .join(scraper_name)
+        .join("script.lua");
+    let script = std::fs::read_to_string(&script_path)
+        .with_context(|| format!("reading Lua script {}", script_path.display()))?;
+
+    let parameters = load_parameters(&args.secrets, scraper_name)?;
+
+    let report = Report::start(&args.report_dir, scraper_name);
     report.record(
         "run_started",
-        json!({ "script": args.script.to_string_lossy() }),
+        json!({ "script": script_path.to_string_lossy() }),
     );
 
     let progress_report = report.clone();
@@ -107,16 +121,14 @@ async fn main() -> Result<()> {
     .await
     .context("initializing the scrapers service")?;
 
-    let result = scrapers.run(&scraper_name, &script, parameters).await;
+    let result = scrapers.run(scraper_name, &script, parameters).await;
 
     match &result {
         Ok(()) => report.record("run_finished", json!({ "status": "ok" })),
         Err(err) => report.record("error", json!({ "message": err.to_string() })),
     }
 
-    result.context("running the scraper's `run` function")?;
-
-    Ok(())
+    result.context("running the scraper's `run` function")
 }
 
 /// Reads `--secrets` (a map of scraper name -> `{"parameters": {...}}`) and
