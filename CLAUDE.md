@@ -39,7 +39,7 @@ repo — `fyde_sdk::init_dev_scrapers` is the one function this program calls to
 ```sh
 cargo build
 cargo run -- didaxis                          # runs scripts/didaxis/script.lua
-cargo run -- didaxis impots --documents-dir documents  # runs both, in order
+cargo run -- didaxis impots --documents-dir data/documents  # runs both, in order
 ```
 
 There is no test suite here — the logic worth testing (the dev documents service, the

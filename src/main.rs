@@ -25,7 +25,7 @@ struct Args {
     scrapers: Vec<String>,
 
     /// Directory documents get saved into (gitignored).
-    #[arg(long, default_value = "documents")]
+    #[arg(long, default_value = "data/documents")]
     documents_dir: PathBuf,
 
     /// Directory scraper cookies/session data persist to across runs, as
