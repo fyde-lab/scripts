@@ -78,19 +78,9 @@ name of a folder under `scripts/` — and runs each in turn via `run_scraper`: r
 progress to the terminal and blocking on stdin for a question — see `fyde_sdk::ClientConfig`'s
 doc comments for why the sdk's own host functions no longer do this directly), calls
 `fyde_sdk::init_dev_scrapers` to get a `scrapers::Service`, then calls its
-`run(name, script, parameters, debug_http_dump)`. A `Report` wraps each scraper's run (see
-below).
-
-### `src/report.rs` — per-run debug report
-
-Ported from `demo-rust-fyde`'s `report.rs`, simplified: records `run_started`/`run_finished`/
-`error` around the whole run, plus every `fyde.progress.step`/`.update` call, as one JSON
-array under `--report-dir` (default `reports/`, gitignored), rewritten after each entry so it
-stays valid JSON even if the run crashes partway through. This is a debugging aid only, kept
-in this repo rather than `../sdk`, since `../sdk`'s own CLAUDE.md notes the equivalent feature
-was deliberately dropped when the scrapers domain was ported into the sdk (out of scope
-there — a GUI/mobile `Client` consumer renders its own progress, it doesn't need a report
-file).
+`run(name, script, parameters, debug_http_dump)`. The per-run debug report is saved by
+`../sdk`'s `scrapers::reports` sub-domain itself, under `--storage`'s `reports/`
+subdirectory — this crate no longer writes one of its own.
 
 ### `scripts/scripts/didaxis/script.lua` / `scripts/scripts/impots/script.lua`
 

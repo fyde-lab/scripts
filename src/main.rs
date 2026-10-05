@@ -1,5 +1,3 @@
-mod report;
-
 use std::collections::HashMap;
 use std::io::Write as _;
 use std::path::PathBuf;
@@ -9,9 +7,7 @@ use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser};
 use fyde_sdk::{ProgressEvent, init_dev_scrapers};
 use serde::Deserialize;
-use serde_json::{Value, json};
-
-use report::Report;
+use serde_json::Value;
 
 /// Runs one or more Lua scraper scripts against `fyde-sdk`'s `scrapers`
 /// service, outside of a full `Client`/server connection: cookies and
@@ -37,11 +33,6 @@ struct Args {
     /// respectively (gitignored; created on first run).
     #[arg(long, default_value = "data/")]
     storage: PathBuf,
-
-    /// Directory the per-run debug report gets written into (gitignored).
-    /// Each run gets its own `<scraper>_<dd-mm-yy>_<hh-mm-ss>.json` file.
-    #[arg(long, default_value = "reports")]
-    report_dir: PathBuf,
 
     /// JSON file to read each scraper's parameters from, keyed by scraper
     /// name (the script's parent directory name). Gitignored - never commit
@@ -90,8 +81,8 @@ async fn main() -> Result<()> {
 
 /// Runs a single scraper by name: reads `scripts/<scraper_name>/script.lua`,
 /// loads its parameters from `--secrets`, and runs it through its own
-/// `fyde_sdk::init_dev_scrapers` instance, wrapping the whole thing in a
-/// `Report`.
+/// `fyde_sdk::init_dev_scrapers` instance (which saves the run's debug
+/// report itself, under `--storage`'s `reports` subdirectory).
 async fn run_scraper(args: &Args, scraper_name: &str) -> Result<()> {
     let script_path = PathBuf::from("scripts")
         .join(scraper_name)
@@ -101,17 +92,8 @@ async fn run_scraper(args: &Args, scraper_name: &str) -> Result<()> {
 
     let (parameters, debug_http_dump) = load_parameters(&args.secrets, scraper_name)?;
 
-    let report = Report::start(&args.report_dir, scraper_name);
-    report.record(
-        "run_started",
-        json!({ "script": script_path.to_string_lossy() }),
-    );
-
-    let progress_report = report.clone();
-    let on_progress: Arc<dyn Fn(ProgressEvent) + Send + Sync> = Arc::new(move |event| {
-        print_progress(&event);
-        progress_report.record_progress(&event);
-    });
+    let on_progress: Arc<dyn Fn(ProgressEvent) + Send + Sync> =
+        Arc::new(|event| print_progress(&event));
     let on_question: Arc<dyn Fn(String) -> String + Send + Sync> = Arc::new(ask);
 
     let scrapers = init_dev_scrapers(
@@ -123,16 +105,10 @@ async fn run_scraper(args: &Args, scraper_name: &str) -> Result<()> {
     .await
     .context("initializing the scrapers service")?;
 
-    let result = scrapers
+    scrapers
         .run(scraper_name, &script, parameters, debug_http_dump)
-        .await;
-
-    match &result {
-        Ok(()) => report.record("run_finished", json!({ "status": "ok" })),
-        Err(err) => report.record("error", json!({ "message": err.to_string() })),
-    }
-
-    result.context("running the scraper's `run` function")
+        .await
+        .context("running the scraper's `run` function")
 }
 
 /// Reads `--secrets` (a map of scraper name -> `{"parameters": {...},
