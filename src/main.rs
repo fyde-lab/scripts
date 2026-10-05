@@ -110,6 +110,18 @@ struct ScraperSettings {
     /// when omitted, and `--dev` forces it on regardless.
     #[serde(default)]
     debug_http_dump: bool,
+    /// Whether `fyde.http` automatically follows HTTP redirects for this
+    /// scraper (see `ScrapersService::run`'s `follow_redirects` parameter).
+    /// Defaults to `true` when omitted, matching a real-browser-like
+    /// client - set to `false` for a scraper that needs to inspect a
+    /// redirect response itself (e.g. reading a `Location` header) instead
+    /// of being carried straight to its target.
+    #[serde(default = "default_follow_redirects")]
+    follow_redirects: bool,
+}
+
+fn default_follow_redirects() -> bool {
+    true
 }
 
 #[tokio::main]
@@ -264,6 +276,7 @@ async fn run_scraper(args: &RunArgs, scraper_name: &str) -> Result<()> {
             parameters,
             debug_http_dump,
             settings.wreq_emulation,
+            settings.follow_redirects,
         )
         .await
         .context("running the scraper's `run` function")

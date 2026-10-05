@@ -56,16 +56,20 @@ in to run locally — never read or commit the real `secret.json`.
 Every scraper also has a `scripts/<name>/settings.json`, next to its `script.lua` — unlike
 `--secrets`, this holds settings specific to the script itself rather than credentials, so
 it's committed alongside the script. It's a `{"wreq_emulation": bool, "debug_http_dump":
-bool}` object. `wreq_emulation` is forwarded to `ScrapersService::run`'s `wreq_emulation`
-parameter, toggling `fyde.http`'s Chrome TLS/HTTP2 fingerprint emulation
-(`wreq_util::Profile::Chrome131`) for that scraper — on by default for every scraper except
-`ameli`, whose WAF blocks `wreq`'s TLS fingerprint outright regardless of emulation (see
-`scripts/ameli/script.lua`'s header comment). `debug_http_dump` (optional, defaults to
-`false`) is forwarded to `ScrapersService::run`'s `debug_http_dump` parameter, opting that
-scraper's run into recording `fyde.http.get`/`post_form`'s response bodies in the per-run
-debug report `../sdk`'s `reports` sub-domain saves (never request headers/bodies or form
-values — see `../sdk/src/domains/scrapers/host/http.rs`'s doc comment) — leave it off unless
-actively debugging a scraper's HTTP traffic.
+bool, "follow_redirects": bool}` object. `wreq_emulation` is forwarded to
+`ScrapersService::run`'s `wreq_emulation` parameter, toggling `fyde.http`'s Chrome TLS/HTTP2
+fingerprint emulation (`wreq_util::Profile::Chrome131`) for that scraper — on by default for
+every scraper except `ameli`, whose WAF blocks `wreq`'s TLS fingerprint outright regardless of
+emulation (see `scripts/ameli/script.lua`'s header comment). `debug_http_dump` (optional,
+defaults to `false`) is forwarded to `ScrapersService::run`'s `debug_http_dump` parameter,
+opting that scraper's run into recording `fyde.http.get`/`post_form`'s response bodies in the
+per-run debug report `../sdk`'s `reports` sub-domain saves (never request headers/bodies or
+form values — see `../sdk/src/domains/scrapers/host/http.rs`'s doc comment) — leave it off
+unless actively debugging a scraper's HTTP traffic. `follow_redirects` (optional, defaults to
+`true`) is forwarded to `ScrapersService::run`'s `follow_redirects` parameter, toggling
+whether `fyde.http` automatically follows HTTP redirects for that scraper — set to `false`
+for a scraper that needs to inspect a redirect response itself (e.g. reading a `Location`
+header) instead of being carried straight to its target.
 
 Pass `--dev` to force `debug_http_dump` on for every scraper run regardless of what each
 scraper's `settings.json` sets — a shortcut for "I'm actively debugging this script's HTTP
@@ -88,14 +92,14 @@ vendored, patched BoringSSL used by `wreq`, the scrapers domain's HTTP client).
 Parses CLI args — a required, variadic list of scraper names (e.g. `didaxis impots`), each the
 name of a folder under `scripts/` — and runs each in turn via `run_scraper`: reads
 `scripts/<name>/script.lua`, loads that scraper's `parameters` from `--secrets` and its
-`wreq_emulation`/`debug_http_dump` settings from `scripts/<name>/settings.json` (both keyed by
-the same name), builds an `on_progress`/`on_question` pair (printing progress to the terminal
-and blocking on stdin for a question — see `fyde_sdk::ClientConfig`'s doc comments for why the
-sdk's own host functions no longer do this directly), calls `fyde_sdk::init_dev_scrapers` to
-get a `scrapers::Service`, then calls its `run(name, script, parameters, debug_http_dump,
-wreq_emulation)`. The per-run debug report is saved by `../sdk`'s `scrapers::reports`
-sub-domain itself, under `--storage`'s `reports/` subdirectory — this crate no longer writes
-one of its own.
+`wreq_emulation`/`debug_http_dump`/`follow_redirects` settings from
+`scripts/<name>/settings.json` (both keyed by the same name), builds an `on_progress`/
+`on_question` pair (printing progress to the terminal and blocking on stdin for a question —
+see `fyde_sdk::ClientConfig`'s doc comments for why the sdk's own host functions no longer do
+this directly), calls `fyde_sdk::init_dev_scrapers` to get a `scrapers::Service`, then calls
+its `run(name, script, parameters, debug_http_dump, wreq_emulation, follow_redirects)`. The
+per-run debug report is saved by `../sdk`'s `scrapers::reports` sub-domain itself, under
+`--storage`'s `reports/` subdirectory — this crate no longer writes one of its own.
 
 ### `scripts/scripts/didaxis/script.lua` / `scripts/scripts/impots/script.lua`
 
