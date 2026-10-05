@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./documents/**)",
+      "Read(./data/cookies/**)",
+      "Read(./data/session/**)",
+      "Read(./secret.json)",
+      "Write(./secret.json)",
+      "Edit(./secret.json)"
+    ]
+  }
+}
