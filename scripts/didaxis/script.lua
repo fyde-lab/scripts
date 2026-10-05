@@ -17,10 +17,18 @@ local M = {}
 local BASE = "https://eolys.didaxis.fr"
 
 local SECTIONS = {
-  { slug = "payslip", url = BASE .. "/mon-espace/payslip.php" },
-  { slug = "employment_contract", url = BASE .. "/mon-espace/employment_contract.php" },
-  { slug = "bills", url = BASE .. "/mon-espace/bills.php" },
-  { slug = "personal_documents", url = BASE .. "/mon-espace/personal_documents.php" },
+  { slug = "payslip", url = BASE .. "/mon-espace/payslip.php", purpose = "employment" },
+  {
+    slug = "employment_contract",
+    url = BASE .. "/mon-espace/employment_contract.php",
+    purpose = "contract",
+  },
+  { slug = "bills", url = BASE .. "/mon-espace/bills.php", purpose = "invoice" },
+  {
+    slug = "personal_documents",
+    url = BASE .. "/mon-espace/personal_documents.php",
+    purpose = "description",
+  },
 }
 
 -- Never follow anything that looks like a logout, and only treat links that look like real
@@ -211,7 +219,12 @@ function M.run(params)
 
       if download.status == 200 and not download.content_type:find("html", 1, true) then
         local filename = section.slug .. "/" .. sanitize(doc.text) .. ".pdf"
-        fyde.save_document(filename, download.body)
+        fyde.save_document(filename, download.body, {
+          name = doc.text,
+          type = section.slug,
+          source_category = "employer",
+          purpose = section.purpose,
+        })
       else
         fyde.log.warn(string.format(
           "failed to download '%s' (status %d, content-type %s)",

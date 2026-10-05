@@ -304,7 +304,13 @@ function M.run(params)
     local download = fyde.http.download(url)
 
     if download.status == 200 and not download.content_type:find("html", 1, true) then
-      fyde.save_document("impots/" .. sanitize(doc.text) .. ".pdf", download.body)
+      fyde.save_document("impots/" .. sanitize(doc.text) .. ".pdf", download.body, {
+        name = doc.text,
+        type = "tax_notice",
+        source_category = "gov",
+        source_sub_category = "tax",
+        purpose = "attestation",
+      })
     else
       fyde.log.warn(string.format(
         "failed to download '%s' (status %d, content-type %s)",

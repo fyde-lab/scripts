@@ -132,7 +132,12 @@ function M.run(params)
 
       if download.status == 200 and not download.content_type:find("html", 1, true) then
         local filename = section.slug .. "/" .. sanitize(bill.date) .. "_" .. sanitize(bill.ref) .. ".pdf"
-        fyde.save_document(filename, download.body)
+        fyde.save_document(filename, download.body, {
+          name = "Facture " .. bill.date,
+          type = "bill",
+          source_category = "water",
+          purpose = "invoice",
+        })
       else
         fyde.log.warn(string.format(
           "failed to download bill '%s' (status %d, content-type %s)",
