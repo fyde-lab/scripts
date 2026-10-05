@@ -107,6 +107,7 @@ async fn run_scraper(args: &Args, scraper_name: &str) -> Result<()> {
     let scrapers = init_dev_scrapers(
         args.storage.clone(),
         args.documents_dir.clone(),
+        scraper_name,
         Some(on_progress),
         Some(on_question),
     )
