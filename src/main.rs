@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::Write as _;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
@@ -41,7 +41,7 @@ struct Args {
     secrets: PathBuf,
 
     /// Force `debug_http_dump` on for every scraper run, regardless of what
-    /// each entry in `--secrets` sets it to - recording all
+    /// each scraper's `settings.json` sets it to - recording all
     /// `fyde.http.get`/`post_form` response bodies in the run's debug
     /// report. Use while actively debugging a scraper's HTTP traffic.
     #[arg(long)]
@@ -55,6 +55,24 @@ struct Args {
 #[derive(Deserialize)]
 struct ScraperConfig {
     parameters: Value,
+}
+
+/// A scraper's `scripts/<name>/settings.json`, next to its `script.lua` -
+/// settings specific to the script itself rather than a secret, so (unlike
+/// `--secrets`) it's committed alongside the script.
+#[derive(Deserialize)]
+struct ScraperSettings {
+    /// Whether `fyde.http` applies `wreq`'s Chrome TLS/HTTP2 fingerprint
+    /// emulation for this scraper. Enabled by default for every scraper
+    /// except `ameli`, whose WAF blocks `wreq`'s TLS fingerprint outright
+    /// regardless of emulation (see `scripts/ameli/script.lua`'s header
+    /// comment).
+    wreq_emulation: bool,
+    /// Opts this scraper's `fyde.http` calls into recording response
+    /// bodies in the run's debug report (see `ScrapersService::run`'s
+    /// `debug_http_dump` parameter) - moved here from `--secrets` since
+    /// it's a property of the scraper, not a secret. Defaults to `false`
+    /// when omitted, and `--dev` forces it on regardless.
     #[serde(default)]
     debug_http_dump: bool,
 }
@@ -91,14 +109,14 @@ async fn main() -> Result<()> {
 /// `fyde_sdk::init_dev_scrapers` instance (which saves the run's debug
 /// report itself, under `--storage`'s `reports` subdirectory).
 async fn run_scraper(args: &Args, scraper_name: &str) -> Result<()> {
-    let script_path = PathBuf::from("scripts")
-        .join(scraper_name)
-        .join("script.lua");
+    let script_dir = PathBuf::from("scripts").join(scraper_name);
+    let script_path = script_dir.join("script.lua");
     let script = std::fs::read_to_string(&script_path)
         .with_context(|| format!("reading Lua script {}", script_path.display()))?;
 
-    let (parameters, debug_http_dump) = load_parameters(&args.secrets, scraper_name)?;
-    let debug_http_dump = debug_http_dump || args.dev;
+    let parameters = load_parameters(&args.secrets, scraper_name)?;
+    let settings = load_settings(&script_dir, scraper_name)?;
+    let debug_http_dump = settings.debug_http_dump || args.dev;
 
     let on_progress: Arc<dyn Fn(ProgressEvent) + Send + Sync> =
         Arc::new(|event| print_progress(&event));
@@ -115,16 +133,21 @@ async fn run_scraper(args: &Args, scraper_name: &str) -> Result<()> {
     .context("initializing the scrapers service")?;
 
     scrapers
-        .run(scraper_name, &script, parameters, debug_http_dump)
+        .run(
+            scraper_name,
+            &script,
+            parameters,
+            debug_http_dump,
+            settings.wreq_emulation,
+        )
         .await
         .context("running the scraper's `run` function")
 }
 
-/// Reads `--secrets` (a map of scraper name -> `{"parameters": {...},
-/// "debug_http_dump": bool}`) and returns `scraper_name`'s `parameters`
-/// value (ready to inject into the script as-is) alongside its
-/// `debug_http_dump` flag (`false` when the entry omits it).
-fn load_parameters(path: &PathBuf, scraper_name: &str) -> Result<(Value, bool)> {
+/// Reads `--secrets` (a map of scraper name -> `{"parameters": {...}}`) and
+/// returns `scraper_name`'s `parameters` value, ready to inject into the
+/// script as-is.
+fn load_parameters(path: &PathBuf, scraper_name: &str) -> Result<Value> {
     let text = std::fs::read_to_string(path).with_context(|| {
         format!(
             "reading {} (create it with a \"{{scraper_name}}\": {{\"parameters\": {{...}}}} entry for {})",
@@ -143,7 +166,20 @@ fn load_parameters(path: &PathBuf, scraper_name: &str) -> Result<(Value, bool)> 
         )
     })?;
 
-    Ok((config.parameters, config.debug_http_dump))
+    Ok(config.parameters)
+}
+
+/// Reads `scripts/<scraper_name>/settings.json` (next to `script.lua`).
+fn load_settings(script_dir: &Path, scraper_name: &str) -> Result<ScraperSettings> {
+    let path = script_dir.join("settings.json");
+    let text = std::fs::read_to_string(&path).with_context(|| {
+        format!(
+            "reading {} (add one with a \"wreq_emulation\" bool for {})",
+            path.display(),
+            scraper_name
+        )
+    })?;
+    serde_json::from_str(&text).with_context(|| format!("parsing {} as JSON", path.display()))
 }
 
 /// Prints `fyde.progress.step`/`fyde.progress.update` calls to the
