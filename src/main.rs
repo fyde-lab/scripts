@@ -39,6 +39,13 @@ struct Args {
     /// real credentials in it.
     #[arg(long, default_value = "secret.json")]
     secrets: PathBuf,
+
+    /// Force `debug_http_dump` on for every scraper run, regardless of what
+    /// each entry in `--secrets` sets it to - recording all
+    /// `fyde.http.get`/`post_form` response bodies in the run's debug
+    /// report. Use while actively debugging a scraper's HTTP traffic.
+    #[arg(long)]
+    dev: bool,
 }
 
 /// One scraper's entry in `--secrets`. `parameters` is injected as-is (as a
@@ -91,6 +98,7 @@ async fn run_scraper(args: &Args, scraper_name: &str) -> Result<()> {
         .with_context(|| format!("reading Lua script {}", script_path.display()))?;
 
     let (parameters, debug_http_dump) = load_parameters(&args.secrets, scraper_name)?;
+    let debug_http_dump = debug_http_dump || args.dev;
 
     let on_progress: Arc<dyn Fn(ProgressEvent) + Send + Sync> =
         Arc::new(|event| print_progress(&event));

@@ -15,10 +15,10 @@ and re-runs from scratch to make sure nothing was secretly relying on leftovers 
 iteration — looping on that clean run (read report -> fix -> wipe state -> re-run) until it
 passes unattended.
 
-This mirrors `fix-script`'s loop mechanics (same run command, same report format, same
-`secret.json` rule) but drives *forward* through new capability rather than backward from a
-known failure — if you get stuck debugging a step that already seemed to work before, switch to
-reasoning the way `fix-script` does rather than re-deriving it here.
+This mirrors `fix-script`'s loop mechanics (same run command including `--dev`, same report
+format, same `secret.json` rule) but drives *forward* through new capability rather than
+backward from a known failure — if you get stuck debugging a step that already seemed to work
+before, switch to reasoning the way `fix-script` does rather than re-deriving it here.
 
 ## 0. Before starting
 
@@ -82,10 +82,11 @@ Every capability the script can use is the `fyde` global table — nothing else 
 
 ## 1. Run loop (every step below uses this)
 
-From the `scripts/` repo root:
+From the `scripts/` repo root, always with `--dev` (forces `debug_http_dump` on, so the report's
+HTTP entries include response bodies without needing to touch `secret.json`):
 
 ```sh
-cargo run -- <name>
+cargo run -- <name> --dev
 ```
 
 Note the newest `data/reports/<name>_*.json` before running (`ls -t data/reports/<name>_*.json
@@ -100,7 +101,7 @@ it by hand or hand you the value back for one manual iteration.
 
 Read the newest `data/reports/<name>_*.json` after each run exactly as `fix-script` describes:
 last progress step reached, the error entry's message/line (if any), and HTTP entries (status,
-url, timing, and body when `debug_http_dump` is set) — these tell you what the site actually
+url, timing, and body — present thanks to `--dev`) — these tell you what the site actually
 returned, which is more informative than the Lua error alone.
 
 ## 2. Step 1 — Go to the homepage
@@ -182,7 +183,7 @@ five steps have passed once, verify the whole script actually works unattended, 
 
 ```sh
 rm -rf data/documents/<name> data/session/<name>.json data/cookies/<name>.cookies.json
-cargo run -- <name>
+cargo run -- <name> --dev
 ```
 
 Read the resulting report the same way as every other iteration. If it fails (a step that
@@ -196,7 +197,7 @@ previously passed now breaks without the leftover state, or a new error appears)
    `data/cookies/<name>.cookies.json` again — a partial/stale session or cookie file from the
    failed attempt must not carry into the next try, or you'll be debugging against leftovers
    again.
-4. Re-run `cargo run -- <name>` and re-read the report.
+4. Re-run `cargo run -- <name> --dev` and re-read the report.
 
 Repeat until a clean-state run succeeds end to end with no error entry and at least one document
 saved, or you hit the same stuck/needs-user conditions below.

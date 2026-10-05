@@ -59,6 +59,12 @@ into recording `fyde.http.get`/`post_form`'s response bodies in the per-run debu
 debugging a scraper's HTTP traffic. Copy `secret.json.example` to `secret.json` and fill it in
 to run locally — never read or commit the real `secret.json`.
 
+Pass `--dev` to force `debug_http_dump` on for every scraper run regardless of what
+`--secrets` sets per-entry — a shortcut for "I'm actively debugging this script's HTTP
+traffic" that doesn't require editing `secret.json`. The `create-script` and `fix-script`
+skills always run with `--dev`, since both loops diagnose failures from the debug report's
+dumped HTTP bodies.
+
 **Claude must never read `secret.json` (or any file matching `secret*.json`) with a tool —
 it holds real third-party credentials.** To run a scraper, ask the user to run the `cargo run
 --` command themselves, or run it via Bash without cat-ing/reading the file's contents.
@@ -100,3 +106,36 @@ the real login/document flow by hand through a browser the way didaxis/impots we
 URL, form fields, and document selectors are marked `TODO` in the file's header comment and
 need confirming against the live site with a real account before this script will actually
 work.
+
+### The remaining scripts, ported from `../doc-downloaders`
+
+`../doc-downloaders` is a sibling repo of browser-automation (Playwright) scrapers for the same
+sites, run against a real, human-authenticated Chromium (see its own `CLAUDE.md`). Its scripts
+never automate login themselves (a human always logs in by hand, then presses ENTER) and often
+never automate navigation to the documents page either — so unlike didaxis/impots (which were
+reverse-engineered directly against the live sites by hand), porting these five scripts from
+their Python source alone could only carry over what the Python code and its selectors actually
+reveal: URLs it `goto()`s to directly, text/regex patterns it matches against, and markers it
+checks for being logged out. Each script below states plainly, in its own header comment, what
+is and isn't confirmed, and whether it hits a hard wall this host (no browser, no JS engine —
+see `../sdk/src/domains/scrapers/host/*.rs`) can't get past, rather than presenting a
+best-guess as if it were verified.
+
+- **`scripts/scripts/boursorama/script.lua`** and **`scripts/scripts/edf/script.lua`** — the
+  document-listing/download logic is ported from confirmed URLs/patterns in the Python source,
+  gated the same way behind a restored session cookie, but these two sites run Datadome
+  bot-detection (per `../doc-downloaders/CLAUDE.md`) that a plain HTTP client with no JS engine
+  very likely can't get past even for a correctly-guessed login request — this is flagged as a
+  probable architectural block in each file's header comment, not just an unconfirmed detail.
+- **`scripts/scripts/cesu/script.lua`** and **`scripts/scripts/pajemploi/script.lua`** — both
+  share Urssaf's SSO login; the Python source for each never reveals even the documents page
+  URL (the human navigates there manually), so these are recon-only scaffolds in the same spirit
+  as `ameli/script.lua`: they check whether a restored session is already authenticated and
+  otherwise fail with an explanatory error, with no login or document logic written yet.
+- **`scripts/scripts/scaleway/script.lua`** — architecturally blocked for a different reason
+  than Datadome: the console's invoices table is rendered client-side by its React SPA and
+  simply doesn't exist in the plain HTML `fyde.http.get` receives, and its download buttons have
+  no real `href` to fetch — both require a JS engine this host doesn't have. The header comment
+  suggests Scaleway's real JSON API (`api.scaleway.com`, authenticated with an API key) as a
+  different, non-scraping way to get invoices if this is ever worth pursuing, but that's a
+  separate design, not a variant of this file.

@@ -1,6 +1,6 @@
 ---
 name: fix-script
-description: "Iteratively debug and fix a broken Lua scraper script in this repo by running it, reading its debug report, patching the script, and re-running — repeating until the run succeeds or the loop is stuck. Use when asked to fix, debug, or get a scraper (didaxis, impots, ameli, edf, boursorama, eaudubassinrennais, cesu, pajemploi, scaleway, or a new one) working, or when told to run a script until it passes."
+description: "Iteratively debug and fix a broken Lua scraper script in this repo by running it, reading its debug report, patching the script, and re-running — repeating until the run succeeds or the loop is stuck. Use when asked to fix, debug, or get a scraper (didaxis, impots, ameli, edf, boursorama, cesu, pajemploi, scaleway, or a new one) working, or when told to run a script until it passes."
 ---
 
 ## What this loop does
@@ -26,10 +26,11 @@ script's `parameters` table has, infer them from how the script reads them
 
 ## 1. Run
 
-From the `scripts/` repo root:
+From the `scripts/` repo root, always with `--dev` (forces `debug_http_dump` on for this run,
+so the report's HTTP entries include response bodies regardless of what `secret.json` sets):
 
 ```sh
-cargo run -- <name>
+cargo run -- <name> --dev
 ```
 
 Before running, note the current newest file (if any) under `data/reports/<name>_*.json` (e.g.
@@ -59,9 +60,8 @@ What to pull out:
 - **The error entry's message**, if present — usually a Lua runtime error with a
   `[string "<name>"]:<line>` stack traceback. That line number indexes directly into
   `scripts/<name>/script.lua`.
-- **HTTP entries** (status, URL, timing, and body if `debug_http_dump` was set for this scraper
-  in `secret.json` — you can't see that flag's value, but you can see its effect: a dumped body
-  present or absent in the entry) — these tell you what the site actually returned, which is
+- **HTTP entries** (status, URL, timing, and body — present because `--dev` forces
+  `debug_http_dump` on for this run) — these tell you what the site actually returned, which is
   usually more informative than the Lua error message alone (e.g. a 200 with a login form
   instead of the documents page means a selector or logged-out check is wrong, not that the
   request itself failed).
