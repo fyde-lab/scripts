@@ -20,6 +20,19 @@ format, same `secret.json` rule) but drives *forward* through new capability rat
 backward from a known failure — if you get stuck debugging a step that already seemed to work
 before, switch to reasoning the way `fix-script` does rather than re-deriving it here.
 
+## Never call the website directly
+
+You must not fetch, browse, or otherwise load any page of the target site yourself (no
+`WebFetch`, no `claude-in-chrome`/browser tools, no ad-hoc `curl`). The only thing you're allowed
+to edit is `scripts/<name>/script.lua`; the only way you're allowed to see what the site returns
+is by running it (`cargo run -- <name> --dev`) and reading the HTTP entries' response bodies in
+the resulting `data/reports/<name>_*.json` dump. This keeps every byte you reason about something
+the script itself actually fetched through `fyde.http`, under the same cookie jar/session it'll
+run with unattended — a page you loaded by hand (different cookies, different IP, a logged-in
+browser session) can look nothing like what the script sees. If you need to see a different page
+than what's already in the dump, add the `fyde.http.get`/`post_form` call that reaches it to the
+script and run it again rather than looking it up yourself.
+
 ## 0. Before starting
 
 - Check `scripts/<name>/` doesn't already exist. If it does, this is a fix/extend job for
