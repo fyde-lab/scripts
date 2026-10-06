@@ -97,6 +97,17 @@ struct ScraperConfig {
 /// `--secrets`) it's committed alongside the script.
 #[derive(Deserialize)]
 struct ScraperSettings {
+    /// Display name for the published script, shown in a marketplace
+    /// listing (e.g. "Didaxis") - distinct from the scraper's directory
+    /// name under `scripts/` (e.g. "didaxis"), which is only used locally
+    /// to run it and to match it against an already-published script.
+    name: String,
+    /// The script's own description, written for display in a marketplace
+    /// listing.
+    description: String,
+    /// A one-line summary, shorter than `description`, for display where
+    /// space is limited (e.g. a marketplace list row).
+    short_description: String,
     /// Whether `fyde.http` applies `wreq`'s Chrome TLS/HTTP2 fingerprint
     /// emulation for this scraper. Enabled by default for every scraper
     /// except `ameli`, whose WAF blocks `wreq`'s TLS fingerprint outright
@@ -194,17 +205,29 @@ async fn publish(args: PublishArgs) -> Result<()> {
         .context("listing this account's existing scripts")?;
 
     for scraper_name in list_scraper_names()? {
-        let script_path = PathBuf::from("scripts")
-            .join(&scraper_name)
-            .join("script.lua");
+        let script_dir = PathBuf::from("scripts").join(&scraper_name);
+        let script_path = script_dir.join("script.lua");
         let script = std::fs::read_to_string(&script_path)
             .with_context(|| format!("reading Lua script {}", script_path.display()))?;
+        let settings = load_settings(&script_dir, &scraper_name)?;
+        let logo_path = script_dir.join("logo.PNG");
+        let logo = std::fs::read(&logo_path)
+            .with_context(|| format!("reading logo {}", logo_path.display()))?;
 
-        match existing.iter().find(|s| s.name() == scraper_name) {
+        match existing.iter().find(|s| s.name() == settings.name) {
             Some(current) => {
                 client
                     .scripts()
-                    .update_script(current.id(), &scraper_name, true, Vec::new(), &script)
+                    .update_script(
+                        current.id(),
+                        &settings.name,
+                        true,
+                        Vec::new(),
+                        &script,
+                        &settings.description,
+                        &settings.short_description,
+                        logo,
+                    )
                     .await
                     .with_context(|| format!("updating script {scraper_name}"))?;
                 tracing::info!("updated {scraper_name}");
@@ -212,7 +235,15 @@ async fn publish(args: PublishArgs) -> Result<()> {
             None => {
                 client
                     .scripts()
-                    .create_script(&scraper_name, true, Vec::new(), &script)
+                    .create_script(
+                        &settings.name,
+                        true,
+                        Vec::new(),
+                        &script,
+                        &settings.description,
+                        &settings.short_description,
+                        logo,
+                    )
                     .await
                     .with_context(|| format!("creating script {scraper_name}"))?;
                 tracing::info!("created {scraper_name}");
