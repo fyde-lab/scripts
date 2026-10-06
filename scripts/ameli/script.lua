@@ -156,7 +156,16 @@ function M.run(params)
       return fyde.browser:html()
     end)
     if html_ok then
-      fyde.log.info("post-submit timeout - page markup (first 4000 chars): " .. html:sub(1, 4000))
+      fyde.log.info("post-submit timeout - page length: " .. #html)
+      fyde.log.info("post-submit timeout - still has SUBMIT_CONTROL: " .. tostring(html:find(SUBMIT_CONTROL:sub(2), 1, true) ~= nil))
+      local err_zone_start = html:find("zone%-erreur")
+      if err_zone_start then
+        fyde.log.info("post-submit timeout - around first zone-erreur: " .. html:sub(err_zone_start, err_zone_start + 1500))
+      end
+      local token_start = html:find('name="token"')
+      if token_start then
+        fyde.log.info("post-submit timeout - around token field: " .. html:sub(token_start, token_start + 150))
+      end
     else
       fyde.log.info("post-submit timeout - fetching page markup for diagnosis also failed: " .. tostring(html))
     end
