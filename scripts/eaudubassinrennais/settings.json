@@ -1,3 +1,7 @@
 {
+  "name": "Eau du Bassin Rennais",
+  "short_description": "Portail client du service d'eau du bassin rennais",
+  "description": "Se connecte à « Mon Espace » / « Agence en Ligne » (monespace.eaudubassinrennais.fr), le portail client d'Eau du Bassin Rennais, le service des eaux de l'agglomération rennaise, pour récupérer les factures d'eau.",
+  "homepage": "https://www.eaudubassinrennais.fr",
   "wreq_emulation": true
 }

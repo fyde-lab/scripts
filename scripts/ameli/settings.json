@@ -1,3 +1,9 @@
 {
-  "wreq_emulation": false
+  "name": "Ameli",
+  "short_description": "Espace personnel de l'Assurance Maladie",
+  "description": "Se connecte à l'espace « compte ameli » (assure.ameli.fr), géré par l'Assurance Maladie (CPAM), pour récupérer les relevés de remboursement et autres documents personnels.",
+  "homepage": "https://www.ameli.fr",
+  "wreq_emulation": false,
+  "debug_http_dump": true,
+  "follow_redirects": false
 }
