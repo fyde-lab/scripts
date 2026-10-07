@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+env:
+  # shell.nix includes `claude-code`, an unfree package, for local dev -
+  # nixpkgs refuses to evaluate it without this.
+  NIXPKGS_ALLOW_UNFREE: 1
+
 # fyde-scripts is part of the multi-repo fyde project (see ../CLAUDE.md):
 # it depends on ../sdk via a `path` dependency, which in turn depends on
 # ../api-protos, so every job that touches Cargo checks out all three repos
