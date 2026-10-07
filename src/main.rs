@@ -220,9 +220,13 @@ async fn publish(args: PublishArgs) -> Result<()> {
         let script = std::fs::read_to_string(&script_path)
             .with_context(|| format!("reading Lua script {}", script_path.display()))?;
         let settings = load_settings(&script_dir, &scraper_name)?;
-        let logo_path = script_dir.join("logo.PNG");
-        let logo = std::fs::read(&logo_path)
-            .with_context(|| format!("reading logo {}", logo_path.display()))?;
+        let logo_path = script_dir.join("logo.png");
+        let logo = if logo_path.is_file() {
+            std::fs::read(&logo_path)
+                .with_context(|| format!("reading logo {}", logo_path.display()))?
+        } else {
+            Vec::new()
+        };
 
         match existing.iter().find(|s| s.name() == settings.name) {
             Some(current) => {
@@ -232,11 +236,11 @@ async fn publish(args: PublishArgs) -> Result<()> {
                         current.id(),
                         &settings.name,
                         true,
-                        Vec::new(),
+                        logo,
                         &script,
                         &settings.description,
                         &settings.short_description,
-                        logo,
+                        settings.allowed_domains.clone(),
                     )
                     .await
                     .with_context(|| format!("updating script {scraper_name}"))?;
@@ -248,11 +252,11 @@ async fn publish(args: PublishArgs) -> Result<()> {
                     .create_script(
                         &settings.name,
                         true,
-                        Vec::new(),
+                        logo,
                         &script,
                         &settings.description,
                         &settings.short_description,
-                        logo,
+                        settings.allowed_domains.clone(),
                     )
                     .await
                     .with_context(|| format!("creating script {scraper_name}"))?;
