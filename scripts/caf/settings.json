@@ -3,5 +3,6 @@
   "short_description": "Espace personnel de la Caisse d'Allocations Familiales",
   "description": "Se connecte à l'espace « Mon Compte » sur caf.fr, le site de la Caisse d'Allocations Familiales, pour récupérer les attestations de paiement et autres documents personnels.",
   "homepage": "https://www.caf.fr",
-  "wreq_emulation": true
+  "wreq_emulation": true,
+  "allowed_domains": ["caf.fr"]
 }

@@ -3,5 +3,6 @@
   "short_description": "Espace particulier de l'administration fiscale",
   "description": "Se connecte à l'espace particulier sur impots.gouv.fr, géré par la Direction générale des Finances publiques (DGFiP), pour récupérer les avis d'imposition et autres documents personnels.",
   "homepage": "https://www.impots.gouv.fr",
-  "wreq_emulation": true
+  "wreq_emulation": true,
+  "allowed_domains": ["impots.gouv.fr"]
 }

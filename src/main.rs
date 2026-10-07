@@ -129,6 +129,16 @@ struct ScraperSettings {
     /// of being carried straight to its target.
     #[serde(default = "default_follow_redirects")]
     follow_redirects: bool,
+    /// The only hosts (or subdomains of them) this scraper's `fyde.http`/
+    /// `fyde.browser:open` calls may reach (see `ScrapersService::run`'s
+    /// `allowed_domains` parameter) - a call to any other host fails before
+    /// it reaches the network, which stops the script right there since
+    /// nothing here wraps a `fyde.http`/`fyde.browser` call in `pcall`.
+    /// Defaults to empty (unrestricted) when omitted, but every scraper
+    /// under `scripts/` sets this explicitly to the real site(s) it talks
+    /// to.
+    #[serde(default)]
+    allowed_domains: Vec<String>,
 }
 
 fn default_follow_redirects() -> bool {
@@ -308,6 +318,7 @@ async fn run_scraper(args: &RunArgs, scraper_name: &str) -> Result<()> {
             debug_http_dump,
             settings.wreq_emulation,
             settings.follow_redirects,
+            settings.allowed_domains,
         )
         .await
         .context("running the scraper's `run` function")

@@ -57,7 +57,7 @@ Every scraper also has a `scripts/<name>/settings.json`, next to its `script.lua
 `--secrets`, this holds settings specific to the script itself rather than credentials, so
 it's committed alongside the script. It's a `{"name": string, "description": string,
 "short_description": string, "homepage": string, "wreq_emulation": bool, "debug_http_dump":
-bool, "follow_redirects": bool}` object. `name`/`description`/`short_description` are
+bool, "follow_redirects": bool, "allowed_domains": [string]}` object. `name`/`description`/`short_description` are
 marketplace metadata — `cargo run -- publish` reads them (plus `logo.PNG`, next to
 `script.lua`) and sends them through to `ScriptsClient::create_script`/`update_script` when
 publishing that scraper as a public script, so a published script's display name, blurb, and
@@ -75,7 +75,14 @@ unless actively debugging a scraper's HTTP traffic. `follow_redirects` (optional
 `true`) is forwarded to `ScrapersService::run`'s `follow_redirects` parameter, toggling
 whether `fyde.http` automatically follows HTTP redirects for that scraper — set to `false`
 for a scraper that needs to inspect a redirect response itself (e.g. reading a `Location`
-header) instead of being carried straight to its target.
+header) instead of being carried straight to its target. `allowed_domains` (optional, defaults
+to empty/unrestricted) is forwarded to `ScrapersService::run`'s `allowed_domains` parameter —
+the only hosts (or subdomains of them) that scraper's `fyde.http.get/post_form/post_json/
+download` and `fyde.browser:open` calls may reach; a call to any other host fails before it
+ever touches the network, which stops the script right there since nothing here wraps a
+`fyde.http`/`fyde.browser` call in `pcall`. Every scraper under `scripts/` sets this
+explicitly to the real site(s) it talks to (e.g. `["impots.gouv.fr"]` covers both
+`cfspart.impots.gouv.fr` and `cfspart-idp.impots.gouv.fr`).
 
 Pass `--dev` to force `debug_http_dump` on for every scraper run regardless of what each
 scraper's `settings.json` sets — a shortcut for "I'm actively debugging this script's HTTP
@@ -98,12 +105,13 @@ vendored, patched BoringSSL used by `wreq`, the scrapers domain's HTTP client).
 Parses CLI args — a required, variadic list of scraper names (e.g. `didaxis impots`), each the
 name of a folder under `scripts/` — and runs each in turn via `run_scraper`: reads
 `scripts/<name>/script.lua`, loads that scraper's `parameters` from `--secrets` and its
-`wreq_emulation`/`debug_http_dump`/`follow_redirects` settings from
+`wreq_emulation`/`debug_http_dump`/`follow_redirects`/`allowed_domains` settings from
 `scripts/<name>/settings.json` (both keyed by the same name), builds an `on_progress`/
 `on_question` pair (printing progress to the terminal and blocking on stdin for a question —
 see `fyde_sdk::ClientConfig`'s doc comments for why the sdk's own host functions no longer do
 this directly), calls `fyde_sdk::init_dev_scrapers` to get a `scrapers::Service`, then calls
-its `run(name, script, parameters, debug_http_dump, wreq_emulation, follow_redirects)`. The
+its `run(name, script, parameters, debug_http_dump, wreq_emulation, follow_redirects,
+allowed_domains)`. The
 per-run debug report is saved by `../sdk`'s `scrapers::reports` sub-domain itself, under
 `--storage`'s `reports/` subdirectory — this crate no longer writes one of its own.
 
