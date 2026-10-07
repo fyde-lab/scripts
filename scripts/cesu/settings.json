@@ -1,0 +1,10 @@
+{
+  "name": "Cesu",
+  "short_description": "Espace personnel du Chèque Emploi Service Universel",
+  "description": "Se connecte à l'espace particulier employeur sur www.cesu.urssaf.fr, le service de l'Urssaf pour déclarer et payer un salarié à domicile, pour en récupérer les déclarations et documents.",
+  "homepage": "https://www.cesu.urssaf.fr",
+  "wreq_emulation": false,
+  "debug_http_dump": true,
+  "follow_redirects": false,
+  "allowed_domains": ["cesu.urssaf.fr"]
+}
