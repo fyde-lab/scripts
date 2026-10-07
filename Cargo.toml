@@ -12,3 +12,7 @@ serde_json = "1"
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# Only used by the `check` subcommand, to load each scraper script through
+# the same restricted Lua 5.4 stdlib ../sdk/src/domains/scrapers/service.rs's
+# `sandboxed_lua` uses, without a full `fyde_sdk::init_dev_scrapers` instance.
+mlua = { version = "0.12.1", features = ["lua54", "vendored"] }

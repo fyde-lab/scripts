@@ -34,6 +34,14 @@ enum Command {
     /// database (there's nothing worth persisting locally for a one-off
     /// publish run).
     Publish(PublishArgs),
+
+    /// Loads every `scripts/<name>/script.lua` through the same restricted
+    /// Lua 5.4 stdlib `../sdk/src/domains/scrapers/service.rs`'s
+    /// `sandboxed_lua` uses, without calling `run` - this only catches Lua
+    /// syntax errors and confirms each script returns a table with a `run`
+    /// function, with no network calls or `--secrets` needed, so it's safe
+    /// to run in CI.
+    Check,
 }
 
 #[derive(Parser)]
@@ -163,6 +171,7 @@ async fn main() -> Result<()> {
     match cli.command {
         Some(Command::Run(args)) => run(args).await,
         Some(Command::Publish(args)) => publish(args).await,
+        Some(Command::Check) => check(),
         None => {
             Cli::command().print_help()?;
             Ok(())
@@ -270,6 +279,68 @@ async fn publish(args: PublishArgs) -> Result<()> {
 
 /// Lists the name of every scraper under `scripts/` (i.e. every directory
 /// directly under it containing a `script.lua`).
+/// Loads every scraper's `script.lua` and reports any that fail to parse or
+/// don't return a table with a `run` function, failing the process (non-zero
+/// exit) if any do.
+fn check() -> Result<()> {
+    let mut failed = Vec::new();
+
+    for scraper_name in list_scraper_names()? {
+        let script_path = PathBuf::from("scripts")
+            .join(&scraper_name)
+            .join("script.lua");
+        let script = std::fs::read_to_string(&script_path)
+            .with_context(|| format!("reading Lua script {}", script_path.display()))?;
+
+        match check_script(&scraper_name, &script) {
+            Ok(()) => tracing::info!("{scraper_name}: ok"),
+            Err(err) => {
+                tracing::error!("{scraper_name}: {err:#}");
+                failed.push(scraper_name);
+            }
+        }
+    }
+
+    if !failed.is_empty() {
+        anyhow::bail!(
+            "{} scraper script(s) failed validation: {failed:?}",
+            failed.len()
+        );
+    }
+
+    Ok(())
+}
+
+/// Evaluates `script`'s top-level chunk in the same restricted stdlib
+/// (`TABLE`/`STRING`/`MATH`/`UTF8`, with `dofile`/`loadfile`/`load` stripped)
+/// `../sdk/src/domains/scrapers/service.rs`'s `sandboxed_lua` builds for a
+/// real run, then checks the returned table has a `run` function - without
+/// calling it, so this needs neither the `fyde` host table nor a network
+/// connection.
+fn check_script(name: &str, script: &str) -> Result<()> {
+    let lua = mlua::Lua::new_with(
+        mlua::StdLib::TABLE | mlua::StdLib::STRING | mlua::StdLib::MATH | mlua::StdLib::UTF8,
+        mlua::LuaOptions::new(),
+    )
+    .context("creating a restricted Lua VM")?;
+    let globals = lua.globals();
+    globals.set("dofile", mlua::Value::Nil)?;
+    globals.set("loadfile", mlua::Value::Nil)?;
+    globals.set("load", mlua::Value::Nil)?;
+
+    let table: mlua::Table = lua
+        .load(script)
+        .set_name(name)
+        .eval()
+        .context("evaluating the script")?;
+
+    table
+        .get::<mlua::Function>("run")
+        .context("script must return a table with a `run(parameters)` function")?;
+
+    Ok(())
+}
+
 fn list_scraper_names() -> Result<Vec<String>> {
     let mut names = Vec::new();
 

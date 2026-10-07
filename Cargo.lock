@@ -1863,6 +1863,7 @@ dependencies = [
  "anyhow",
  "clap",
  "fyde-sdk",
+ "mlua",
  "serde",
  "serde_json",
  "tokio",

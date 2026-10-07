@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+# fyde-scripts is part of the multi-repo fyde project (see ../CLAUDE.md):
+# it depends on ../sdk via a `path` dependency, which in turn depends on
+# ../api-protos, so every job that touches Cargo checks out all three repos
+# as siblings under the runner's workspace, mirroring the local dev layout.
+jobs:
+  lua-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: scripts
+
+      - uses: cachix/install-nix-action@v30
+
+      - name: luacheck
+        working-directory: scripts
+        run: nix-shell -p luaPackages.luacheck --run "luacheck scripts/"
+
+  lua-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: scripts
+
+      - uses: actions/checkout@v4
+        with:
+          repository: fyde-lab/sdk
+          path: sdk
+
+      - uses: actions/checkout@v4
+        with:
+          repository: fyde-lab/api-protos
+          path: api-protos
+
+      - uses: cachix/install-nix-action@v30
+
+      - name: cargo run -- check
+        working-directory: scripts
+        run: nix-shell --run "cargo run -- check"
+
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: scripts
+
+      - uses: actions/checkout@v4
+        with:
+          repository: fyde-lab/sdk
+          path: sdk
+
+      - uses: actions/checkout@v4
+        with:
+          repository: fyde-lab/api-protos
+          path: api-protos
+
+      - uses: cachix/install-nix-action@v30
+
+      - name: cargo fmt --check
+        working-directory: scripts
+        run: nix-shell --run "cargo fmt --check"
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: scripts
+
+      - uses: actions/checkout@v4
+        with:
+          repository: fyde-lab/sdk
+          path: sdk
+
+      - uses: actions/checkout@v4
+        with:
+          repository: fyde-lab/api-protos
+          path: api-protos
+
+      - uses: cachix/install-nix-action@v30
+
+      - name: cargo clippy
+        working-directory: scripts
+        run: nix-shell --run "cargo clippy --all-targets -- -D warnings"
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: scripts
+
+      - uses: actions/checkout@v4
+        with:
+          repository: fyde-lab/sdk
+          path: sdk
+
+      - uses: actions/checkout@v4
+        with:
+          repository: fyde-lab/api-protos
+          path: api-protos
+
+      - uses: cachix/install-nix-action@v30
+
+      - name: cargo build
+        working-directory: scripts
+        run: nix-shell --run "cargo build"
