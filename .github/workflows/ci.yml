@@ -21,6 +21,11 @@ jobs:
           path: scripts
 
       - uses: cachix/install-nix-action@v30
+        with:
+          # cachix/install-nix-action doesn't set up NIX_PATH on its own, so
+          # `<nixpkgs>` (used by shell.nix and by `nix-shell -p` below) fails
+          # to resolve without this.
+          nix_path: nixpkgs=channel:nixos-unstable
 
       - name: luacheck
         working-directory: scripts
@@ -44,6 +49,11 @@ jobs:
           path: api-protos
 
       - uses: cachix/install-nix-action@v30
+        with:
+          # cachix/install-nix-action doesn't set up NIX_PATH on its own, so
+          # `<nixpkgs>` (used by shell.nix and by `nix-shell -p` below) fails
+          # to resolve without this.
+          nix_path: nixpkgs=channel:nixos-unstable
 
       - name: cargo run -- check
         working-directory: scripts
@@ -67,6 +77,11 @@ jobs:
           path: api-protos
 
       - uses: cachix/install-nix-action@v30
+        with:
+          # cachix/install-nix-action doesn't set up NIX_PATH on its own, so
+          # `<nixpkgs>` (used by shell.nix and by `nix-shell -p` below) fails
+          # to resolve without this.
+          nix_path: nixpkgs=channel:nixos-unstable
 
       - name: cargo fmt --check
         working-directory: scripts
@@ -90,6 +105,11 @@ jobs:
           path: api-protos
 
       - uses: cachix/install-nix-action@v30
+        with:
+          # cachix/install-nix-action doesn't set up NIX_PATH on its own, so
+          # `<nixpkgs>` (used by shell.nix and by `nix-shell -p` below) fails
+          # to resolve without this.
+          nix_path: nixpkgs=channel:nixos-unstable
 
       - name: cargo clippy
         working-directory: scripts
@@ -113,6 +133,11 @@ jobs:
           path: api-protos
 
       - uses: cachix/install-nix-action@v30
+        with:
+          # cachix/install-nix-action doesn't set up NIX_PATH on its own, so
+          # `<nixpkgs>` (used by shell.nix and by `nix-shell -p` below) fails
+          # to resolve without this.
+          nix_path: nixpkgs=channel:nixos-unstable
 
       - name: cargo build
         working-directory: scripts
