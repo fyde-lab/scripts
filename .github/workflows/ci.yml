@@ -39,6 +39,19 @@ jobs:
   lua-check:
     runs-on: ubuntu-latest
     steps:
+      # fyde-sdk's dependency tree (wry/webkitgtk/BoringSSL, for the
+      # scrapers domain's embedded browser and HTTP client) doesn't fit in
+      # ubuntu-latest's default ~14GB free disk alongside its preinstalled
+      # toolchains - free up the ones this job doesn't need.
+      - uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
       - uses: actions/checkout@v4
         with:
           path: scripts
@@ -100,6 +113,16 @@ jobs:
   clippy:
     runs-on: ubuntu-latest
     steps:
+      # See the lua-check job's comment on this step.
+      - uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
       - uses: actions/checkout@v4
         with:
           path: scripts
@@ -133,6 +156,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # See the lua-check job's comment on this step.
+      - uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
       - uses: actions/checkout@v4
         with:
           path: scripts
