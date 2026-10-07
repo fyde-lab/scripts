@@ -220,9 +220,6 @@ async fn publish(args: PublishArgs) -> Result<()> {
         let script = std::fs::read_to_string(&script_path)
             .with_context(|| format!("reading Lua script {}", script_path.display()))?;
         let settings = load_settings(&script_dir, &scraper_name)?;
-        let logo_path = script_dir.join("logo.PNG");
-        let logo = std::fs::read(&logo_path)
-            .with_context(|| format!("reading logo {}", logo_path.display()))?;
 
         match existing.iter().find(|s| s.name() == settings.name) {
             Some(current) => {
@@ -236,7 +233,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
                         &script,
                         &settings.description,
                         &settings.short_description,
-                        logo,
+                        settings.allowed_domains.clone(),
                     )
                     .await
                     .with_context(|| format!("updating script {scraper_name}"))?;
@@ -252,7 +249,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
                         &script,
                         &settings.description,
                         &settings.short_description,
-                        logo,
+                        settings.allowed_domains.clone(),
                     )
                     .await
                     .with_context(|| format!("creating script {scraper_name}"))?;

@@ -57,11 +57,11 @@ Every scraper also has a `scripts/<name>/settings.json`, next to its `script.lua
 `--secrets`, this holds settings specific to the script itself rather than credentials, so
 it's committed alongside the script. It's a `{"name": string, "description": string,
 "short_description": string, "homepage": string, "wreq_emulation": bool, "debug_http_dump":
-bool, "follow_redirects": bool, "allowed_domains": [string]}` object. `name`/`description`/`short_description` are
-marketplace metadata — `cargo run -- publish` reads them (plus `logo.PNG`, next to
-`script.lua`) and sends them through to `ScriptsClient::create_script`/`update_script` when
-publishing that scraper as a public script, so a published script's display name, blurb, and
-banner image come from here rather than from the scraper's directory name. `homepage` isn't
+bool, "follow_redirects": bool, "allowed_domains": [string]}` object. `name`/`description`/`short_description`/
+`allowed_domains` are marketplace metadata — `cargo run -- publish` reads them and sends them
+through to `ScriptsClient::create_script`/`update_script` when publishing that scraper as a
+public script, so a published script's display name, blurb, and allowed domains come from
+here rather than from the scraper's directory name. `homepage` isn't
 read by this program yet. `wreq_emulation` is forwarded to
 `ScrapersService::run`'s `wreq_emulation` parameter, toggling `fyde.http`'s Chrome TLS/HTTP2
 fingerprint emulation (`wreq_util::Profile::Chrome131`) for that scraper — on by default for
