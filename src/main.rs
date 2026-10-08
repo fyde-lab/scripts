@@ -5,7 +5,9 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser, Subcommand};
-use fyde_sdk::{Client, ClientConfig, LogLevel, ProgressEvent, Storage, init_dev_scrapers};
+use fyde_sdk::{
+    Client, ClientConfig, LogLevel, ProgressEvent, ScriptType, Storage, init_dev_scrapers,
+};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -250,6 +252,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
                         &settings.description,
                         &settings.short_description,
                         settings.allowed_domains.clone(),
+                        ScriptType::Scraper,
                     )
                     .await
                     .with_context(|| format!("updating script {scraper_name}"))?;
@@ -266,6 +269,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
                         &settings.description,
                         &settings.short_description,
                         settings.allowed_domains.clone(),
+                        ScriptType::Scraper,
                     )
                     .await
                     .with_context(|| format!("creating script {scraper_name}"))?;
