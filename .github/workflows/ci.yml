@@ -34,7 +34,7 @@ jobs:
 
       - name: luacheck
         working-directory: scripts
-        run: nix-shell -p luaPackages.luacheck --run "luacheck scripts/"
+        run: nix-shell -p luaPackages.luacheck --run "luacheck scrapers/"
 
   lua-check:
     runs-on: ubuntu-latest

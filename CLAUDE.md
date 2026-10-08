@@ -6,7 +6,7 @@ repository.
 ## What this is
 
 `fyde-scripts` is the canonical home for the Lua scraper scripts run by `fyde-sdk`'s
-`scrapers` domain (`scripts/scripts/<name>/script.lua`), plus `fyde-scripts` itself — a thin Rust CLI (ported from
+`scrapers` domain (`scripts/scrapers/<name>/script.lua`), plus `fyde-scripts` itself — a thin Rust CLI (ported from
 the standalone `demo-rust-fyde` repo) that runs one of those scripts through
 `fyde-sdk`'s public `ScrapersService::run`, outside of a full `Client`.
 
@@ -38,7 +38,7 @@ repo — `fyde_sdk::init_dev_scrapers` is the one function this program calls to
 
 ```sh
 cargo build
-cargo run -- didaxis                          # runs scripts/didaxis/script.lua
+cargo run -- didaxis                          # runs scrapers/didaxis/script.lua
 cargo run -- didaxis impots --documents-dir data/documents  # runs both, in order
 ```
 
@@ -53,7 +53,7 @@ it, so a script is free to read whatever fields it needs (conventionally
 `username`/`password`) back out of it. Copy `secret.json.example` to `secret.json` and fill it
 in to run locally — never read or commit the real `secret.json`.
 
-Every scraper also has a `scripts/<name>/settings.json`, next to its `script.lua` — unlike
+Every scraper also has a `scrapers/<name>/settings.json`, next to its `script.lua` — unlike
 `--secrets`, this holds settings specific to the script itself rather than credentials, so
 it's committed alongside the script. It's a `{"name": string, "description": string,
 "short_description": string, "homepage": string, "wreq_emulation": bool, "debug_http_dump":
@@ -66,7 +66,7 @@ read by this program yet. `wreq_emulation` is forwarded to
 `ScrapersService::run`'s `wreq_emulation` parameter, toggling `fyde.http`'s Chrome TLS/HTTP2
 fingerprint emulation (`wreq_util::Profile::Chrome131`) for that scraper — on by default for
 every scraper except `ameli`, whose WAF blocks `wreq`'s TLS fingerprint outright regardless of
-emulation (see `scripts/ameli/script.lua`'s header comment). `debug_http_dump` (optional,
+emulation (see `scrapers/ameli/script.lua`'s header comment). `debug_http_dump` (optional,
 defaults to `false`) is forwarded to `ScrapersService::run`'s `debug_http_dump` parameter,
 opting that scraper's run into recording `fyde.http.get`/`post_form`'s response bodies in the
 per-run debug report `../sdk`'s `reports` sub-domain saves (never request headers/bodies or
@@ -80,7 +80,7 @@ to empty/unrestricted) is forwarded to `ScrapersService::run`'s `allowed_domains
 the only hosts (or subdomains of them) that scraper's `fyde.http.get/post_form/post_json/
 download` and `fyde.browser:open` calls may reach; a call to any other host fails before it
 ever touches the network, which stops the script right there since nothing here wraps a
-`fyde.http`/`fyde.browser` call in `pcall`. Every scraper under `scripts/` sets this
+`fyde.http`/`fyde.browser` call in `pcall`. Every scraper under `scrapers/` sets this
 explicitly to the real site(s) it talks to (e.g. `["impots.gouv.fr"]` covers both
 `cfspart.impots.gouv.fr` and `cfspart-idp.impots.gouv.fr`).
 
@@ -103,10 +103,10 @@ vendored, patched BoringSSL used by `wreq`, the scrapers domain's HTTP client).
 ### `src/main.rs`
 
 Parses CLI args — a required, variadic list of scraper names (e.g. `didaxis impots`), each the
-name of a folder under `scripts/` — and runs each in turn via `run_scraper`: reads
-`scripts/<name>/script.lua`, loads that scraper's `parameters` from `--secrets` and its
+name of a folder under `scrapers/` — and runs each in turn via `run_scraper`: reads
+`scrapers/<name>/script.lua`, loads that scraper's `parameters` from `--secrets` and its
 `wreq_emulation`/`debug_http_dump`/`follow_redirects`/`allowed_domains` settings from
-`scripts/<name>/settings.json` (both keyed by the same name), builds an `on_progress`/
+`scrapers/<name>/settings.json` (both keyed by the same name), builds an `on_progress`/
 `on_question` pair (printing progress to the terminal and blocking on stdin for a question —
 see `fyde_sdk::ClientConfig`'s doc comments for why the sdk's own host functions no longer do
 this directly), calls `fyde_sdk::init_dev_scrapers` to get a `scrapers::Service`, then calls
@@ -115,7 +115,7 @@ allowed_domains)`. The
 per-run debug report is saved by `../sdk`'s `scrapers::reports` sub-domain itself, under
 `--storage`'s `reports/` subdirectory — this crate no longer writes one of its own.
 
-### `scripts/scripts/didaxis/script.lua` / `scripts/scripts/impots/script.lua`
+### `scripts/scrapers/didaxis/script.lua` / `scripts/scrapers/impots/script.lua`
 
 Unmodified from `demo-rust-fyde` (beyond updated comments pointing at `../sdk`'s host
 instead of a local one that no longer exists here) — see each file's header comment for what
@@ -124,7 +124,7 @@ with a single `run(parameters)` function, and only call into the `fyde` host tab
 `fyde.http`, `fyde.html`, `fyde.json`, `fyde.progress`, `fyde.input`, `fyde.save_document`,
 `fyde.session`) — see `../sdk/src/domains/scrapers/host/`.
 
-### `scripts/scripts/ameli/script.lua`
+### `scripts/scrapers/ameli/script.lua`
 
 Scaffold for the "compte ameli" personal space (assure.ameli.fr, Assurance Maladie/CPAM) —
 **unverified**, unlike the two scripts above: `assure.ameli.fr` returns a bot-protection
@@ -148,18 +148,18 @@ is and isn't confirmed, and whether it hits a hard wall this host (no browser, n
 see `../sdk/src/domains/scrapers/host/*.rs`) can't get past, rather than presenting a
 best-guess as if it were verified.
 
-- **`scripts/scripts/boursorama/script.lua`** and **`scripts/scripts/edf/script.lua`** — the
+- **`scripts/scrapers/boursorama/script.lua`** and **`scripts/scrapers/edf/script.lua`** — the
   document-listing/download logic is ported from confirmed URLs/patterns in the Python source,
   gated the same way behind a restored session cookie, but these two sites run Datadome
   bot-detection (per `../doc-downloaders/CLAUDE.md`) that a plain HTTP client with no JS engine
   very likely can't get past even for a correctly-guessed login request — this is flagged as a
   probable architectural block in each file's header comment, not just an unconfirmed detail.
-- **`scripts/scripts/cesu/script.lua`** and **`scripts/scripts/pajemploi/script.lua`** — both
+- **`scripts/scrapers/cesu/script.lua`** and **`scripts/scrapers/pajemploi/script.lua`** — both
   share Urssaf's SSO login; the Python source for each never reveals even the documents page
   URL (the human navigates there manually), so these are recon-only scaffolds in the same spirit
   as `ameli/script.lua`: they check whether a restored session is already authenticated and
   otherwise fail with an explanatory error, with no login or document logic written yet.
-- **`scripts/scripts/scaleway/script.lua`** — architecturally blocked for a different reason
+- **`scripts/scrapers/scaleway/script.lua`** — architecturally blocked for a different reason
   than Datadome: the console's invoices table is rendered client-side by its React SPA and
   simply doesn't exist in the plain HTML `fyde.http.get` receives, and its download buttons have
   no real `href` to fetch — both require a JS engine this host doesn't have. The header comment

@@ -1,17 +1,17 @@
 ---
 name: create-script
-description: "Write a brand-new Lua scraper script for a given website from scratch, in a fixed order: ask for secret.json + a token budget, ask for an HAR capture of the login (and ideally a document fetch), write settings.json, recreate the login flow with an already-logged-in check, run/fix/retry until it passes, re-run to confirm it doesn't log in twice, fetch documents, then add upload metadata. Use when asked to write, create, add, or port a new scraper/script for a site that has no scripts/<name>/script.lua yet."
+description: "Write a brand-new Lua scraper script for a given website from scratch, in a fixed order: ask for secret.json + a token budget, ask for an HAR capture of the login (and ideally a document fetch), write settings.json, recreate the login flow with an already-logged-in check, run/fix/retry until it passes, re-run to confirm it doesn't log in twice, fetch documents, then add upload metadata. Use when asked to write, create, add, or port a new scraper/script for a site that has no scrapers/<name>/script.lua yet."
 ---
 
 ## What this loop does
 
 A site name, a human-supplied HAR capture, and a login the user can supply credentials for in;
-a new `scripts/<name>/script.lua` out. The work happens in a fixed order — each numbered step
+a new `scrapers/<name>/script.lua` out. The work happens in a fixed order — each numbered step
 below must be done before the next starts:
 
 1. Ask the user to fill in `secret.json` and to give a token budget for this task.
 2. Ask the user for an HAR capture of the login (and ideally a first document fetch).
-3. Write `scripts/<name>/settings.json`.
+3. Write `scrapers/<name>/settings.json`.
 4. Recreate the login flow from the HAR, plus an already-logged-in check.
 5. Run the script; loop **run -> read report -> fix -> retry** until it logs in cleanly.
 6. Re-run the script and confirm the second run does *not* log in again.
@@ -33,8 +33,8 @@ before, switch to reasoning the way `fix-script` does rather than re-deriving it
 You must not fetch, browse, or otherwise load any page of the target site yourself (no
 `WebFetch`, no `claude-in-chrome`/browser tools, no ad-hoc `curl`). The only things you're
 allowed to look at are the HAR file the user gives you in step 2 and the script's own runs —
-the only thing you're allowed to edit is `scripts/<name>/script.lua` (and
-`scripts/<name>/settings.json`). This keeps every byte you reason about something either the
+the only thing you're allowed to edit is `scrapers/<name>/script.lua` (and
+`scrapers/<name>/settings.json`). This keeps every byte you reason about something either the
 user's own real browser session captured, or the script itself actually fetched through
 `fyde.http`, under the same cookie jar/session it'll run with unattended — a page you loaded by
 hand (different cookies, different IP, a logged-in browser session) can look nothing like what
@@ -44,14 +44,14 @@ than looking it up yourself.
 
 ## 0. Before starting
 
-- Check `scripts/<name>/` doesn't already exist. If it does, this is a fix/extend job for
+- Check `scrapers/<name>/` doesn't already exist. If it does, this is a fix/extend job for
   `fix-script`, not a new script.
 - Skim this repo's `CLAUDE.md` for whether the site is already known to be a hard wall (Datadome,
   client-rendered SPA, no JS engine). This host has **no JS engine and no real browser** — it's
   plain HTTP (`fyde.http`) + server-side HTML parsing (`fyde.html.select`, a CSS selector engine).
   If the HAR you get in step 2 shows the login or document pages are rendered client-side by JS,
   say so up front rather than discovering it after burning several iterations.
-- Create `scripts/<name>/script.lua` with a header comment (site name/URL, one line on what it
+- Create `scrapers/<name>/script.lua` with a header comment (site name/URL, one line on what it
   scrapes) and a minimal skeleton, leaving the body to steps 4+:
 
   ```lua
@@ -103,7 +103,7 @@ OPAQUE-style/WebAuthn flow this host can't drive, that's a hard wall — stop an
 
 ## 3. Write `settings.json`
 
-Create `scripts/<name>/settings.json` per this repo's `CLAUDE.md`: a `{"name", "description",
+Create `scrapers/<name>/settings.json` per this repo's `CLAUDE.md`: a `{"name", "description",
 "short_description", "homepage", "wreq_emulation", "debug_http_dump", "follow_redirects",
 "allowed_domains"}` object.
 

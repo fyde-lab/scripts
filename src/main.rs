@@ -10,7 +10,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 /// Runs, or publishes to a fyde server, the Lua scraper scripts under
-/// `scripts/`. Ported from `demo-rust-fyde`.
+/// `scrapers/`. Ported from `demo-rust-fyde`.
 #[derive(Parser)]
 struct Cli {
     #[command(subcommand)]
@@ -28,14 +28,14 @@ enum Command {
     /// uploaded.
     Run(RunArgs),
 
-    /// Publishes every scraper's `script.lua` under `scripts/` to a fyde
+    /// Publishes every scraper's `script.lua` under `scrapers/` to a fyde
     /// server's scripts service, as a public script, authenticating with a
     /// real account via a full `fyde_sdk::Client` backed by an in-memory
     /// database (there's nothing worth persisting locally for a one-off
     /// publish run).
     Publish(PublishArgs),
 
-    /// Loads every `scripts/<name>/script.lua` through the same restricted
+    /// Loads every `scrapers/<name>/script.lua` through the same restricted
     /// Lua 5.4 stdlib `../sdk/src/domains/scrapers/service.rs`'s
     /// `sandboxed_lua` uses, without calling `run` - this only catches Lua
     /// syntax errors and confirms each script returns a table with a `run`
@@ -47,8 +47,8 @@ enum Command {
 #[derive(Parser)]
 struct RunArgs {
     /// Names of the scrapers to run, each the name of a folder under
-    /// `scripts/` containing a `script.lua` (e.g. `didaxis impots` runs
-    /// `scripts/didaxis/script.lua` and `scripts/impots/script.lua`, in
+    /// `scrapers/` containing a `script.lua` (e.g. `didaxis impots` runs
+    /// `scrapers/didaxis/script.lua` and `scrapers/impots/script.lua`, in
     /// order). Prints the full `--help` text if none are given.
     scrapers: Vec<String>,
 
@@ -100,14 +100,14 @@ struct ScraperConfig {
     parameters: Value,
 }
 
-/// A scraper's `scripts/<name>/settings.json`, next to its `script.lua` -
+/// A scraper's `scrapers/<name>/settings.json`, next to its `script.lua` -
 /// settings specific to the script itself rather than a secret, so (unlike
 /// `--secrets`) it's committed alongside the script.
 #[derive(Deserialize)]
 struct ScraperSettings {
     /// Display name for the published script, shown in a marketplace
     /// listing (e.g. "Didaxis") - distinct from the scraper's directory
-    /// name under `scripts/` (e.g. "didaxis"), which is only used locally
+    /// name under `scrapers/` (e.g. "didaxis"), which is only used locally
     /// to run it and to match it against an already-published script.
     name: String,
     /// The script's own description, written for display in a marketplace
@@ -119,7 +119,7 @@ struct ScraperSettings {
     /// Whether `fyde.http` applies `wreq`'s Chrome TLS/HTTP2 fingerprint
     /// emulation for this scraper. Enabled by default for every scraper
     /// except `ameli`, whose WAF blocks `wreq`'s TLS fingerprint outright
-    /// regardless of emulation (see `scripts/ameli/script.lua`'s header
+    /// regardless of emulation (see `scrapers/ameli/script.lua`'s header
     /// comment).
     wreq_emulation: bool,
     /// Opts this scraper's `fyde.http` calls into recording response
@@ -143,7 +143,7 @@ struct ScraperSettings {
     /// it reaches the network, which stops the script right there since
     /// nothing here wraps a `fyde.http`/`fyde.browser` call in `pcall`.
     /// Defaults to empty (unrestricted) when omitted, but every scraper
-    /// under `scripts/` sets this explicitly to the real site(s) it talks
+    /// under `scrapers/` sets this explicitly to the real site(s) it talks
     /// to.
     #[serde(default)]
     allowed_domains: Vec<String>,
@@ -193,7 +193,7 @@ async fn run(args: RunArgs) -> Result<()> {
     Ok(())
 }
 
-/// Reads every `scripts/<name>/script.lua` under the repo and publishes it
+/// Reads every `scrapers/<name>/script.lua` under the repo and publishes it
 /// to `args.server`'s scripts service as a public script, authenticated as
 /// `args.username`. Updates a script already owned by this account (by
 /// matching on name) instead of failing, so the command can be re-run after
@@ -224,7 +224,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
         .context("listing this account's existing scripts")?;
 
     for scraper_name in list_scraper_names()? {
-        let script_dir = PathBuf::from("scripts").join(&scraper_name);
+        let script_dir = PathBuf::from("scrapers").join(&scraper_name);
         let script_path = script_dir.join("script.lua");
         let script = std::fs::read_to_string(&script_path)
             .with_context(|| format!("reading Lua script {}", script_path.display()))?;
@@ -277,7 +277,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
     Ok(())
 }
 
-/// Lists the name of every scraper under `scripts/` (i.e. every directory
+/// Lists the name of every scraper under `scrapers/` (i.e. every directory
 /// directly under it containing a `script.lua`).
 /// Loads every scraper's `script.lua` and reports any that fail to parse or
 /// don't return a table with a `run` function, failing the process (non-zero
@@ -286,7 +286,7 @@ fn check() -> Result<()> {
     let mut failed = Vec::new();
 
     for scraper_name in list_scraper_names()? {
-        let script_path = PathBuf::from("scripts")
+        let script_path = PathBuf::from("scrapers")
             .join(&scraper_name)
             .join("script.lua");
         let script = std::fs::read_to_string(&script_path)
@@ -344,8 +344,8 @@ fn check_script(name: &str, script: &str) -> Result<()> {
 fn list_scraper_names() -> Result<Vec<String>> {
     let mut names = Vec::new();
 
-    for entry in std::fs::read_dir("scripts").context("reading the scripts/ directory")? {
-        let entry = entry.context("reading a scripts/ directory entry")?;
+    for entry in std::fs::read_dir("scrapers").context("reading the scrapers/ directory")? {
+        let entry = entry.context("reading a scrapers/ directory entry")?;
         if !entry.path().join("script.lua").is_file() {
             continue;
         }
@@ -357,12 +357,12 @@ fn list_scraper_names() -> Result<Vec<String>> {
     Ok(names)
 }
 
-/// Runs a single scraper by name: reads `scripts/<scraper_name>/script.lua`,
+/// Runs a single scraper by name: reads `scrapers/<scraper_name>/script.lua`,
 /// loads its parameters from `--secrets`, and runs it through its own
 /// `fyde_sdk::init_dev_scrapers` instance (which saves the run's debug
 /// report itself, under `--storage`'s `reports` subdirectory).
 async fn run_scraper(args: &RunArgs, scraper_name: &str) -> Result<()> {
-    let script_dir = PathBuf::from("scripts").join(scraper_name);
+    let script_dir = PathBuf::from("scrapers").join(scraper_name);
     let script_path = script_dir.join("script.lua");
     let script = std::fs::read_to_string(&script_path)
         .with_context(|| format!("reading Lua script {}", script_path.display()))?;
@@ -424,7 +424,7 @@ fn load_parameters(path: &PathBuf, scraper_name: &str) -> Result<Value> {
     Ok(config.parameters)
 }
 
-/// Reads `scripts/<scraper_name>/settings.json` (next to `script.lua`).
+/// Reads `scrapers/<scraper_name>/settings.json` (next to `script.lua`).
 fn load_settings(script_dir: &Path, scraper_name: &str) -> Result<ScraperSettings> {
     let path = script_dir.join("settings.json");
     let text = std::fs::read_to_string(&path).with_context(|| {
