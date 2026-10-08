@@ -4,5 +4,20 @@
   "description": "Se connecte au portail salarié Eolys by Didaxis (eolys.didaxis.fr) et récupère les bulletins de paie et autres documents personnels publiés pour les consultants indépendants employés via le dispositif de portage salarial de Didaxis.",
   "homepage": "https://www.didaxis.fr",
   "wreq_emulation": true,
-  "allowed_domains": ["didaxis.fr"]
+  "allowed_domains": ["didaxis.fr"],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "jdupont",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
 }

@@ -4,5 +4,20 @@
   "description": "Se connecte à l'espace particulier sur impots.gouv.fr, géré par la Direction générale des Finances publiques (DGFiP), pour récupérer les avis d'imposition et autres documents personnels.",
   "homepage": "https://www.impots.gouv.fr",
   "wreq_emulation": true,
-  "allowed_domains": ["impots.gouv.fr"]
+  "allowed_domains": ["impots.gouv.fr"],
+  "parameters": {
+    "fiscal-number": {
+      "label": "Numéro fiscal",
+      "placeholder": "1234567890123",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
 }

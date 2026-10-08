@@ -6,5 +6,20 @@
   "wreq_emulation": false,
   "debug_http_dump": true,
   "follow_redirects": false,
-  "allowed_domains": ["ameli.fr"]
+  "allowed_domains": ["ameli.fr"],
+  "parameters": {
+    "identifiant": {
+      "label": "Identifiant",
+      "placeholder": "1234567890123",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
 }
