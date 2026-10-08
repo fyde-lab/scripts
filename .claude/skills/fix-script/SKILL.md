@@ -5,7 +5,7 @@ description: "Debug and fix a broken Lua scraper script in this repo, in a fixed
 
 ## What this loop does
 
-A broken scraper name in; a working `scripts/<name>/script.lua` (or a clear reason it can't be
+A broken scraper name in; a working `scrapers/<name>/script.lua` (or a clear reason it can't be
 fixed from here) out. The work happens in a fixed order — each numbered step below must be done
 before the next starts:
 
@@ -23,12 +23,12 @@ actually finished clean.
 This mirrors `create-script`'s loop mechanics (same run command including `--dev`, same report
 format, same `secret.json` rule, same HAR-first/token-budget framing) but drives *backward* from
 a known failure in an existing script rather than forward through new capability — if you're
-instead building a script for a site with no `scripts/<name>/script.lua` yet, use `create-script`
+instead building a script for a site with no `scrapers/<name>/script.lua` yet, use `create-script`
 instead.
 
 ## 0. Before starting
 
-Read `scripts/<name>/script.lua` in full and skim this repo's `CLAUDE.md` section about that
+Read `scrapers/<name>/script.lua` in full and skim this repo's `CLAUDE.md` section about that
 script (the "Architecture" section documents, per script, what's confirmed vs. `TODO` vs.
 architecturally blocked — e.g. Datadome on boursorama/edf, no login flow for cesu/pajemploi,
 client-side-rendered invoices on scaleway). If `CLAUDE.md` already flags the site as a probable
@@ -39,7 +39,7 @@ attempt it — don't burn iterations rediscovering a documented blocker.
 
 Two separate asks, both before running anything:
 
-- Check `scripts/<name>/script.lua` for which `parameters` fields it reads (`parameters.username`,
+- Check `scrapers/<name>/script.lua` for which `parameters` fields it reads (`parameters.username`,
   etc.) and confirm with the user that their `secret.json` entry for `<name>` still has matching
   fields — a renamed/missing field is a common, boring cause of a "broken" script that has
   nothing to do with the site itself. **Never read or write `secret.json` itself** — infer the
@@ -60,7 +60,7 @@ logging-in browser session) covering the login and — if they're willing — a 
 A script that used to work and now doesn't is usually broken because the site's markup, login
 flow, or URLs changed since it was written; a stale dump from a previous run's report can't show
 you that, only what the old report already captured. Diffing the HAR's current `action`
-URL/field names/markers against what `scripts/<name>/script.lua` currently assumes is the
+URL/field names/markers against what `scrapers/<name>/script.lua` currently assumes is the
 fastest way to confirm *what* changed before touching any code.
 
 Read the HAR (it's JSON — a `log.entries[]` array, each with `request`/`response`) yourself.
@@ -116,7 +116,7 @@ What to pull out:
   didn't).
 - **The error entry's message**, if present — usually a Lua runtime error with a
   `[string "<name>"]:<line>` stack traceback. That line number indexes directly into
-  `scripts/<name>/script.lua`.
+  `scrapers/<name>/script.lua`.
 - **HTTP entries** (status, URL, timing, and body — present because `--dev` forces
   `debug_http_dump` on for this run) — these tell you what the site actually returned, which is
   usually more informative than the Lua error message alone (e.g. a 200 with a login form
@@ -127,7 +127,7 @@ What to pull out:
 
 ## 3. Run, diagnose, patch, retry
 
-Open `scripts/<name>/script.lua` at the failing line reported by the run above. Cross-check it
+Open `scrapers/<name>/script.lua` at the failing line reported by the run above. Cross-check it
 against the HAR from step 2. Common root causes, roughly in order of likelihood given this
 repo's scripts:
 
@@ -153,7 +153,7 @@ You cannot exercise authenticated requests yourself (no credentials, no browser)
 is entirely the HAR plus the report's HTTP entries. Don't guess at a fix that isn't grounded in
 something one of those two actually showed you.
 
-Edit `scripts/<name>/script.lua` with the smallest change that addresses the diagnosed cause,
+Edit `scrapers/<name>/script.lua` with the smallest change that addresses the diagnosed cause,
 then re-run per the mechanics above. Each iteration, compare the new report's
 last-progress-step/error against the previous one:
 
