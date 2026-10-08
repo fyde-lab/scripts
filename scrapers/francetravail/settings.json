@@ -1,0 +1,10 @@
+{
+  "name": "France Travail",
+  "description": "Personal space (\"espace personnel\") on francetravail.fr, the French national employment agency (formerly Pôle emploi) — job-seeker account, correspondence, and attestations.",
+  "short_description": "France Travail job-seeker personal space",
+  "homepage": "https://candidat.francetravail.fr/espacepersonnel/",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": ["francetravail.fr"]
+}
