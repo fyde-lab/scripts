@@ -6,5 +6,20 @@
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
-  "allowed_domains": ["francetravail.fr"]
+  "allowed_domains": ["francetravail.fr"],
+  "parameters": {
+    "username": {
+      "label": "Identifiant France Travail",
+      "placeholder": "12345678901",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
 }
