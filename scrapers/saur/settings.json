@@ -1,0 +1,27 @@
+{
+  "name": "SAUR",
+  "short_description": "Factures d'eau SAUR",
+  "description": "Se connecte à l'espace client SAUR (saurclient.fr) pour récupérer les factures d'eau.",
+  "homepage": "https://www.saurclient.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "saurclient.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
