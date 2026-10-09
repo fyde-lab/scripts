@@ -1,0 +1,27 @@
+{
+  "name": "Boulanger",
+  "short_description": "Factures Boulanger",
+  "description": "Se connecte au compte client Boulanger (boulanger.com) pour récupérer les factures des commandes.",
+  "homepage": "https://www.boulanger.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "boulanger.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
