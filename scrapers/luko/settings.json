@@ -1,0 +1,27 @@
+{
+  "name": "Luko",
+  "short_description": "Factures et contrat Luko",
+  "description": "Se connecte au compte Luko (assurance habitation, activité arrêtée en 2023) pour récupérer les factures et documents de contrat.",
+  "homepage": "https://www.luko.eu",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "luko.eu"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
