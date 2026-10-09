@@ -1,0 +1,27 @@
+{
+  "name": "EDF",
+  "short_description": "Factures EDF",
+  "description": "Se connecte à l'espace client EDF (particulier.edf.fr), avec le code de vérification si demandé, pour récupérer les factures d'électricité.",
+  "homepage": "https://particulier.edf.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "edf.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
