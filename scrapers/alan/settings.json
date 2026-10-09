@@ -1,0 +1,28 @@
+{
+  "name": "Alan",
+  "short_description": "Décomptes et carte Alan",
+  "description": "Se connecte au compte Alan (alan.com) pour récupérer les décomptes de remboursement et la carte de tiers payant.",
+  "homepage": "https://alan.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "alan.com",
+    "alan.eu"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
