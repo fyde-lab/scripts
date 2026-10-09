@@ -143,7 +143,7 @@ login) even if the site behaves as the konnector expected.
 | [`malentille`](scrapers/malentille/script.lua) | [malentille](https://github.com/konnectors/malentille) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`materielnet`](scrapers/materielnet/script.lua) | [cozy-konnector-materielnet](https://github.com/konnectors/cozy-konnector-materielnet) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`mediapart`](scrapers/mediapart/script.lua) | [mediapart](https://github.com/konnectors/mediapart) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
-| [`mercermasante`](scrapers/mercermasante/script.lua) | — | browser | Broken | ⏳ not run | ⏳ not run | ✅² | ❌² | The logged-in dashboard renders, but the `a[href='/remboursements']` marker is gone (site nav changed): times out before listing documents |
+| [`mercermasante`](scrapers/mercermasante/script.lua) | — | browser | Verified | ✅ | ✅ | ✅² | ✅² | Attestation de couverture, carte de tiers payant, reimbursement statements; SMS code on login, session reused on the next run |
 | [`mgen`](scrapers/mgen/script.lua) | [cozy-konnector-mgen](https://github.com/konnectors/cozy-konnector-mgen) | browser | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | Attestations (api.mgen.fr) not ported |
 | [`mint-energie`](scrapers/mint-energie/script.lua) | [mint-energie](https://github.com/konnectors/mint-energie) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`misterauto`](scrapers/misterauto/script.lua) | [misterauto](https://github.com/konnectors/misterauto) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |

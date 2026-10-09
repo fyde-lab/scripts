@@ -16,17 +16,21 @@
 --      letting `about:blank`/`about:srcdoc` frames through). `wait_for_turnstile` just waits
 --      for its token before submitting.
 --   3. Valid credentials lead to a 2FA screen ("Vérifions votre identité") offering an SMS code
---      via `button[data-testid=MiniCTA]`, then 8 one-digit `mfa-code-N` boxes and an "Envoyer"
---      submit button - `submit_otp` asks for the code through `fyde.input.ask`.
+--      via `button[data-testid=MiniCTA]`, then 8 one-digit `pin-input-<id>-N` boxes and an
+--      "Envoyer" submit button - `submit_otp` asks for the code through `ask_code`. A rejected
+--      username/password shows "Identifiant ou mot de passe incorrect" on the login form (seen
+--      via tests/login_smoke.sh), failing the run with `INVALID_CREDENTIALS`; a wrong SMS code
+--      leaves the boxes on screen and fails it with `MFA_FAILED`.
 --   4. The session lives in an `auth-token` cookie (plus a `device-uuid` one), which the sdk
 --      carries across runs for `fyde.browser` as well as `fyde.http` (see ../sdk's
 --      `scrapers/browser/mod.rs`) - so `run` first opens the dashboard (`/journal`) and skips
 --      the whole login (Turnstile, credentials, SMS) if it renders.
---   5. Every document page (`/document/<source>`) is itself client-rendered, but its download
---      button is a plain `<a download href="/api/proxy/selfcare/...">` to an endpoint that
---      returns the PDF to `fyde.http` directly, authenticated by that same cookie - see
---      `DOCUMENTS`/`refund_url`. Only the claim ids need the browser (the list is rendered
---      client-side too).
+--   5. Every document page (`/document/<source>`) is client-rendered, with a plain
+--      `<a download href="/api/proxy/selfcare/...">` "Télécharger" link - see
+--      `DOCUMENTS`/`refund_url`. Those endpoints answer 401 to `fyde.http` right after a fresh
+--      login: the sdk only copies the webview's cookies into the cookie jar once the run ends,
+--      so `fyde.http` doesn't have `auth-token` yet. Hence every PDF is fetched by opening its
+--      document page and clicking that link with `fyde.browser:download` instead.
 --
 -- **Not confirmed:** whether `/remboursements` ever paginates or hides older claims (the test
 -- account's 7 claims, Nov 2024 - Oct 2026, all rendered with no "load more" control).
@@ -47,21 +51,256 @@ local LOGIN_URL = BASE .. "/connexion"
 local HOME_URL = BASE .. "/journal"
 local REFUNDS_URL = BASE .. "/remboursements"
 
+-- luacheck: push ignore 211
+-- ---------------------------------------------------------------------------------------------
+-- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+--
+-- Login error contract: a rejected username/password always fails the run with exactly
+-- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
+-- `MFA_FAILED` (both raised with `error(code, 0)`, so the message carries no position prefix).
+-- Any other failure is a free-form error message.
+--
+-- Log markers (grepped by tests/login_smoke.sh): `LOGIN_PAGE_FOUND` once the login form has
+-- been seen, `ALREADY_LOGGED_IN` when a restored session made the login step unnecessary.
+-- ---------------------------------------------------------------------------------------------
+local INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
+local MFA_FAILED = "MFA_FAILED"
+
+local function fail(code, detail)
+  if detail then
+    fyde.log.warn(code .. ": " .. detail)
+  end
+  error(code, 0)
+end
+
+local function contains(haystack, needle)
+  return (haystack or ""):lower():find(needle:lower(), 1, true) ~= nil
+end
+
+local function contains_any(haystack, needles)
+  for _, needle in ipairs(needles) do
+    if contains(haystack, needle) then
+      return true
+    end
+  end
+  return false
+end
+
+local function trim(s)
+  return ((s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function sanitize(name)
+  name = trim((name or ""):gsub("%s+", " "))
+  name = name:gsub('[<>:"/\\|%?%*]', "_"):gsub("%c", "")
+  if name == "" then
+    name = "document"
+  end
+  return name
+end
+
+-- Asks the user for a one-time code through fyde.input.ask; an unanswered/empty prompt (or no
+-- input handler at all, e.g. an unattended run) is an MFA failure.
+local function ask_code(question)
+  local ok, code = pcall(fyde.input.ask, question)
+  if not ok or type(code) ~= "string" or trim(code) == "" then
+    fail(MFA_FAILED, "no one-time code was provided")
+  end
+  return (code:gsub("%s", ""))
+end
+
+local function absolute(base, href)
+  if not href or href == "" then
+    return base
+  end
+  href = href:gsub("&amp;", "&")
+  if href:match("^https?://") then
+    return href
+  end
+  local origin = base:match("^(https?://[^/]+)")
+  if href:sub(1, 2) == "//" then
+    return base:match("^(https?:)") .. href
+  end
+  if href:sub(1, 1) == "/" then
+    return origin .. href
+  end
+  if href:sub(1, 1) == "?" then
+    return (base:gsub("%?.*$", "")) .. href
+  end
+  local dir = (base:gsub("[?#].*$", "")):match("^(https?://.*/)") or (origin .. "/")
+  return dir .. href
+end
+
+-- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
+-- named input's current value (unchecked checkboxes/radios left out, like a browser does).
+local function read_form(page, selector)
+  local form = fyde.html.select(page.body, selector)[1]
+  if not form then
+    return nil
+  end
+  local fields = {}
+  for _, input in ipairs(fyde.html.select(form.html, "input[name]")) do
+    local kind = (input.attrs.type or "text"):lower()
+    if (kind ~= "checkbox" and kind ~= "radio") or input.attrs.checked then
+      fields[input.attrs.name] = input.attrs.value or ""
+    end
+  end
+  return absolute(page.url, form.attrs.action), fields
+end
+
+-- Fills `values` into the form matching `selector` on `page` and posts it.
+local function submit_form(page, selector, values, headers)
+  local action, fields = read_form(page, selector)
+  if not action then
+    error("no form matching '" .. selector .. "' on " .. tostring(page.url))
+  end
+  for name, value in pairs(values) do
+    fields[name] = value
+  end
+  return fyde.http.post_form(action, fields, headers)
+end
+
+local function has(page_or_html, selector)
+  local html = type(page_or_html) == "table" and page_or_html.body or page_or_html
+  return #fyde.html.select(html or "", selector) > 0
+end
+
+local function json_or_nil(body)
+  local ok, value = pcall(fyde.json.decode, body or "")
+  if ok then
+    return value
+  end
+  return nil
+end
+
+-- Downloads `url` and saves it as `filename` when it really is a PDF; returns true on success.
+local function save_pdf(url, filename, fields, headers)
+  local resp = fyde.http.download(url, headers)
+  local content_type = resp.content_type or ""
+  local is_pdf = content_type:find("pdf", 1, true) or (resp.body or ""):sub(1, 4) == "%PDF"
+  if resp.status == 200 and is_pdf then
+    fyde.save_document(sanitize(filename), resp.body, fields)
+    return true
+  end
+  fyde.log.warn(string.format("skipping %s (status %d, content-type %s)", filename, resp.status, content_type))
+  return false
+end
+
+-- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
+-- exists.
+local function sleep(ms)
+  pcall(function()
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
+  end)
+end
+
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+local function present(selector)
+  return #fyde.html.select(page_html(), selector) > 0
+end
+
+local function page_text()
+  local body = fyde.html.select(page_html(), "body")[1]
+  return body and body.text or ""
+end
+
+-- Polls the current page until one of `states` matches and returns its name (or nil after
+-- `timeout_ms`). Each state is `{ name, selector = css }` or `{ name, text = { needles } }`.
+-- Polling in short chunks also survives `fyde.browser:open` not waiting for navigation (a
+-- `wait_for` issued against the previous page just times out and gets retried).
+local function wait_state(states, timeout_ms)
+  local waited = 0
+  repeat
+    local html = page_html()
+    local text
+    for _, state in ipairs(states) do
+      if state.selector and #fyde.html.select(html, state.selector) > 0 then
+        return state[1]
+      end
+      if state.text then
+        if not text then
+          local body = fyde.html.select(html, "body")[1]
+          text = body and body.text or ""
+        end
+        if contains_any(text, state.text) then
+          return state[1]
+        end
+      end
+    end
+    sleep(1000)
+    waited = waited + 1000
+  until waited >= (timeout_ms or 30000)
+  return nil
+end
+
+local function open_and_wait(url, states, timeout_ms)
+  fyde.browser:open(url)
+  sleep(1500)
+  return wait_state(states, timeout_ms)
+end
+
+-- Fills the first present selector of each candidate list.
+local function fill_first(selectors, value)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:fill(selector, value)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+local function click_first(selectors)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:click(selector)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+-- Clicks `selector` (a download link/button) and saves what the browser downloads.
+local function browser_save(selector, filename, fields)
+  local ok, bytes = pcall(function()
+    return fyde.browser:download(selector, 60000)
+  end)
+  if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
+    fyde.save_document(sanitize(filename), bytes, fields)
+    return true
+  end
+  fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
+  return false
+end
+-- luacheck: pop
+
 local USERNAME_FIELD = "#username"
 local PASSWORD_FIELD = "#password"
 local SUBMIT_CONTROL = "#login-form button[type=submit]"
-local LOGIN_FORM = "#login-form"
+
 -- Main-nav link only rendered for an authenticated session (seen on /journal after login).
-local LOGGED_IN_MARKER = "a[href='/remboursements']"
+local LOGGED_IN = { "logged_in", selector = "a[href='/remboursements']" }
+local LOGIN_FORM = { "login", selector = USERNAME_FIELD }
+-- Shown on the login form itself, under its title, after a rejected username/password.
+local BAD_CREDENTIALS = { "bad_credentials", text = { "Identifiant ou mot de passe incorrect" } }
+-- 2FA ("Vérifions votre identité", matched sans accents): shown right after credentials are
+-- accepted.
+local OTP_PAGE = { "otp", text = { "rifions votre identit" } }
 
 -- Turnstile writes its token into this hidden input; a hidden input's `.value` reflects to its
 -- `value` attribute, so a non-empty attribute means the challenge is solved.
 local TURNSTILE_TOKEN = "input[name='cf-turnstile-response'][value]:not([value=''])"
 
--- 2FA ("Vérifions votre identité"): shown right after credentials are accepted.
 local SMS_CHANNEL_BUTTON = "button[data-testid=MiniCTA]"
-local OTP_PAGE_MARKER = "rifions votre identit" -- "Vérifions votre identité", sans accents
-local OTP_INPUTS = "main input:not([type=hidden]):not([type=checkbox])"
+-- One box per digit (Chakra PinInput), each with its own generated `pin-input-<id>-N` id.
+local OTP_BOXES = "input[id^='pin-input-']"
 local OTP_SUBMIT = "main button[type=submit]"
 
 -- One per claim on /remboursements, `href="/document/refunds?id=<claim id>"`.
@@ -75,10 +314,11 @@ local NNBSP = "\226\128\175"
 local CLAIM_LABEL = "(%d[%d\194\160\226\128\175]*,%d%d)[%s\194\160]*\226\130\172[%s\194\160]*"
   .. "Rembours\195\169[%s\194\160]+le[%s\194\160]+(%d[^\n]-%d%d%d%d)"
 
--- The download targets of each `/document/<source>` page's own "Télécharger" link.
+-- Each document's page, and the `href` of that page's own "Télécharger" link.
 local DOCUMENTS = {
   {
-    url = BASE .. "/api/proxy/selfcare/documents/certificate/health",
+    page = BASE .. "/document/healthCertificate",
+    href = "/api/proxy/selfcare/documents/certificate/health",
     filename = "mon-attestation-de-couverture.pdf",
     fields = {
       name = "Attestation de couverture Mercer",
@@ -87,7 +327,8 @@ local DOCUMENTS = {
     },
   },
   {
-    url = BASE .. "/api/proxy/selfcare/health/tp-card/file",
+    page = BASE .. "/document/tpCard",
+    href = "/api/proxy/selfcare/health/tp-card/file",
     filename = "CarteTiersPayant.pdf",
     fields = {
       name = "Carte de tiers payant Mercer",
@@ -97,65 +338,16 @@ local DOCUMENTS = {
   },
 }
 
-local function refund_url(id)
-  return BASE .. "/api/proxy/selfcare/health/refunds/" .. id .. "/receipt/file"
+local function refund_page(id)
+  return BASE .. "/document/refunds?id=" .. id
 end
 
-local FORM_LOAD_TIMEOUT_MS = 30000
+local function refund_href(id)
+  return "/api/proxy/selfcare/health/refunds/" .. id .. "/receipt/file"
+end
+
+local TIMEOUT_MS = 30000
 local TURNSTILE_TIMEOUT_MS = 60000
-local POST_SUBMIT_TIMEOUT_MS = 30000
-local POLL_MS = 1000
-
--- `wait_for` only waits for a selector to *appear*; there's no way to wait for one to go away,
--- so this sleeps by waiting on a selector that never exists.
-local function sleep(ms)
-  pcall(function()
-    fyde.browser:wait_for("#__mercermasante_sleep__", ms)
-  end)
-end
-
-local function page_text()
-  local root = fyde.html.select(fyde.browser:html(), "#__next")[1]
-  return root and root.text or ""
-end
-
--- `fyde.browser:open` doesn't wait for the navigation, so a `wait_for` issued right after it
--- can land in the *previous* page, get torn down with it, and never reply at all (a "timed out
--- waiting for the browser" error rather than a selector timeout). Polling in short chunks
--- means a chunk lost that way just gets retried against the new page.
-local function wait_for_after_open(selector, timeout_ms)
-  local waited = 0
-  while waited < timeout_ms do
-    if pcall(function()
-      fyde.browser:wait_for(selector, 2000)
-    end) then
-      return
-    end
-    waited = waited + 2000
-  end
-  error("timed out waiting for " .. selector .. " - page says: " .. page_text())
-end
-
-local function on_login_form()
-  return #fyde.html.select(fyde.browser:html(), LOGIN_FORM) > 0
-end
-
-local function is_logged_in()
-  return #fyde.html.select(fyde.browser:html(), LOGGED_IN_MARKER) > 0
-end
-
-local function on_otp_page()
-  return page_text():find(OTP_PAGE_MARKER, 1, true) ~= nil
-end
-
-local function wait_while(predicate, timeout_ms)
-  local waited = 0
-  while predicate() and waited < timeout_ms do
-    sleep(POLL_MS)
-    waited = waited + POLL_MS
-  end
-  return not predicate()
-end
 
 local function wait_for_turnstile()
   fyde.progress.step("Waiting for the Cloudflare check")
@@ -169,36 +361,35 @@ end
 
 local function submit_otp()
   fyde.progress.step("Requesting an SMS verification code")
-  fyde.browser:wait_for(SMS_CHANNEL_BUTTON, FORM_LOAD_TIMEOUT_MS)
   fyde.browser:click(SMS_CHANNEL_BUTTON)
-  fyde.browser:wait_for(OTP_INPUTS, FORM_LOAD_TIMEOUT_MS)
-
-  local code = fyde.input.ask("Code de vérification reçu par SMS"):gsub("%s", "")
-
-  -- One box per digit (Chakra PinInput), each with its own generated id.
-  local inputs = fyde.html.select(fyde.browser:html(), OTP_INPUTS)
-  if #inputs > 1 then
-    for i = 1, math.min(#inputs, #code) do
-      fyde.browser:fill("#" .. inputs[i].attrs.id, code:sub(i, i))
-    end
-  else
-    fyde.browser:fill(OTP_INPUTS, code)
+  if wait_state({ { "boxes", selector = OTP_BOXES } }, TIMEOUT_MS) ~= "boxes" then
+    error("the SMS code form never showed up - page says: " .. page_text())
   end
-  if #fyde.html.select(fyde.browser:html(), OTP_SUBMIT) > 0 then
+
+  local code = ask_code("Code de vérification reçu par SMS")
+  local boxes = fyde.html.select(page_html(), OTP_BOXES)
+  if #code ~= #boxes then
+    fail(MFA_FAILED, string.format("expected a %d-digit code, got %d characters", #boxes, #code))
+  end
+  for i, box in ipairs(boxes) do
+    fyde.browser:fill("#" .. box.attrs.id, code:sub(i, i))
+  end
+  if present(OTP_SUBMIT) then
     fyde.browser:click(OTP_SUBMIT)
   end
 
-  if not wait_while(on_otp_page, POST_SUBMIT_TIMEOUT_MS) then
-    error("SMS code rejected or not submitted - page says: " .. page_text())
+  -- A rejected code leaves the boxes on screen under a "code sent" notice - the page's text
+  -- changes either way, so only reaching the dashboard means the code was accepted.
+  if wait_state({ LOGGED_IN }, TIMEOUT_MS) ~= "logged_in" then
+    fail(MFA_FAILED, "code rejected - page says: " .. page_text())
   end
-  fyde.log.info("SMS verification succeeded")
 end
 
 local function login(params)
-  if not on_login_form() then
-    fyde.browser:open(LOGIN_URL)
-    wait_for_after_open(USERNAME_FIELD, FORM_LOAD_TIMEOUT_MS)
+  if not present(USERNAME_FIELD) and open_and_wait(LOGIN_URL, { LOGIN_FORM }, TIMEOUT_MS) ~= "login" then
+    error("Mercer login form not found - page says: " .. page_text())
   end
+  fyde.log.info("LOGIN_PAGE_FOUND")
   wait_for_turnstile()
 
   fyde.progress.step("Logging in as " .. params.username)
@@ -206,20 +397,13 @@ local function login(params)
   fyde.browser:fill(PASSWORD_FIELD, params.password)
   fyde.browser:click(SUBMIT_CONTROL)
 
-  if not wait_while(on_login_form, POST_SUBMIT_TIMEOUT_MS) then
-    error("login failed: still on the login form after submitting - page says: " .. page_text())
-  end
-  fyde.log.info("credentials accepted")
-
-  sleep(2000)
-  if on_otp_page() then
+  local state = wait_state({ BAD_CREDENTIALS, OTP_PAGE, LOGGED_IN }, TIMEOUT_MS)
+  if state == "bad_credentials" then
+    fail(INVALID_CREDENTIALS)
+  elseif state == "otp" then
     submit_otp()
-  end
-
-  if not wait_while(function()
-    return not is_logged_in()
-  end, POST_SUBMIT_TIMEOUT_MS) then
-    error("login looked successful but the dashboard never rendered - page says: " .. page_text())
+  elseif state ~= "logged_in" then
+    error("Mercer login did not complete - page says: " .. page_text())
   end
   fyde.log.info("login succeeded")
 end
@@ -229,9 +413,10 @@ end
 --- by position - if the two counts ever disagree, labels are dropped rather than risk pairing
 --- a statement with the wrong claim's amount/date.
 local function list_refunds()
-  fyde.browser:open(REFUNDS_URL)
-  wait_for_after_open(REFUND_LINK, FORM_LOAD_TIMEOUT_MS)
-  local html = fyde.browser:html()
+  if open_and_wait(REFUNDS_URL, { { "refunds", selector = REFUND_LINK } }, TIMEOUT_MS) ~= "refunds" then
+    error("no claim found on " .. REFUNDS_URL .. " - page says: " .. page_text())
+  end
+  local html = page_html()
 
   local refunds = {}
   for _, link in ipairs(fyde.html.select(html, REFUND_LINK)) do
@@ -258,36 +443,30 @@ local function list_refunds()
   return refunds
 end
 
-local function save(url, filename, fields)
-  local download = fyde.http.download(url)
-  local content_type = download.content_type or ""
-  if download.status == 200 and content_type:find("pdf", 1, true) then
-    fields.source_category = "insurance"
-    fields.source_sub_category = "health"
-    fyde.save_document(filename, download.body, fields)
-    return true
+--- Opens `page` and clicks its "Télécharger" link (the one pointing at `href`) in the webview,
+--- which holds the session cookie - see the header comment's point 5 for why not `fyde.http`.
+local function save(page, href, filename, fields)
+  local link = "a[download][href='" .. href .. "']"
+  if open_and_wait(page, { { "link", selector = link } }, TIMEOUT_MS) ~= "link" then
+    fyde.log.warn("could not download " .. filename .. ": no download link on " .. page)
+    return false
   end
-  fyde.log.warn(string.format(
-    "failed to download %s (status %d, content-type %s)",
-    filename, download.status, content_type
-  ))
-  return false
+  fields.source_category = "insurance"
+  fields.source_sub_category = "health"
+  return browser_save(link, filename, fields)
 end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  fyde.browser:open(HOME_URL)
-  -- Whichever renders first: the dashboard's nav, or the login form it redirects to.
-  wait_for_after_open(LOGGED_IN_MARKER .. ", " .. USERNAME_FIELD, FORM_LOAD_TIMEOUT_MS)
-  if is_logged_in() then
-    fyde.log.info("restored session is still valid, skipping login")
+  if open_and_wait(HOME_URL, { LOGGED_IN, LOGIN_FORM }, TIMEOUT_MS) == "logged_in" then
+    fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
   fyde.progress.step("Downloading the attestation and the tiers payant card")
   for _, doc in ipairs(DOCUMENTS) do
-    save(doc.url, doc.filename, doc.fields)
+    save(doc.page, doc.href, doc.filename, doc.fields)
   end
 
   fyde.progress.step("Listing reimbursements")
@@ -297,7 +476,7 @@ function M.run(params)
   fyde.progress.step("Downloading reimbursement statements")
   for i, refund in ipairs(refunds) do
     fyde.progress.update(i, #refunds, refund.label or refund.id)
-    save(refund_url(refund.id), "mon-decompte-" .. refund.id .. ".pdf", {
+    save(refund_page(refund.id), refund_href(refund.id), "mon-decompte-" .. refund.id .. ".pdf", {
       name = "Décompte Mercer - " .. (refund.label or ("remboursement " .. refund.id)),
       type = "reimbursement_statement",
       purpose = "report",

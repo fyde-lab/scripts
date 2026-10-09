@@ -141,8 +141,10 @@ Mercer Ma Santé (mercermasante.fr), built from the script's own runs (no HAR). 
 `challenges.cloudflare.com` is in `allowed_domains`, then an SMS code asked via `fyde.input.ask`
 on every fresh login), and relies on the sdk carrying the webview's `auth-token` cookie across
 runs to skip all of that while the session lasts. Documents (attestation de couverture, carte de
-tiers payant, one décompte per claim) come straight from `/api/proxy/selfcare/...` endpoints via
-`fyde.http.download`; only the claim list needs the browser. See the file's header comment.
+tiers payant, one décompte per claim) are downloaded through the webview too, by clicking each
+document page's `<a download href="/api/proxy/selfcare/...">` link with `fyde.browser:download`:
+`fyde.http` answers 401 there right after a fresh login, since the sdk only copies the webview's
+cookies into its jar once the run ends. See the file's header comment.
 
 ### `scripts/scrapers/boursobank/script.lua`
 
