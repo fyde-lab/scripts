@@ -1,0 +1,27 @@
+{
+  "name": "Eau du Grand Lyon",
+  "short_description": "Factures d'eau du Grand Lyon",
+  "description": "Se connecte à l'agence en ligne Eau du Grand Lyon (agence.eaudugrandlyon.com) pour récupérer les factures d'eau.",
+  "homepage": "https://agence.eaudugrandlyon.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "eaudugrandlyon.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
