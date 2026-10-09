@@ -8,8 +8,9 @@
 -- ip" (magic link) is unsupported; any other refusal = bad credentials. The answer's `token` is
 -- the `X-Session-Token`; `iam/v1alpha1/users/<jwt.issuer_id>` gives the organization, whose
 -- invoices are listed by `billing/v1/invoices?organization_id=...` (paid ones downloaded with
--- `?format=pdf`). The session JWT is deleted at the end, as the konnector did, so every run logs
--- in. Unverified (see README.md).
+-- `?format=pdf`). The konnector deleted its session JWT at the end (DELETE
+-- `iam/v1alpha1/jwts/<jti>`); fyde.http has no DELETE, so the JWT is left to expire, and every
+-- run logs in again as the konnector did. Unverified (see README.md).
 
 local M = {}
 
@@ -186,28 +187,20 @@ function M.run(params)
   -- The konnector deleted its JWT after every run, so there is never a session to reuse.
   local session = login(params)
   local headers = { ["X-Session-Token"] = session.token }
-  local ok, err = pcall(function()
-    fyde.progress.step("Downloading invoices")
-    local user = json_or_nil(fyde.http.get(API .. "/iam/v1alpha1/users/" .. tostring(session.jwt and session.jwt.issuer_id), headers).body) or {}
-    local list = json_or_nil(fyde.http.get(API .. "/billing/v1/invoices?organization_id=" .. tostring(user.organization_id), headers).body) or {}
-    for _, invoice in ipairs(list.invoices or {}) do
-      if invoice.state == "paid" then
-        local date = tostring(invoice.start_date):sub(1, 10)
-        save_pdf(API .. "/billing/v1/invoices/" .. tostring(invoice.organization_id) .. "/" .. tostring(invoice.start_date) .. "/" .. tostring(invoice.id) .. "?format=pdf",
-          date .. "_" .. tostring(invoice.total_taxed) .. "_" .. tostring(invoice.currency) .. ".pdf", {
-            name = "Facture Scaleway " .. date,
-            type = "web_service_invoice",
-            source_category = "web",
-            purpose = "invoice",
-          }, headers)
-      end
+  fyde.progress.step("Downloading invoices")
+  local user = json_or_nil(fyde.http.get(API .. "/iam/v1alpha1/users/" .. tostring(session.jwt and session.jwt.issuer_id), headers).body) or {}
+  local list = json_or_nil(fyde.http.get(API .. "/billing/v1/invoices?organization_id=" .. tostring(user.organization_id), headers).body) or {}
+  for _, invoice in ipairs(list.invoices or {}) do
+    if invoice.state == "paid" then
+      local date = tostring(invoice.start_date):sub(1, 10)
+      save_pdf(API .. "/billing/v1/invoices/" .. tostring(invoice.organization_id) .. "/" .. tostring(invoice.start_date) .. "/" .. tostring(invoice.id) .. "?format=pdf",
+        date .. "_" .. tostring(invoice.total_taxed) .. "_" .. tostring(invoice.currency) .. ".pdf", {
+          name = "Facture Scaleway " .. date,
+          type = "web_service_invoice",
+          source_category = "web",
+          purpose = "invoice",
+        }, headers)
     end
-  end)
-  if session.jwt and session.jwt.jti then
-    pcall(fyde.http.post_json, API .. "/iam/v1alpha1/jwts/" .. session.jwt.jti .. "?_method=DELETE", {}, headers)
-  end
-  if not ok then
-    error(err, 0)
   end
   fyde.progress.step("Done")
 end
