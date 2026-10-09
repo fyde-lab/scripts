@@ -1,0 +1,27 @@
+{
+  "name": "Veolia Eau",
+  "short_description": "Factures d'eau Veolia",
+  "description": "Se connecte à l'espace client Veolia Eau pour récupérer les factures d'eau et courriers.",
+  "homepage": "https://www.service.eau.veolia.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "veolia.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
