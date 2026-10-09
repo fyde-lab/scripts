@@ -1,0 +1,27 @@
+{
+  "name": "Médecins Sans Frontières",
+  "short_description": "Reçus fiscaux MSF",
+  "description": "Se connecte à l'espace donateur de Médecins Sans Frontières (don.msf.fr) pour récupérer les reçus fiscaux des dons.",
+  "homepage": "https://don.msf.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "msf.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
