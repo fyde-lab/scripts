@@ -10,7 +10,8 @@
 --
 -- **Confirmed via live, logged-out runs of this script** (no HAR was available - the reference
 -- for the overall flow is the cozy konnector named above):
---   1. `MON_COMPTE_URL` embeds `#bytelid_a360_login`, an iframe whose `src` is the CAS-backed
+--   1. `BILLS_URL` (like the rest of /mon-compte) embeds `#bytelid_a360_login` while logged
+--      out, an iframe whose `src` is the CAS-backed
 --      login page. Opening that `src` top-level (as the konnector also does) renders both a
 --      React form (`#picasso-username`/`#picasso-password`) and the underlying CAS form `#fm1`
 --      with plain hidden `username`/`password` inputs plus its own `execution`/`_eventId`
@@ -40,9 +41,15 @@ local CAS_FORM = "#fm1"
 -- Confirmed with a deliberately wrong login (see `login`).
 local BAD_CREDENTIALS = { "identifiant ou votre mot de passe est incorrect", "mot de passe est incorrect" }
 
--- There's no reliable selector for "the SPA finished rendering", so pages are given a fixed
--- delay (the shared block's `sleep`) instead.
-local PAGE_SETTLE_MS = 15000
+-- Nothing here sleeps for a fixed delay: every wait polls the page every `POLL_MS` for a
+-- concrete marker of the state it's waiting for, giving up after `PAGE_TIMEOUT_MS`.
+local POLL_MS = 500
+local PAGE_TIMEOUT_MS = 30000
+
+-- Confirmed by polling both states: logged in, `BILLS_URL`'s "Mes factures" tab renders ~1.5s
+-- after opening and the invoice tables ~0.5s later, and the login iframe never does; logged
+-- out, the login iframe renders (~1.5s) and the tab never does.
+local INVOICES_TAB = 'a[data-route="invoicesV4"]'
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -197,35 +204,44 @@ end
 -- luacheck: pop
 
 
--- Polls the page's HTML until `selector` matches, returning that HTML. Used instead of
--- fyde.browser:wait_for on the OAuth/login pages, where wait_for's injected poll never
--- reports back ("timed out ... waiting for the browser") - most likely because the page
--- navigates client-side while it's running.
-local function wait_until(selector, timeout_ms)
+-- Polls the current page every POLL_MS until `check(html)` returns something truthy, and
+-- returns that (or nil once `timeout_ms` is up). `fyde.browser:open` doesn't wait for the
+-- navigation it starts, so the first polls after one may still see the previous page - every
+-- `check` below looks for a marker that page can't have.
+local function poll(check, timeout_ms)
   local waited = 0
   while true do
-    local html = fyde.browser:html()
-    if fyde.html.select(html, selector)[1] then
-      return html
+    local result = check(page_html())
+    if result then
+      return result
     end
     if waited >= timeout_ms then
-      error("timed out after " .. timeout_ms .. "ms waiting for " .. selector)
+      return nil
     end
-    sleep(2000)
-    waited = waited + 2000
+    sleep(POLL_MS)
+    waited = waited + POLL_MS
   end
 end
 
--- The SPA only embeds the login iframe while logged out. Text markers don't work here: the
--- header's user panel (a <dialog>) always carries a "Me déconnecter" button, logged in or not.
-local function is_logged_in(html)
-  return fyde.html.select(html, LOGIN_IFRAME)[1] == nil
+local function has(html, selector)
+  return fyde.html.select(html, selector)[1] ~= nil
 end
 
-local function open_account()
-  fyde.browser:open(MON_COMPTE_URL)
-  sleep(PAGE_SETTLE_MS)
-  return fyde.browser:html()
+-- Opens `BILLS_URL` and waits until it's clear whether the session is logged in (see
+-- INVOICES_TAB). Returns that, plus the page's HTML.
+local function open_bills()
+  fyde.browser:open(BILLS_URL)
+  local state = poll(function(html)
+    if has(html, INVOICES_TAB) then
+      return "logged_in"
+    elseif has(html, LOGIN_IFRAME) then
+      return "logged_out"
+    end
+  end, PAGE_TIMEOUT_MS)
+  if not state then
+    error("timed out waiting for " .. BILLS_URL .. " to show either the invoices or the login iframe")
+  end
+  return state == "logged_in", page_html()
 end
 
 -- CAS bookkeeping fields every step's hidden form carries, never the one to fill in.
@@ -273,6 +289,36 @@ local function log_cas_form(html)
   end
 end
 
+local function execution_of(html)
+  local input = fyde.html.select(html, 'input[name="execution"]')[1]
+  return input and input.attrs.value
+end
+
+-- Clicks a CAS submit control and waits for CAS's answer. Every CAS page carries a fresh
+-- `execution` token (confirmed: it changes even when CAS re-renders the same form with an
+-- error), so CAS has answered once the page's token differs from the one before the click -
+-- or, for the step that leaves CAS for the OAuth callback, once there's no token at all on two
+-- polls in a row (one could just be a page caught mid-parse).
+local function cas_click(selector)
+  local before = execution_of(page_html())
+  fyde.browser:click(selector)
+  local gone = 0
+  local html = poll(function(html)
+    local now = execution_of(html)
+    if now and now ~= "" and now ~= before then
+      return html
+    end
+    gone = now and 0 or gone + 1
+    if gone >= 2 then
+      return html
+    end
+  end, PAGE_TIMEOUT_MS)
+  if not html then
+    error("timed out waiting for Bouygues Telecom's login server to answer")
+  end
+  return html
+end
+
 -- Fills the page's hidden CAS form's one real field with `value` and submits it.
 local function submit_cas_form(html, value)
   local id, field = find_cas_form(html)
@@ -281,9 +327,7 @@ local function submit_cas_form(html, value)
     error("couldn't find the hidden CAS form to submit on this page")
   end
   fyde.browser:fill("#" .. id .. ' input[name="' .. field .. '"]', value)
-  fyde.browser:click("#" .. id .. ' [type="submit"]')
-  sleep(PAGE_SETTLE_MS)
-  return fyde.browser:html()
+  return cas_click("#" .. id .. ' [type="submit"]')
 end
 
 -- Confirmed on a real login: after the password, CAS asks which channel to send a one-time
@@ -330,19 +374,21 @@ end
 local function login(params, html)
   local frame = fyde.html.select(html, LOGIN_IFRAME)[1]
   if not frame or not frame.attrs.src then
-    error("neither logged in nor showing the login iframe (" .. LOGIN_IFRAME .. ") on " .. MON_COMPTE_URL)
+    error("neither logged in nor showing the login iframe (" .. LOGIN_IFRAME .. ") on " .. BILLS_URL)
   end
 
   fyde.progress.step("Logging in")
   fyde.browser:open(frame.attrs.src)
-  wait_until(CAS_FORM, 30000)
+  if not poll(function(page)
+    return has(page, CAS_FORM)
+  end, PAGE_TIMEOUT_MS) then
+    error("timed out waiting for the login form (" .. CAS_FORM .. ")")
+  end
   fyde.log.info("LOGIN_PAGE_FOUND")
   fyde.browser:fill(CAS_FORM .. ' input[name="username"]', params.username)
   fyde.browser:fill(CAS_FORM .. ' input[name="password"]', params.password)
-  fyde.browser:click(CAS_FORM .. ' button[name="submit"]')
-  sleep(PAGE_SETTLE_MS)
 
-  local after = fyde.browser:html()
+  local after = cas_click(CAS_FORM .. ' button[name="submit"]')
   if after:find('id="fm1"', 1, true) then
     -- Confirmed with a deliberately wrong login: the CAS form re-renders with
     -- "Votre identifiant ou votre mot de passe est incorrect" in `p.help.is-error`. Any other
@@ -362,14 +408,14 @@ local function login(params, html)
   -- Confirmed on a real login: an accepted code lands on a confirmation screen ("Continuer")
   -- whose hidden `#proceed` submit (`_eventId_proceed`) finishes the CAS flow and redirects
   -- back to the OAuth callback. Until it's clicked, /mon-compte still shows the login iframe.
-  if fyde.html.select(after, "#proceed")[1] then
-    fyde.browser:click("#proceed")
-    sleep(PAGE_SETTLE_MS)
+  if has(after, "#proceed") then
+    cas_click("#proceed")
   end
 
-  if not is_logged_in(open_account()) then
+  local logged_in = open_bills()
+  if not logged_in then
     log_cas_form(after)
-    error("login submitted, but " .. MON_COMPTE_URL .. " still doesn't show a logged-in page")
+    error("login submitted, but " .. BILLS_URL .. " still shows the login iframe")
   end
 end
 
@@ -386,19 +432,31 @@ local LOAD_MORE = "table.table tbody tr.is-expansion a.link"
 local MAX_LOAD_MORE = 20
 
 local function load_all_invoices()
-  local html = fyde.browser:html()
+  -- Both tables have rendered once the row count stops changing between two polls.
+  local rows = -1
+  local html = poll(function(page)
+    local count = #fyde.html.select(page, "table.table tbody tr")
+    local settled = count > 0 and count == rows
+    rows = count
+    return settled and page
+  end, PAGE_TIMEOUT_MS)
+  if not html then
+    error("no invoice table showed up on " .. BILLS_URL)
+  end
   for _ = 1, MAX_LOAD_MORE do
     if not fyde.html.select(html, LOAD_MORE)[1] then
       break
     end
     local before = #fyde.html.select(html, "table.table tbody tr")
     fyde.browser:click(LOAD_MORE)
-    sleep(5000)
-    html = fyde.browser:html()
-    if #fyde.html.select(html, "table.table tbody tr") <= before then
+    local more = poll(function(page)
+      return #fyde.html.select(page, "table.table tbody tr") > before and page
+    end, PAGE_TIMEOUT_MS)
+    if not more then
       fyde.log.warn("clicking \"load more\" didn't add any invoice, stopping there")
       break
     end
+    html = more
   end
   return html
 end
@@ -476,16 +534,14 @@ end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local html = open_account()
-  if is_logged_in(html) then
+  local logged_in, html = open_bills()
+  if logged_in then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params, html)
   end
 
   fyde.progress.step("Listing invoices")
-  fyde.browser:open(BILLS_URL)
-  sleep(PAGE_SETTLE_MS)
   local invoices = parse_invoices(load_all_invoices())
   if #invoices == 0 then
     error("no invoice found on " .. BILLS_URL)
