@@ -74,6 +74,10 @@
 
 local M = {}
 
+-- Login error contract shared with every scraper ported from github.com/konnectors (see
+-- README.md): a rejected username/password fails with exactly INVALID_CREDENTIALS, a rejected
+-- or unanswered one-time code with exactly MFA_FAILED.
+
 local LOGIN_URL =
 "https://assure.ameli.fr/PortailAS/appmanager/PortailAS/assure?_nfpb=true&_pageLabel=as_login_page&connexioncompte_2actionEvt=afficher"
 
@@ -116,14 +120,21 @@ end
 -- Asks the user for the OTP just emailed to them, fills the six digit fields, and clicks the
 -- submit control a second time.
 local function submit_otp()
-  local otp = fyde.input.ask("Ameli sent a one-time passcode (OTP) - enter it:"):gsub("%D", "")
+  local asked, answer = pcall(fyde.input.ask, "Ameli sent a one-time passcode (OTP) - enter it:")
+  local otp = asked and tostring(answer):gsub("%D", "") or ""
   if #otp ~= 6 then
-    error("expected a 6-digit OTP, got " .. #otp .. " digit(s)")
+    fyde.log.warn("expected a 6-digit OTP, got " .. #otp .. " digit(s)")
+    error("MFA_FAILED", 0)
   end
 
   fill_otp_digits(otp)
   fyde.browser:click(SUBMIT_CONTROL)
-  fyde.browser:wait_for(LOGGED_IN_MARKER, POST_SUBMIT_TIMEOUT_MS)
+  if not pcall(function()
+    fyde.browser:wait_for(LOGGED_IN_MARKER, POST_SUBMIT_TIMEOUT_MS)
+  end) then
+    fyde.log.warn("the one-time passcode was not accepted")
+    error("MFA_FAILED", 0)
+  end
 end
 
 function M.run(params)
@@ -132,7 +143,13 @@ function M.run(params)
   -- flow) on its own; unlike the old fyde.http-based version, there's no manual Location-header
   -- chasing to do here.
   fyde.browser:open(LOGIN_URL)
-  fyde.browser:wait_for(USER_FIELD, FORM_LOAD_TIMEOUT_MS)
+  fyde.browser:wait_for(USER_FIELD .. ", " .. LOGGED_IN_MARKER, FORM_LOAD_TIMEOUT_MS)
+  if browser_has(LOGGED_IN_MARKER) then
+    fyde.log.info("restored session is still valid, skipping login")
+    fyde.log.info("ALREADY_LOGGED_IN")
+    return
+  end
+  fyde.log.info("LOGIN_PAGE_FOUND")
 
   fyde.progress.step("Submitting credentials")
   fyde.browser:fill(USER_FIELD, params.identifiant)
@@ -169,6 +186,10 @@ function M.run(params)
     else
       fyde.log.info("post-submit timeout - fetching page markup for diagnosis also failed: " .. tostring(html))
     end
+    if browser_has(USER_FIELD) then
+      fyde.log.warn("still on the login form after submitting: credentials rejected")
+      error("INVALID_CREDENTIALS", 0)
+    end
     error(err)
   end
 
@@ -184,10 +205,13 @@ function M.run(params)
   elseif browser_has(OTP_FIRST_DIGIT) then
     fyde.progress.step("Waiting for the one-time passcode")
     submit_otp()
+  elseif browser_has(USER_FIELD) then
+    fyde.log.warn("still on the login form after submitting: credentials rejected")
+    error("INVALID_CREDENTIALS", 0)
   else
     error(
-      "login did not land on a recognized state after submitting credentials - wrong "
-        .. "identifiant/password, or the site changed in a way this script doesn't handle yet"
+      "login did not land on a recognized state after submitting credentials - the site "
+        .. "changed in a way this script doesn't handle yet"
     )
   end
 
