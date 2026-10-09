@@ -15,7 +15,15 @@
 local M = {}
 
 local BASE = "https://www.netflix.com"
-local BAD_CREDENTIALS = { "Incorrect password", "Mot de passe incorrect", "Impossible de trouver un compte", "Sorry, we can't find an account" }
+-- The last two are the sign-up page Netflix sends an email with no account to (a wrong username).
+local BAD_CREDENTIALS = {
+  "Incorrect password",
+  "Mot de passe incorrect",
+  "Impossible de trouver un compte",
+  "Sorry, we can't find an account",
+  "Vérifiez les informations pour continuer",
+  "Check your info to continue",
+}
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------

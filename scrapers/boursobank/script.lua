@@ -115,6 +115,15 @@ local function parse_keypad(html)
 end
 
 local function login(username, password)
+  -- Mirrors woob's boursorama module (modules/boursorama, PasswordPage.enter_password), which
+  -- is maintained against the live site: password page for the token, keypad, then one POST.
+  local page = with_brs_mit(URL_LOGIN)
+  local token = first_attr(page.body, "input#form__token", "value")
+  if not token then
+    error("login page has no form[_token] input (status " .. page.status .. ", url " .. page.url .. ")")
+  end
+  fyde.log.info("LOGIN_PAGE_FOUND")
+
   -- The keypad only has digits 0-9 and the page asks for "les 8 chiffres": reject anything else
   -- before burning a (lockout-counted) login attempt on it.
   if not password:match("^%d%d%d%d%d%d%d%d$") then
@@ -128,15 +137,6 @@ local function login(username, password)
     fyde.log.warn("username must be the BoursoBank client ID (6-12 characters, got " .. #username .. ")")
     error("INVALID_CREDENTIALS", 0)
   end
-
-  -- Mirrors woob's boursorama module (modules/boursorama, PasswordPage.enter_password), which
-  -- is maintained against the live site: password page for the token, keypad, then one POST.
-  local page = with_brs_mit(URL_LOGIN)
-  local token = first_attr(page.body, "input#form__token", "value")
-  if not token then
-    error("login page has no form[_token] input (status " .. page.status .. ", url " .. page.url .. ")")
-  end
-  fyde.log.info("LOGIN_PAGE_FOUND")
 
   -- Step 2: the virtual keypad (loaded via hinclude on the password step).
   local keyboard = fyde.http.get(URL_KEYBOARD)

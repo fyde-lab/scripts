@@ -237,6 +237,11 @@ function M.run(params)
     fyde.log.info("LOGIN_PAGE_FOUND")
     fyde.progress.step("Resolving account type for " .. spi)
     local context_code = get_context(spi, login_page_url)
+    if context_code == "EXISTEPAS" then
+      -- No account for this fiscal number: a wrong username.
+      fyde.log.warn("GetContexte: unknown fiscal number")
+      error("INVALID_CREDENTIALS", 0)
+    end
     if context_code ~= "LMDP" then
       error(
         "GetContexte returned context '"

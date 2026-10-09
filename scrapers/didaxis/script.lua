@@ -179,7 +179,12 @@ function M.run(params)
   local check = fyde.http.get(SECTIONS[1].url)
   if is_logged_in(check.body) then
     fyde.log.info("restored session is still valid, skipping login")
+    fyde.log.info("ALREADY_LOGGED_IN")
   else
+    if not check.body:find("Se connecter", 1, true) then
+      error("didaxis login page not found on " .. check.url)
+    end
+    fyde.log.info("LOGIN_PAGE_FOUND")
     fyde.progress.step("Logging in as " .. username)
     local login_resp = login(username, password)
     if login_resp.status >= 400 then
@@ -188,7 +193,9 @@ function M.run(params)
 
     check = fyde.http.get(SECTIONS[1].url)
     if not is_logged_in(check.body) then
-      error("login failed: still showing a login page after authenticating")
+      -- The login POST went through but we're still logged out: the credentials were refused.
+      fyde.log.warn("login failed: still showing a login page after authenticating")
+      error("INVALID_CREDENTIALS", 0)
     end
     fyde.log.info("login succeeded")
   end

@@ -151,10 +151,20 @@ local function save_pdf(url, filename, fields, headers)
 end
 -- luacheck: pop
 
+local graph_found = false
+
 local function api(path, token)
   local sep = path:find("?", 1, true) and "&" or "?"
   local url = path:match("^https://") and path or (GRAPH .. path .. sep .. "access_token=" .. token)
-  local data = json_or_nil(fyde.http.get(url).body) or {}
+  local data = json_or_nil(fyde.http.get(url).body)
+  if not data then
+    error("Graph API answered something other than JSON for " .. path)
+  end
+  if not graph_found then
+    -- There is no login page: the Graph API answering in JSON is the equivalent marker.
+    graph_found = true
+    fyde.log.info("LOGIN_PAGE_FOUND")
+  end
   if data.error then
     if data.error.code == 190 or data.error.type == "OAuthException" then
       fail(INVALID_CREDENTIALS, data.error.message)

@@ -202,6 +202,11 @@ end
 local function client(params)
   local base = ENDPOINTS[params.provider or "ovh-eu"] or ENDPOINTS["ovh-eu"]
   local time = trim(fyde.http.get(base .. "/auth/time").body)
+  if not time:match("^%d+$") then
+    error("OVH API not found: /auth/time answered " .. time:sub(1, 80))
+  end
+  -- There is no login page: the API answering /auth/time is the equivalent marker.
+  fyde.log.info("LOGIN_PAGE_FOUND")
   return function(path)
     local url = base .. path
     local signature = "$1$" .. sha1(params.appSecret .. "+" .. params.consumerKey .. "+GET+" .. url .. "++" .. time)
@@ -235,7 +240,6 @@ function M.run(params)
   local api = client(params)
   local bills = api("/me/bill")
   -- There is no session here: valid API credentials are the "already logged in" state.
-  fyde.log.info("LOGIN_PAGE_FOUND")
   fyde.log.info("ALREADY_LOGGED_IN")
 
   fyde.progress.step("Downloading bills")
