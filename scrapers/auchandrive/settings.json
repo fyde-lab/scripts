@@ -1,0 +1,27 @@
+{
+  "name": "Auchan Drive",
+  "short_description": "Commandes Auchan Drive",
+  "description": "Se connecte au compte client Auchan Drive (auchandrive.fr) pour lister les commandes passées.",
+  "homepage": "https://www.auchandrive.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "auchandrive.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
