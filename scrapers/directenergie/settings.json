@@ -1,0 +1,28 @@
+{
+  "name": "TotalEnergies (Direct Énergie)",
+  "short_description": "Factures TotalEnergies",
+  "description": "Se connecte à l'espace client TotalEnergies (ex Direct Énergie) pour récupérer les factures d'électricité et de gaz et le contrat.",
+  "homepage": "https://www.totalenergies.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "totalenergies.fr",
+    "direct-energie.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
