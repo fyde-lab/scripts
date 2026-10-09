@@ -1,0 +1,27 @@
+{
+  "name": "easyJet",
+  "short_description": "Réservations easyJet",
+  "description": "Se connecte au compte easyJet (easyjet.com) et enregistre la confirmation de chaque réservation.",
+  "homepage": "https://www.easyjet.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "easyjet.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
