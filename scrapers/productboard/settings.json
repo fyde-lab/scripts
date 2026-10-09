@@ -1,0 +1,33 @@
+{
+  "name": "Productboard",
+  "short_description": "Factures Productboard",
+  "description": "Se connecte à un espace Productboard pour récupérer les factures d'abonnement.",
+  "homepage": "https://www.productboard.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "productboard.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "E-mail",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    },
+    "workspace": {
+      "label": "Espace (sous-domaine)",
+      "placeholder": "cozycloud",
+      "type": "string",
+      "required": false
+    }
+  }
+}
