@@ -1,0 +1,27 @@
+{
+  "name": "Materiel.net",
+  "short_description": "Factures Materiel.net",
+  "description": "Se connecte au compte client Materiel.net pour récupérer les factures des commandes terminées.",
+  "homepage": "https://www.materiel.net",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "materiel.net"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
