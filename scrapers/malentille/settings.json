@@ -1,0 +1,27 @@
+{
+  "name": "Malentille",
+  "short_description": "Factures Malentille",
+  "description": "Se connecte au compte client Malentille (malentille.com) pour récupérer les factures des commandes de lentilles.",
+  "homepage": "https://www.malentille.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "malentille.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
