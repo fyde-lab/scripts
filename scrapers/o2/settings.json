@@ -1,0 +1,27 @@
+{
+  "name": "O2",
+  "short_description": "Factures O2 services à domicile",
+  "description": "Se connecte à l'espace client O2 (client.o2.fr) pour récupérer les factures mensuelles des services à domicile.",
+  "homepage": "https://www.o2.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "o2.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
