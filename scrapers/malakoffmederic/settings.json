@@ -1,0 +1,27 @@
+{
+  "name": "Malakoff Humanis",
+  "short_description": "Remboursements santé Malakoff Humanis",
+  "description": "Se connecte à l'espace client Malakoff Humanis (ex Malakoff Médéric) pour récupérer les décomptes de remboursement santé.",
+  "homepage": "https://www.malakoffhumanis.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "malakoffhumanis.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
