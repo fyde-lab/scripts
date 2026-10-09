@@ -1,0 +1,21 @@
+{
+  "name": "Facebook",
+  "short_description": "Albums photo Facebook",
+  "description": "Vérifie un jeton d'accès Facebook (Graph API) et liste les albums photo du compte.",
+  "homepage": "https://www.facebook.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "graph.facebook.com"
+  ],
+  "parameters": {
+    "access_token": {
+      "label": "Jeton d'accès (Graph API)",
+      "placeholder": "EAAB...",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
