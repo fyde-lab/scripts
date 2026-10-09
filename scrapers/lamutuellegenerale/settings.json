@@ -1,0 +1,27 @@
+{
+  "name": "La Mutuelle Générale",
+  "short_description": "Documents La Mutuelle Générale",
+  "description": "Se connecte à l'espace adhérent de La Mutuelle Générale pour récupérer les décomptes et documents santé.",
+  "homepage": "https://www.lamutuellegenerale.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "lamutuellegenerale.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
