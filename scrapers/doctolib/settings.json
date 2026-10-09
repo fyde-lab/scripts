@@ -1,0 +1,27 @@
+{
+  "name": "Doctolib",
+  "short_description": "Documents Doctolib",
+  "description": "Se connecte au compte patient Doctolib (doctolib.fr) pour récupérer les documents partagés par les praticiens.",
+  "homepage": "https://www.doctolib.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "doctolib.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
