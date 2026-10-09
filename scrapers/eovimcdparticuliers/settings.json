@@ -1,0 +1,27 @@
+{
+  "name": "Eovi MCD Mutuelle",
+  "short_description": "Relevés de prestations Eovi MCD",
+  "description": "Se connecte à l'espace particuliers Eovi MCD Mutuelle pour récupérer les relevés de prestations santé.",
+  "homepage": "https://www.espace-particuliers.eovi-mcd-mutuelle.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "eovi-mcd-mutuelle.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
