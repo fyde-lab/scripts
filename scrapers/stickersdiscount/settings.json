@@ -1,0 +1,27 @@
+{
+  "name": "Stickers Discount",
+  "short_description": "Factures Stickers Discount",
+  "description": "Se connecte au compte client Stickers Discount pour récupérer les factures des commandes.",
+  "homepage": "https://www.stickers-discount.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "stickers-discount.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
