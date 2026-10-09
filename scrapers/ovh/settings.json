@@ -1,0 +1,44 @@
+{
+  "name": "OVHcloud",
+  "short_description": "Factures OVHcloud (API)",
+  "description": "Récupère les factures OVHcloud (ou Kimsufi / So you Start) via l'API OVH, avec des identifiants d'application.",
+  "homepage": "https://www.ovhcloud.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "api.ovh.com",
+    "ovh.com",
+    "ovhcloud.com",
+    "api.kimsufi.com",
+    "api.soyoustart.com"
+  ],
+  "parameters": {
+    "appKey": {
+      "label": "Application key",
+      "placeholder": "abcdef0123456789",
+      "type": "string",
+      "required": true
+    },
+    "appSecret": {
+      "label": "Application secret",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    },
+    "consumerKey": {
+      "label": "Consumer key",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    },
+    "provider": {
+      "label": "Point d'accès (ovh-eu, ovh-ca, kimsufi-eu...)",
+      "placeholder": "ovh-eu",
+      "type": "string",
+      "required": false
+    }
+  }
+}
