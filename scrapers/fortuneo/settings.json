@@ -1,0 +1,27 @@
+{
+  "name": "Fortuneo",
+  "short_description": "Opérations bancaires Fortuneo",
+  "description": "Se connecte à l'espace client Fortuneo (mabanque.fortuneo.fr) et enregistre les opérations récentes de chaque compte.",
+  "homepage": "https://www.fortuneo.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "fortuneo.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
