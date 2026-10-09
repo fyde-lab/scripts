@@ -1,0 +1,27 @@
+{
+  "name": "Orange",
+  "short_description": "Factures Orange",
+  "description": "Se connecte à l'espace client Orange (espace-client.orange.fr) pour récupérer les factures mobile et internet de chaque contrat.",
+  "homepage": "https://www.orange.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "orange.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
