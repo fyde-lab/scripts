@@ -1,0 +1,27 @@
+{
+  "name": "Cultura",
+  "short_description": "Factures Cultura",
+  "description": "Se connecte au compte client Cultura (cultura.com) pour récupérer les factures des commandes.",
+  "homepage": "https://www.cultura.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "cultura.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
