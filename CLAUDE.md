@@ -189,3 +189,23 @@ best-guess as if it were verified.
   suggests Scaleway's real JSON API (`api.scaleway.com`, authenticated with an API key) as a
   different, non-scraping way to get invoices if this is ever worth pursuing, but that's a
   separate design, not a variant of this file.
+
+### The scrapers ported from `github.com/konnectors`
+
+Most scrapers under `scrapers/` are ports of Cozy Cloud's konnectors (one per repository of the
+`konnectors` GitHub organization - see `README.md`'s status table for the list, the upstream repo
+of each, and what is and isn't confirmed). Each script's header comment says which upstream files
+it was ported from and which parts couldn't be carried over. They all follow the same contract,
+which any new scraper should follow too:
+
+- check the restored session first and skip the login when it's still valid (log
+  `ALREADY_LOGGED_IN`); log `LOGIN_PAGE_FOUND` once the login form/endpoint is recognised;
+- fail with exactly `error("INVALID_CREDENTIALS", 0)` for a rejected username/password and
+  `error("MFA_FAILED", 0)` for a rejected/unanswered one-time code;
+- the shared helpers (`fail`, `submit_form`, `save_pdf`, `wait_state`, `browser_save`,
+  `text_pdf`...) are inlined between `-- luacheck: push ignore 211` / `-- luacheck: pop` in each
+  script, since the sandbox has no `require` - keep that block identical across scripts.
+
+`tests/login_smoke.sh [scraper ...]` runs scrapers with made-up credentials and reports, per
+scraper, whether the login page was found and the bad credentials reported as
+`INVALID_CREDENTIALS` - the only checks possible without real accounts.
