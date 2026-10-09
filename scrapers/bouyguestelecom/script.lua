@@ -20,10 +20,14 @@
 --      React's controlled-input value tracker ignores, so filling the visible React inputs
 --      would most likely submit empty state.
 --
--- **Not yet confirmed (needs a run with real credentials)**: what the post-login page looks
--- like, whether an OTP is asked (the konnector handles a `.radio-tile`/`.otp` confirmation
--- code screen), and the invoices page's markup. The invoices page URL comes from the
--- konnector, not a run.
+--   3. A fresh login always asks for a one-time code (SMS/e-mail channel choice, then the code
+--      itself, then a "Continuer" screen) - see `confirm_with_code`/`login`. A run that reuses
+--      a saved session (the sdk restores the webview's cookies when the previous run
+--      succeeded) skips all of it.
+--   4. Invoices (`BILLS_URL`) are listed in two tables and downloaded by clicking each row's
+--      "Télécharger" link, which `window.open`s a `blob:` PDF that the webview turns into a
+--      native download - see `parse_invoices`/`save_invoice`. One very old invoice (2021) comes
+--      back as a 2-byte body and is skipped with a warning.
 
 local M = {}
 
@@ -33,15 +37,165 @@ local BILLS_URL = MON_COMPTE_URL .. "/mes-factures"
 local LOGIN_IFRAME = "#bytelid_a360_login"
 local CAS_FORM = "#fm1"
 
+-- Confirmed with a deliberately wrong login (see `login`).
+local BAD_CREDENTIALS = { "identifiant ou votre mot de passe est incorrect", "mot de passe est incorrect" }
+
+-- There's no reliable selector for "the SPA finished rendering", so pages are given a fixed
+-- delay (the shared block's `sleep`) instead.
 local PAGE_SETTLE_MS = 15000
 
--- fyde.browser:wait_for only waits for a selector to appear, and there's no reliable selector
--- for "the SPA finished rendering" - this forces a fixed delay instead.
-local function settle(ms)
+-- luacheck: push ignore 211
+-- ---------------------------------------------------------------------------------------------
+-- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+--
+-- Login error contract: a rejected username/password always fails the run with exactly
+-- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
+-- `MFA_FAILED` (both raised with `error(code, 0)`, so the message carries no position prefix).
+-- Any other failure is a free-form error message.
+--
+-- Log markers (grepped by tests/login_smoke.sh): `LOGIN_PAGE_FOUND` once the login form has
+-- been seen, `ALREADY_LOGGED_IN` when a restored session made the login step unnecessary.
+-- ---------------------------------------------------------------------------------------------
+local INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
+local MFA_FAILED = "MFA_FAILED"
+
+local function fail(code, detail)
+  if detail then
+    fyde.log.warn(code .. ": " .. detail)
+  end
+  error(code, 0)
+end
+
+local function contains(haystack, needle)
+  return (haystack or ""):lower():find(needle:lower(), 1, true) ~= nil
+end
+
+local function contains_any(haystack, needles)
+  for _, needle in ipairs(needles) do
+    if contains(haystack, needle) then
+      return true
+    end
+  end
+  return false
+end
+
+local function trim(s)
+  return ((s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function sanitize(name)
+  name = trim((name or ""):gsub("%s+", " "))
+  name = name:gsub('[<>:"/\\|%?%*]', "_"):gsub("%c", "")
+  if name == "" then
+    name = "document"
+  end
+  return name
+end
+
+-- Asks the user for a one-time code through fyde.input.ask; an unanswered/empty prompt (or no
+-- input handler at all, e.g. an unattended run) is an MFA failure.
+local function ask_code(question)
+  local ok, code = pcall(fyde.input.ask, question)
+  if not ok or type(code) ~= "string" or trim(code) == "" then
+    fail(MFA_FAILED, "no one-time code was provided")
+  end
+  return (code:gsub("%s", ""))
+end
+
+-- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
+-- exists.
+local function sleep(ms)
   pcall(function()
-    fyde.browser:wait_for("#__bouyguestelecom_force_wait__", ms)
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
   end)
 end
+
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+local function present(selector)
+  return #fyde.html.select(page_html(), selector) > 0
+end
+
+local function page_text()
+  local body = fyde.html.select(page_html(), "body")[1]
+  return body and body.text or ""
+end
+
+-- Polls the current page until one of `states` matches and returns its name (or nil after
+-- `timeout_ms`). Each state is `{ name, selector = css }` or `{ name, text = { needles } }`.
+-- Polling in short chunks also survives `fyde.browser:open` not waiting for navigation (a
+-- `wait_for` issued against the previous page just times out and gets retried).
+local function wait_state(states, timeout_ms)
+  local waited = 0
+  repeat
+    local html = page_html()
+    local text
+    for _, state in ipairs(states) do
+      if state.selector and #fyde.html.select(html, state.selector) > 0 then
+        return state[1]
+      end
+      if state.text then
+        if not text then
+          local body = fyde.html.select(html, "body")[1]
+          text = body and body.text or ""
+        end
+        if contains_any(text, state.text) then
+          return state[1]
+        end
+      end
+    end
+    sleep(1000)
+    waited = waited + 1000
+  until waited >= (timeout_ms or 30000)
+  return nil
+end
+
+local function open_and_wait(url, states, timeout_ms)
+  fyde.browser:open(url)
+  sleep(1500)
+  return wait_state(states, timeout_ms)
+end
+
+-- Fills the first present selector of each candidate list.
+local function fill_first(selectors, value)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:fill(selector, value)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+local function click_first(selectors)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:click(selector)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+-- Clicks `selector` (a download link/button) and saves what the browser downloads.
+local function browser_save(selector, filename, fields)
+  local ok, bytes = pcall(function()
+    return fyde.browser:download(selector, 60000)
+  end)
+  if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
+    fyde.save_document(sanitize(filename), bytes, fields)
+    return true
+  end
+  fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
+  return false
+end
+-- luacheck: pop
+
 
 -- Polls the page's HTML until `selector` matches, returning that HTML. Used instead of
 -- fyde.browser:wait_for on the OAuth/login pages, where wait_for's injected poll never
@@ -57,7 +211,7 @@ local function wait_until(selector, timeout_ms)
     if waited >= timeout_ms then
       error("timed out after " .. timeout_ms .. "ms waiting for " .. selector)
     end
-    settle(2000)
+    sleep(2000)
     waited = waited + 2000
   end
 end
@@ -70,7 +224,7 @@ end
 
 local function open_account()
   fyde.browser:open(MON_COMPTE_URL)
-  settle(PAGE_SETTLE_MS)
+  sleep(PAGE_SETTLE_MS)
   return fyde.browser:html()
 end
 
@@ -92,6 +246,17 @@ local function find_cas_form(html)
     end
   end
   return nil
+end
+
+local function error_messages(html, selector)
+  local messages = {}
+  for _, e in ipairs(fyde.html.select(html, selector)) do
+    local text = trim(e.text:gsub("%s+", " "))
+    if text ~= "" then
+      messages[#messages + 1] = text
+    end
+  end
+  return table.concat(messages, " / ")
 end
 
 local function log_cas_form(html)
@@ -117,7 +282,7 @@ local function submit_cas_form(html, value)
   end
   fyde.browser:fill("#" .. id .. ' input[name="' .. field .. '"]', value)
   fyde.browser:click("#" .. id .. ' [type="submit"]')
-  settle(PAGE_SETTLE_MS)
+  sleep(PAGE_SETTLE_MS)
   return fyde.browser:html()
 end
 
@@ -140,31 +305,26 @@ local function confirm_with_code(html)
 
   fyde.progress.step("Requesting a confirmation code")
   html = submit_cas_form(html, choice.attrs.value)
-  log_cas_form(html)
 
   -- Confirmed on a real login: the code page is `#fm1` again with a hidden `token` field
   -- (`#codeOtp`); a rejected code re-renders that same page, so ask again rather than failing
   -- the whole login (and spending another SMS) over a typo.
   local question = "Bouygues Telecom confirmation code sent to " .. choice.attrs.value .. ":"
   for _ = 1, 3 do
-    local code = fyde.input.ask(question)
+    local code = ask_code(question)
     fyde.progress.step("Submitting the confirmation code")
     html = submit_cas_form(html, code)
     if not fyde.html.select(html, "#codeOtp")[1] then
       return html
     end
-    local messages = {}
-    for _, e in ipairs(fyde.html.select(html, ".is-error, [role=alert]")) do
-      local text = e.text:gsub("%s+", " ")
-      if text:find("%S") then
-        messages[#messages + 1] = text
-      end
+    local reason = error_messages(html, ".is-error, [role=alert]")
+    if reason == "" then
+      reason = "code rejected"
     end
-    local reason = #messages > 0 and table.concat(messages, " / ") or "code rejected"
     fyde.log.warn("confirmation code rejected: " .. reason)
     question = "Code rejected (" .. reason .. "), enter it again:"
   end
-  error("confirmation code rejected 3 times")
+  fail(MFA_FAILED, "confirmation code rejected 3 times")
 end
 
 local function login(params, html)
@@ -176,22 +336,24 @@ local function login(params, html)
   fyde.progress.step("Logging in")
   fyde.browser:open(frame.attrs.src)
   wait_until(CAS_FORM, 30000)
+  fyde.log.info("LOGIN_PAGE_FOUND")
   fyde.browser:fill(CAS_FORM .. ' input[name="username"]', params.username)
   fyde.browser:fill(CAS_FORM .. ' input[name="password"]', params.password)
   fyde.browser:click(CAS_FORM .. ' button[name="submit"]')
-  settle(PAGE_SETTLE_MS)
+  sleep(PAGE_SETTLE_MS)
 
   local after = fyde.browser:html()
   if after:find('id="fm1"', 1, true) then
     -- Confirmed with a deliberately wrong login: the CAS form re-renders with
-    -- "Votre identifiant ou votre mot de passe est incorrect" in `p.help.is-error`.
-    local messages = {}
-    for _, e in ipairs(fyde.html.select(after, "p.help.is-error")) do
-      messages[#messages + 1] = (e.text:gsub("%s+", " "))
+    -- "Votre identifiant ou votre mot de passe est incorrect" in `p.help.is-error`. Any other
+    -- (or no) message isn't treated as a credentials rejection.
+    local message = error_messages(after, "p.help.is-error")
+    if contains_any(message, BAD_CREDENTIALS) then
+      fail(INVALID_CREDENTIALS, message)
     end
     error(
       "still on the login form after submitting credentials: "
-        .. (#messages > 0 and table.concat(messages, " / ") or "no error message shown")
+        .. (message ~= "" and message or "no error message shown")
     )
   end
   if fyde.html.select(after, ".radio-tile")[1] then
@@ -202,7 +364,7 @@ local function login(params, html)
   -- back to the OAuth callback. Until it's clicked, /mon-compte still shows the login iframe.
   if fyde.html.select(after, "#proceed")[1] then
     fyde.browser:click("#proceed")
-    settle(PAGE_SETTLE_MS)
+    sleep(PAGE_SETTLE_MS)
   end
 
   if not is_logged_in(open_account()) then
@@ -231,7 +393,7 @@ local function load_all_invoices()
     end
     local before = #fyde.html.select(html, "table.table tbody tr")
     fyde.browser:click(LOAD_MORE)
-    settle(5000)
+    sleep(5000)
     html = fyde.browser:html()
     if #fyde.html.select(html, "table.table tbody tr") <= before then
       fyde.log.warn("clicking \"load more\" didn't add any invoice, stopping there")
@@ -243,7 +405,7 @@ end
 
 local function text_of(html, selector)
   local e = fyde.html.select(html, selector)[1]
-  return e and (e.text:gsub("%s+", " "):gsub("^ ", ""):gsub(" $", "")) or ""
+  return e and trim(e.text:gsub("%s+", " ")) or ""
 end
 
 local function parse_invoices(html)
@@ -272,10 +434,6 @@ local function parse_invoices(html)
   return invoices
 end
 
-local function sanitize(s)
-  return (s:gsub("[%c/\\:*?\"<>|]", ""):gsub("%s+", "_"))
-end
-
 local function save_invoice(invoice)
   local ok, body = pcall(function()
     return fyde.browser:download(invoice.selector, 60000)
@@ -290,14 +448,27 @@ local function save_invoice(invoice)
   end
 
   local line = invoice.line:gsub("%s", "")
-  -- Mobile numbers start with 06/07; anything else on a Bouygues invoice is a Bbox line.
-  local mobile = line:match("^0[67]") ~= nil
   local title = invoice.kind ~= "" and invoice.kind or "Facture"
-  fyde.save_document(sanitize((invoice.date or "facture") .. "_bouyguestelecom_" .. line) .. ".pdf", body, {
-    name = "Bouygues Telecom - " .. title .. " " .. invoice.line .. " - " .. tostring(invoice.date)
-      .. (invoice.amount and (" - " .. invoice.amount) or ""),
+  -- Mobile numbers start with 06/07; any other line on a Bouygues invoice is a Bbox line. Some
+  -- invoices (e.g. "Facture d'achat", an equipment purchase) have no line at all, so they get
+  -- no sub-category rather than a guessed one.
+  local sub_category
+  if line ~= "" then
+    sub_category = line:match("^0[67]") and "mobile" or "internet"
+  end
+  local name = "Bouygues Telecom - " .. title
+  if invoice.line ~= "" then
+    name = name .. " " .. invoice.line
+  end
+  name = name .. " - " .. (invoice.date or "date inconnue")
+  if invoice.amount then
+    name = name .. " - " .. invoice.amount
+  end
+  local slug = line ~= "" and line or title:gsub("%s+", "-")
+  fyde.save_document(sanitize((invoice.date or "facture") .. "_bouyguestelecom_" .. slug) .. ".pdf", body, {
+    name = name,
     source_category = "telecom",
-    source_sub_category = mobile and "mobile" or "internet",
+    source_sub_category = sub_category,
     purpose = "invoice",
   })
   return true
@@ -307,14 +478,14 @@ function M.run(params)
   fyde.progress.step("Checking for an existing session")
   local html = open_account()
   if is_logged_in(html) then
-    fyde.log.info("existing session still valid, skipping login")
+    fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params, html)
   end
 
   fyde.progress.step("Listing invoices")
   fyde.browser:open(BILLS_URL)
-  settle(PAGE_SETTLE_MS)
+  sleep(PAGE_SETTLE_MS)
   local invoices = parse_invoices(load_all_invoices())
   if #invoices == 0 then
     error("no invoice found on " .. BILLS_URL)
