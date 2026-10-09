@@ -1,0 +1,27 @@
+{
+  "name": "Mint Énergie",
+  "short_description": "Factures Mint Énergie",
+  "description": "Se connecte à l'espace client Mint Énergie (mint-energie.com) pour récupérer les factures d'électricité.",
+  "homepage": "https://www.mint-energie.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "mint-energie.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
