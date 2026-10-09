@@ -90,10 +90,10 @@ login) even if the site behaves as the konnector expected.
 | [`blablacar`](scrapers/blablacar/script.lua) | [blablacar](https://github.com/konnectors/blablacar) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | No receipts on the site: text PDF per ride; site is now a SPA |
 | [`bookingdotcom`](scrapers/bookingdotcom/script.lua) | [bookingdotcom](https://github.com/konnectors/bookingdotcom) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | Login moved to account.booking.com since; text PDF per reservation |
 | [`boulanger`](scrapers/boulanger/script.lua) | [boulanger](https://github.com/konnectors/boulanger) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
-| [`boursobank`](scrapers/boursobank/script.lua) | [boursorama](https://github.com/konnectors/boursorama) | HTTP | Verified | ✅² | ⏳ not run | ✅² | ✅² | 276 documents: 32 statements, 240 other-bank documents, 2 IFU, 2 RIBs |
+| [`boursobank`](scrapers/boursobank/script.lua) | [boursorama](https://github.com/konnectors/boursorama) | HTTP | Verified | ✅² | ⏳ not run | ✅² | ✅² | Statements, other banks' documents, IFU, RIBs |
 | [`bouyguesbox`](scrapers/bouyguesbox/script.lua) | [cozy-konnector-bouyguesbox](https://github.com/konnectors/cozy-konnector-bouyguesbox) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`bouyguestelecom`](scrapers/bouyguestelecom/script.lua) | [cozy-konnector-bouyguestelecom](https://github.com/konnectors/cozy-konnector-bouyguestelecom) | browser | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
-| [`caf`](scrapers/caf/script.lua) | [caf](https://github.com/konnectors/caf) | HTTP | Verified | ✅² | ⏳ not run | ✅² | ✅² | 4 attestations (paiements, mns, qf, rms); remembered device, no one-time code asked |
+| [`caf`](scrapers/caf/script.lua) | [caf](https://github.com/konnectors/caf) | HTTP | Verified | ✅² | ⏳ not run | ✅² | ✅² | Attestations (paiements, mns, qf, rms); remembered device, no one-time code asked |
 | [`cdiscount`](scrapers/cdiscount/script.lua) | [cdiscount](https://github.com/konnectors/cdiscount) | browser | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | Order selection relies on the select change event |
 | [`cesml`](scrapers/cesml/script.lua) | [cesml](https://github.com/konnectors/cesml) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`cesu`](scrapers/cesu/script.lua) | [cozy-konnector-cesu](https://github.com/konnectors/cozy-konnector-cesu) | browser | Broken | ⏳ not run | ⏳ not run | ✅² | ❌² | Session reused, but the "Mes déclarations" / "Mon avantage fiscal" menu links are no longer found: no documents |
@@ -106,7 +106,7 @@ login) even if the site behaves as the konnector expected.
 | [`directenergie`](scrapers/directenergie/script.lua) | [cozy-konnector-directenergie](https://github.com/konnectors/cozy-konnector-directenergie) | browser | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`doctolib`](scrapers/doctolib/script.lua) | [doctolib](https://github.com/konnectors/doctolib) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | 2FA field names unconfirmed |
 | [`easyjet`](scrapers/easyjet/script.lua) | [easyjet](https://github.com/konnectors/easyjet) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | Site rebuilt since; text PDF per booking |
-| [`eaudubassinrennais`](scrapers/eaudubassinrennais/script.lua) | [eaudubassinrennais](https://github.com/konnectors/eaudubassinrennais) | HTTP | Verified | ✅² | ⏳ not run | ✅² | ✅² | 3 bills |
+| [`eaudubassinrennais`](scrapers/eaudubassinrennais/script.lua) | [eaudubassinrennais](https://github.com/konnectors/eaudubassinrennais) | HTTP | Verified | ✅² | ⏳ not run | ✅² | ✅² | Bills |
 | [`eaudugrandlyon`](scrapers/eaudugrandlyon/script.lua) | [eaudugrandlyon](https://github.com/konnectors/eaudugrandlyon) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`edf`](scrapers/edf/script.lua) | [edf](https://github.com/konnectors/edf) | browser | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | Bot protection may block the webview |
 | [`ekwateur`](scrapers/ekwateur/script.lua) | [ekwateur](https://github.com/konnectors/ekwateur) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
@@ -128,7 +128,7 @@ login) even if the site behaves as the konnector expected.
 | [`glisshop`](scrapers/glisshop/script.lua) | [glisshop](https://github.com/konnectors/glisshop) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`harmonie`](scrapers/harmonie/script.lua) | [cozy-konnector-harmonie](https://github.com/konnectors/cozy-konnector-harmonie) | browser | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | API token unreachable, download controls clicked instead |
 | [`humanis`](scrapers/humanis/script.lua) | [humanis](https://github.com/konnectors/humanis) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | Merged into Malakoff Humanis; site may be gone |
-| [`impots`](scrapers/impots/script.lua) | [impots](https://github.com/konnectors/impots) | HTTP | Verified | ✅² | ⏳ not run | ✅² | ✅² | 45 documents |
+| [`impots`](scrapers/impots/script.lua) | [impots](https://github.com/konnectors/impots) | HTTP | Verified | ✅² | ⏳ not run | ✅² | ✅² | Tax notices (income, property), online tax returns, declarative situation notices, tax reminders |
 | [`inulogic`](scrapers/inulogic/script.lua) | [inulogic](https://github.com/konnectors/inulogic) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`justeat`](scrapers/justeat/script.lua) | [justeat](https://github.com/konnectors/justeat) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`lamutuellegenerale`](scrapers/lamutuellegenerale/script.lua) | [lamutuellegenerale](https://github.com/konnectors/lamutuellegenerale) | browser | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
@@ -195,7 +195,7 @@ Scrapers that aren't ports of a konnector, run the same way on 2026-10-09 (legen
 
 | Scraper | Method | Status | Login OK | Documents fetched | Notes |
 |---|---|---|---|---|---|
-| [`didaxis`](scrapers/didaxis/script.lua) | HTTP | Verified | ✅² | ✅² | 95 documents: 39 payslips, 11 employment contracts, 40 bills, 5 personal documents |
+| [`didaxis`](scrapers/didaxis/script.lua) | HTTP | Verified | ✅² | ✅² | Payslips, employment contracts, bills, personal documents |
 | [`mercermasante`](scrapers/mercermasante/script.lua) | browser | Broken | ✅² | ❌² | The logged-in dashboard renders, but the `a[href='/remboursements']` marker is gone (site nav changed): times out before listing documents |
 
 ### konnectors repositories without a scraper
