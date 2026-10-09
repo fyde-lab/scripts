@@ -1,0 +1,27 @@
+{
+  "name": "Booking.com",
+  "short_description": "Réservations Booking.com",
+  "description": "Se connecte au compte Booking.com et enregistre un justificatif par réservation.",
+  "homepage": "https://www.booking.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "booking.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
