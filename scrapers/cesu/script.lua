@@ -83,28 +83,22 @@
 -- `name`, not by loading a distinct URL. `click_menu_link` below finds the real link by its
 -- `name` attribute and `fyde.browser:click`s it for real instead.
 --
--- **Documents are found but cannot be downloaded through this host yet.** Both pages this script
+-- **Downloading documents: `fyde.browser:download`, not a no-op click.** Both pages this script
 -- visits list real documents with a confirmed, identical convention: a hidden `display:none`
 -- template button, `id="affichagePdf"`, and one real, visible button per document,
 -- `id="affichagePdf_<id>"` - "Bulletin de salaire" buttons (one per declared pay period) on the
 -- declarations page, "Télécharger" (the attestation fiscale) on the avantage fiscal page, same id
--- prefix, presumably the same JS handler. But clicking a real `affichagePdf_<id>` button was
--- confirmed, live, to produce **no observable change to the current page whatsoever** - polled
--- at 5/10/15s after the click, the page's `fyde.browser:html()` snapshot came back byte-for-byte
--- identical both times (the only "diff" seen across several attempts was an unrelated
--- cookie-consent banner re-rendering on its own schedule, coincidental with the click, not caused
--- by it). The page also has no inline `<script>` anywhere mentioning "affichagePdf" - the actual
--- click handler must live in an external `.js` file this host has no way to read the source of.
--- The most likely explanation is a `window.open()` (or similar) call opening the PDF in a new
--- browser tab/window: `fyde.browser` manages exactly one webview (see `browser::driver`'s own doc
--- comments) and has no way to observe, let alone read bytes from, a second one. Even if it did,
--- `fyde.browser` has no bridge back to `fyde.http`'s cookie jar (see `browser::Service::submit`'s
--- doc comment), and `submit`'s own `fetch()` reads its response via `.text()`, which would
--- corrupt a binary PDF even if a direct URL were ever found. **Downloading these documents needs
--- a new host capability** (e.g. handling popup/new-window creation, or a binary-safe
--- fetch-as-base64 primitive) before this script can do more than list what exists - `M.run`
--- below lists real document ids on both pages, logs a clear warning instead of silently claiming
--- success, and stops there.
+-- prefix, presumably the same JS handler. Clicking a real `affichagePdf_<id>` button was
+-- confirmed, live, to produce **no observable change to the current page whatsoever** via plain
+-- `fyde.browser:click` - polled at 5/10/15s after the click, `fyde.browser:html()`'s snapshot
+-- came back byte-for-byte identical. That's because the handler doesn't change the page at all -
+-- it triggers the webview engine's own native file-download machinery (most likely a
+-- `window.open()` whose response carries `Content-Disposition: attachment`), which neither
+-- `wait_for` nor `html` can ever observe since nothing in the DOM changes.
+-- `fyde.browser:download(selector, [timeout_ms])` (see `../../../sdk/src/domains/scrapers/
+-- browser/driver.rs`'s `download_started_handler`/`download_completed_handler`) clicks the same
+-- selector but waits for, and returns the bytes of, that native download instead - this is what
+-- `M.run` below uses to actually save each bulletin/attestation it finds.
 
 local M = {}
 
@@ -126,6 +120,8 @@ local FORM_LOAD_ATTEMPT_TIMEOUT_MS = 4000
 local POST_SUBMIT_ATTEMPTS = 12
 local POST_SUBMIT_ATTEMPT_TIMEOUT_MS = 4000
 local PROBE_TIMEOUT_MS = 1000
+-- A real PDF download routinely takes longer to settle than a DOM change does.
+local DOWNLOAD_TIMEOUT_MS = 30000
 
 -- Retries `fyde.browser:wait_for` in several short attempts instead of one long one - see the
 -- header comment for why a single long wait races page navigations and silently stalls.
@@ -264,6 +260,25 @@ local function real_ids(html, prefix)
   return ids
 end
 
+-- Downloads and saves every id in `ids` by clicking its "affichagePdf_<id>" button via
+-- `fyde.browser:download` (see the header comment for why `download`, not plain `click`, is what
+-- actually retrieves the file). A failed download for one id is logged and skipped rather than
+-- aborting the whole run - a pattern already used by every other scraper's own per-document loop
+-- (see `../impots/script.lua`/`../didaxis/script.lua`).
+local function download_and_save(ids, slug, label, fields)
+  for _, id in ipairs(ids) do
+    local ok, result = pcall(function()
+      return fyde.browser:download("#affichagePdf_" .. id, DOWNLOAD_TIMEOUT_MS)
+    end)
+    if ok then
+      fyde.save_document("cesu/" .. slug .. "_" .. id .. ".pdf", result, fields)
+      fyde.log.info(string.format("saved %s %s (%d bytes)", label, id, #result))
+    else
+      fyde.log.warn(string.format("failed to download %s %s: %s", label, id, tostring(result)))
+    end
+  end
+end
+
 function M.run(params)
   fyde.progress.step("Visiting the login page")
   -- A real browser follows LOGIN_URL's cross-domain OAuth redirect chain (and runs the SPA's own
@@ -319,22 +334,17 @@ function M.run(params)
   end
   fyde.log.info("authenticated")
 
-  -- See the header comment: both sections below find real documents but cannot download them
-  -- yet - clicking their "affichagePdf_<id>" button is confirmed to do nothing observable to
-  -- this webview, most likely because it opens a second window/tab this host can't see.
   fyde.progress.step("Listing bulletins de salaire")
   local dashboard_html = fyde.browser:html()
   if click_menu_link(dashboard_html, "page_empl_mes_declarations") then
     sleep_ms(3000)
     local bulletin_ids = real_ids(fyde.browser:html(), "affichagePdf")
     fyde.log.info(#bulletin_ids .. " bulletin(s) de salaire found")
-    if #bulletin_ids > 0 then
-      fyde.log.warn(
-        "cannot download any bulletin de salaire yet - clicking a real affichagePdf_<id> "
-          .. "button produces no observable change to the page (confirmed live, polled for 15s) "
-          .. "- see this file's header comment for why"
-      )
-    end
+    download_and_save(bulletin_ids, "bulletin", "bulletin de salaire", {
+      type = "payslip",
+      source_category = "gov",
+      purpose = "employment",
+    })
   else
     fyde.log.warn('could not find the "Mes déclarations" menu link on the dashboard')
   end
@@ -345,12 +355,12 @@ function M.run(params)
     sleep_ms(3000)
     local attestation_ids = real_ids(fyde.browser:html(), "affichagePdf")
     fyde.log.info(#attestation_ids .. " attestation(s) fiscale(s) found")
-    if #attestation_ids > 0 then
-      fyde.log.warn(
-        'cannot download the "Télécharger" attestation fiscale yet - same affichagePdf_<id> '
-          .. "click, same no-op result - see this file's header comment for why"
-      )
-    end
+    download_and_save(attestation_ids, "attestation_fiscale", "attestation fiscale", {
+      type = "tax_certificate",
+      source_category = "gov",
+      source_sub_category = "tax",
+      purpose = "attestation",
+    })
   else
     fyde.log.warn('could not find the "Mon avantage fiscal" menu link on the current page')
   end
