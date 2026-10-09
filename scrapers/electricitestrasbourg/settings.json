@@ -1,0 +1,27 @@
+{
+  "name": "Électricité de Strasbourg",
+  "short_description": "Factures ES Énergies Strasbourg",
+  "description": "Se connecte à l'espace client interactif d'Électricité de Strasbourg pour récupérer les factures d'électricité.",
+  "homepage": "https://www.es.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "electricite-strasbourg.net"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
