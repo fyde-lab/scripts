@@ -1,18 +1,26 @@
 -- Scraper for Deliveroo (deliveroo.fr), the food-delivery platform: downloads the receipts of
 -- delivered orders.
 --
--- Ported from github.com/konnectors/deliveroo (src/index.js): `/fr/login` has `form#login`
--- (whose `action` is the JSON login endpoint) and a `meta[name="csrf-token"]`; the login is
--- posted with the names given by the `inputmode` attributes of the `login_email`/
--- `login_password` inputs, with `x-csrf-token` - success is an answer with a `user.id`.
--- Orders: the `ul.results-list li:has(.status-delivered)` entries of `/fr/orders`, each
--- receipt at `/order/receipt/<order number>`. Deliveroo's site is now a JS app, so this
--- flow may be outdated. Unverified (see README.md).
+-- Originally ported from github.com/konnectors/deliveroo, whose `form#login` no longer exists:
+-- deliveroo.fr is now a Next.js app (behind PerimeterX, which `wreq`'s Chrome emulation gets
+-- through). The flow below was rebuilt from that app's own JS bundle (pages/login + _app):
+-- - `GET /fr/api/auth/read` gives a `csrf_token`;
+-- - `POST /fr/api/auth/login` (JSON `email`/`password`/`page_in_progress`, `X-CSRF-Token`,
+--   `X_ROO_CHALLENGE_SUPPORT: passcode`) answers 401 for bad credentials, 423 `mfa_required`
+--   (`mfa_token`) when an SMS code is needed, sent/checked through `/fr/api/auth/
+--   initiate_challenge` and `complete_challenge` with the `sms:passcode` challenge;
+-- - `GET /fr/api/account/read` is 401 without a session, 200 with one;
+-- - `/fr/orders` is server-rendered with the latest orders (one page, 25 at most) in its
+--   `__NEXT_DATA__` state, each receipt at `/order/receipt/<order id>`.
+-- Bad credentials -> 401 is confirmed against the live site; the successful login, SMS step,
+-- order list and receipt format are not verified against a real account (see README.md).
 
 local M = {}
 
 local ORIGIN = "https://deliveroo.fr"
-local LOGIN_URL = ORIGIN .. "/fr/login"
+local LOGIN_URL = ORIGIN .. "/fr/api/auth/login"
+local AUTH_READ_URL = ORIGIN .. "/fr/api/auth/read"
+local ACCOUNT_URL = ORIGIN .. "/fr/api/account/read"
 local ORDERS_URL = ORIGIN .. "/fr/orders"
 
 -- luacheck: push ignore 211
@@ -152,44 +160,109 @@ local function save_pdf(url, filename, fields, headers)
 end
 -- luacheck: pop
 
-local function login(params)
-  fyde.progress.step("Logging in")
-  local page = fyde.http.get(LOGIN_URL)
-  local form = fyde.html.select(page.body, "form#login")[1]
-  if not form then
-    error("Deliveroo login form not found on " .. page.url)
+-- Common headers of the JSON API calls the web app makes from the login page.
+local function api_headers(csrf)
+  return {
+    accept = "application/json",
+    ["x-csrf-token"] = csrf,
+    ["x_roo_challenge_support"] = "passcode",
+  }
+end
+
+-- `/fr/api/account/read` answers 401 without a session, 200 with one.
+local function is_logged_in()
+  return fyde.http.get(ACCOUNT_URL, { accept = "application/json" }).status == 200
+end
+
+-- The SMS one-time code step the login answers with (423 `mfa_required`) when Deliveroo
+-- doesn't trust this device yet: `initiate_challenge` sends the code, `complete_challenge`
+-- checks it.
+local function mfa(csrf, answer)
+  local token = answer.mfa_token or ""
+  local challenge = "sms:passcode"
+  local sent = fyde.http.post_json(ORIGIN .. "/fr/api/auth/initiate_challenge", {
+    mfa_token = token,
+    challenge = challenge,
+    trigger = "send",
+    page_in_progress = "login",
+  }, api_headers(csrf))
+  if sent.status >= 300 then
+    fail(MFA_FAILED, "sending the SMS code failed (HTTP " .. sent.status .. ")")
   end
-  fyde.log.info("LOGIN_PAGE_FOUND")
-  local csrf = fyde.html.select(page.body, "meta[name='csrf-token']")[1]
-  local email = fyde.html.select(page.body, "form input[name='login_email']")[1]
-  local password = fyde.html.select(page.body, "form input[name='login_password']")[1]
-  local resp = fyde.http.post_form(absolute(ORIGIN, form.attrs.action), {
-    [email and email.attrs.inputmode or "email"] = params.username,
-    [password and password.attrs.inputmode or "password"] = params.password,
-  }, { ["x-csrf-token"] = csrf and csrf.attrs.content or "" })
-  local body = json_or_nil(resp.body)
-  if not (body and body.user and body.user.id) then
-    fail(INVALID_CREDENTIALS, "HTTP " .. resp.status)
+  local code = ask_code("Code reçu par SMS de Deliveroo")
+  local done = fyde.http.post_json(ORIGIN .. "/fr/api/auth/complete_challenge", {
+    mfa_token = token,
+    challenge = challenge,
+    data = { passcode = code },
+    page_in_progress = "login",
+  }, api_headers(csrf))
+  if done.status >= 300 then
+    fail(MFA_FAILED, "HTTP " .. done.status)
   end
 end
 
+local function login(params)
+  fyde.progress.step("Logging in")
+  local read = json_or_nil(fyde.http.get(AUTH_READ_URL, { accept = "application/json" }).body)
+  local csrf = read and read.csrf_token
+  if not csrf then
+    error("Deliveroo login endpoint not found: no csrf_token from " .. AUTH_READ_URL)
+  end
+  fyde.log.info("LOGIN_PAGE_FOUND")
+  local resp = fyde.http.post_json(LOGIN_URL, {
+    email = params.username,
+    password = params.password,
+    page_in_progress = "login",
+  }, api_headers(csrf))
+  local body = json_or_nil(resp.body) or {}
+  if resp.status == 401 then
+    fail(INVALID_CREDENTIALS, body.msg)
+  elseif resp.status == 423 and body.error == "mfa_required" then
+    mfa(csrf, body)
+  elseif resp.status == 423 then
+    -- Deliveroo locks accounts whose password showed up in a breach until it's reset.
+    error("Deliveroo requires a password reset for this account: " .. tostring(body.msg_js_link or body.error))
+  elseif resp.status >= 300 then
+    error("Deliveroo login failed: HTTP " .. resp.status)
+  end
+  if not is_logged_in() then
+    error("Deliveroo login answered HTTP " .. resp.status .. " but no session was opened")
+  end
+end
+
+-- `/fr/orders` is server-rendered by the Next.js app: the most recent orders (one page of the
+-- order history) are in its `__NEXT_DATA__` state, under `order.history.orders`.
+local function list_orders()
+  local page = fyde.http.get(ORDERS_URL)
+  local raw = (page.body or ""):match('<script id="__NEXT_DATA__"[^>]*>(.-)</script>')
+  local data = json_or_nil(raw)
+  local ok, orders = pcall(function()
+    return data.props.initialState.order.history.orders
+  end)
+  if not ok or type(orders) ~= "table" then
+    error("no order history in " .. tostring(page.url))
+  end
+  return orders
+end
+
+local DELIVERED = { DELIVERED = true, PICKED_UP_BY_CUSTOMER = true }
+
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local page = fyde.http.get(ORDERS_URL)
-  if has(page, "ul.results-list") then
+  if is_logged_in() then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
-    page = fyde.http.get(ORDERS_URL)
   end
 
   fyde.progress.step("Downloading receipts")
-  for _, order in ipairs(fyde.html.select(page.body, "ul.results-list li")) do
-    local link = fyde.html.select(order.html, "a")[1]
-    if has(order.html, ".status-delivered") and link and link.attrs.href then
-      local number = link.attrs.href:match("([^/]+)$")
+  for _, order in ipairs(list_orders()) do
+    if DELIVERED[order.status] and order.id then
+      local number = tostring(order.id)
+      local date = (order.legacySubmittedDate or ""):sub(1, 10)
+      local label = trim((order.restaurantName or "") .. " " .. date)
       save_pdf(ORIGIN .. "/order/receipt/" .. number, "deliveroo-" .. number .. ".pdf", {
-        name = "Reçu Deliveroo " .. number,
+        name = "Reçu Deliveroo " .. (label ~= "" and label or number),
         type = "invoice",
         source_category = "alimentation",
         purpose = "invoice",
