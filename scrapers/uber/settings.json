@@ -1,0 +1,27 @@
+{
+  "name": "Uber",
+  "short_description": "Factures Uber",
+  "description": "Se connecte au compte passager Uber (riders.uber.com) pour récupérer les factures des courses.",
+  "homepage": "https://www.uber.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "uber.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
