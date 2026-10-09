@@ -1,0 +1,27 @@
+{
+  "name": "N26",
+  "short_description": "Relevés de compte N26",
+  "description": "Se connecte au compte N26 (avec validation dans l'application) pour récupérer les relevés de compte mensuels.",
+  "homepage": "https://n26.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "api.tech26.de"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
