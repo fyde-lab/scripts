@@ -1,0 +1,27 @@
+{
+  "name": "Autolib'",
+  "short_description": "Factures Autolib'",
+  "description": "Se connecte au compte Autolib' (moncompte.autolib.eu, service fermé en 2018) pour récupérer les factures payées.",
+  "homepage": "https://www.autolib.eu",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "autolib.eu"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
