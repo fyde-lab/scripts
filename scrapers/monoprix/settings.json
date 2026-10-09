@@ -1,0 +1,27 @@
+{
+  "name": "Monoprix",
+  "short_description": "Commandes Monoprix",
+  "description": "Se connecte au compte Monoprix (monoprix.fr) et enregistre l'historique des commandes.",
+  "homepage": "https://www.monoprix.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "monoprix.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
