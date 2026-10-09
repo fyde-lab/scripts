@@ -1,0 +1,27 @@
+{
+  "name": "E.Leclerc Drive",
+  "short_description": "Bons de commande Leclerc Drive",
+  "description": "Se connecte au compte E.Leclerc Drive (leclercdrive.fr) pour récupérer les bons de commande des courses passées.",
+  "homepage": "https://www.leclercdrive.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "leclercdrive.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
