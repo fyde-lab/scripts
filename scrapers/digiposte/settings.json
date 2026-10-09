@@ -1,0 +1,29 @@
+{
+  "name": "Digiposte",
+  "short_description": "Coffre-fort numérique Digiposte",
+  "description": "Se connecte au coffre-fort Digiposte (La Poste) pour récupérer les documents de tous les dossiers (bulletins de paie, factures...).",
+  "homepage": "https://secure.digiposte.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "digiposte.fr",
+    "laposte.fr",
+    "hcaptcha.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
