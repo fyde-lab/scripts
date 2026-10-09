@@ -1,0 +1,30 @@
+{
+  "name": "Prixtel",
+  "short_description": "Factures Prixtel",
+  "description": "Se connecte à l'espace client Prixtel (espaceclient.prixtel.com) pour récupérer les factures mobile.",
+  "homepage": "https://www.prixtel.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "prixtel.com",
+    "google.com",
+    "gstatic.com",
+    "recaptcha.net"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
