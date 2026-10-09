@@ -1,0 +1,27 @@
+{
+  "name": "Showroomprivé",
+  "short_description": "Commandes Showroomprivé",
+  "description": "Se connecte au compte Showroomprivé (showroomprive.com) et enregistre un justificatif par commande.",
+  "homepage": "https://www.showroomprive.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "showroomprive.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
