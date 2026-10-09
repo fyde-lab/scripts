@@ -1,0 +1,27 @@
+{
+  "name": "Free (Freebox)",
+  "short_description": "Factures Freebox",
+  "description": "Se connecte à l'espace abonné Freebox (adsl.free.fr) pour récupérer les factures mensuelles.",
+  "homepage": "https://www.free.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "free.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
