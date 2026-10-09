@@ -1,0 +1,27 @@
+{
+  "name": "TAG & Pass",
+  "short_description": "Factures TAG & Pass (Grenoble)",
+  "description": "Se connecte au compte Pass Mobilités du réseau TAG (Grenoble) pour récupérer les factures mensuelles.",
+  "homepage": "https://www.tag.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "tag.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
