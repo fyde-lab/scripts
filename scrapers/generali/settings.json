@@ -1,0 +1,27 @@
+{
+  "name": "Generali",
+  "short_description": "Remboursements santé Generali",
+  "description": "Se connecte à l'espace client Generali (generali.fr) pour récupérer les décomptes de remboursement santé.",
+  "homepage": "https://www.generali.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "generali.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "12345678",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Code d'accès (chiffres)",
+      "placeholder": "••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
