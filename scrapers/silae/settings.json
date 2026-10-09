@@ -1,0 +1,32 @@
+{
+  "name": "Silae",
+  "short_description": "Bulletins de paie Silae",
+  "description": "Se connecte à l'espace salarié Silae pour récupérer les bulletins de paie.",
+  "homepage": "https://www.silaexpert.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "silaexpert01.fr",
+    "silaexpert02.fr",
+    "silaexpert03.fr",
+    "silaexpert04.fr",
+    "silaexpert.fr",
+    "silae.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
