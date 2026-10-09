@@ -251,7 +251,11 @@ end
 local function periods()
   local resp = fyde.http.post_form(SECURE .. "/Orders/CompletedOrdersPeriodSelection", {}, { ["x-requested-with"] = "XMLHttpRequest" })
   local data = resp.status == 200 and json_or_nil(resp.body)
-  return type(data) == "table" and data or nil
+  -- Logged out, this answers 200 with `{"redirectUrl": ".../Login/Login"}` instead of the list.
+  if type(data) ~= "table" or data.redirectUrl then
+    return nil
+  end
+  return data
 end
 
 local function login(params)
