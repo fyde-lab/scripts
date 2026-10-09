@@ -1,0 +1,28 @@
+{
+  "name": "RED by SFR",
+  "short_description": "Factures RED by SFR",
+  "description": "Se connecte à l'espace client RED by SFR pour récupérer les factures mobile et box.",
+  "homepage": "https://www.red-by-sfr.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "sfr.fr",
+    "red-by-sfr.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
