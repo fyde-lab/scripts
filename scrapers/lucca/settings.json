@@ -1,0 +1,34 @@
+{
+  "name": "Lucca",
+  "short_description": "Bulletins de paie Lucca",
+  "description": "Se connecte à l'espace Lucca de l'entreprise (module Pagga) pour récupérer les bulletins de paie.",
+  "homepage": "https://www.lucca.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "lucca.fr",
+    "ilucca.net"
+  ],
+  "parameters": {
+    "username": {
+      "label": "E-mail ou identifiant Lucca",
+      "placeholder": "prenom.nom@entreprise.fr",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    },
+    "loginUrl": {
+      "label": "Adresse de l'instance Lucca (optionnel)",
+      "placeholder": "https://entreprise.ilucca.net",
+      "type": "string",
+      "required": false
+    }
+  }
+}
