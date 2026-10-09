@@ -1,0 +1,27 @@
+{
+  "name": "ENGIE",
+  "short_description": "Factures ENGIE",
+  "description": "Se connecte à l'espace client ENGIE (particuliers.engie.fr) pour récupérer les factures et le justificatif de domicile.",
+  "homepage": "https://particuliers.engie.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "engie.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
