@@ -9,8 +9,9 @@
 -- the `X-Session-Token`; `iam/v1alpha1/users/<jwt.issuer_id>` gives the organization, whose
 -- invoices are listed by `billing/v1/invoices?organization_id=...` (paid ones downloaded with
 -- `?format=pdf`). The konnector deleted its session JWT at the end (DELETE
--- `iam/v1alpha1/jwts/<jti>`); fyde.http has no DELETE, so the JWT is left to expire, and every
--- run logs in again as the konnector did. Unverified (see README.md).
+-- `iam/v1alpha1/jwts/<jti>`); fyde.http has no DELETE, so the JWT is kept in fyde.session instead
+-- and reused by the next run while the users endpoint still accepts it. Unverified (see
+-- README.md).
 
 local M = {}
 
@@ -184,11 +185,23 @@ local function login(params)
 end
 
 function M.run(params)
-  -- The konnector deleted its JWT after every run, so there is never a session to reuse.
-  local session = login(params)
-  local headers = { ["X-Session-Token"] = session.token }
+  fyde.progress.step("Checking for an existing session")
+  local function me(token, issuer)
+    local resp = fyde.http.get(API .. "/iam/v1alpha1/users/" .. tostring(issuer), { ["X-Session-Token"] = token })
+    return resp.status == 200 and json_or_nil(resp.body) or nil
+  end
+  local token, issuer = fyde.session.scaleway_token, fyde.session.scaleway_issuer
+  local user = token and me(token, issuer)
+  if user then
+    fyde.log.info("ALREADY_LOGGED_IN")
+  else
+    local session = login(params)
+    token, issuer = session.token, session.jwt and session.jwt.issuer_id
+    fyde.session.scaleway_token, fyde.session.scaleway_issuer = token, issuer
+    user = me(token, issuer) or {}
+  end
+  local headers = { ["X-Session-Token"] = token }
   fyde.progress.step("Downloading invoices")
-  local user = json_or_nil(fyde.http.get(API .. "/iam/v1alpha1/users/" .. tostring(session.jwt and session.jwt.issuer_id), headers).body) or {}
   local list = json_or_nil(fyde.http.get(API .. "/billing/v1/invoices?organization_id=" .. tostring(user.organization_id), headers).body) or {}
   for _, invoice in ipairs(list.invoices or {}) do
     if invoice.state == "paid" then
