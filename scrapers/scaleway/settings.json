@@ -1,0 +1,27 @@
+{
+  "name": "Scaleway",
+  "short_description": "Factures Scaleway",
+  "description": "Se connecte au compte Scaleway (avec le code de double authentification si demandé) pour récupérer les factures payées.",
+  "homepage": "https://www.scaleway.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "api.scaleway.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
