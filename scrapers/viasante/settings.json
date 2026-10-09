@@ -1,0 +1,27 @@
+{
+  "name": "Viasanté Mutuelle",
+  "short_description": "Documents Viasanté Mutuelle",
+  "description": "Se connecte à l'espace adhérent Viasanté Mutuelle pour récupérer les courriers (décomptes, attestations) de chaque contrat.",
+  "homepage": "https://www.mutuelle-viasante.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "mutuelle-viasante.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
