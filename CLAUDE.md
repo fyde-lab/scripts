@@ -134,6 +134,16 @@ URL, form fields, and document selectors are marked `TODO` in the file's header 
 need confirming against the live site with a real account before this script will actually
 work.
 
+### `scripts/scrapers/mercermasante/script.lua`
+
+Mercer Ma Santé (mercermasante.fr), built from the script's own runs (no HAR). Logs in through
+`fyde.browser` (client-rendered Next.js login, Cloudflare Turnstile that passes on its own once
+`challenges.cloudflare.com` is in `allowed_domains`, then an SMS code asked via `fyde.input.ask`
+on every fresh login), and relies on the sdk carrying the webview's `auth-token` cookie across
+runs to skip all of that while the session lasts. Documents (attestation de couverture, carte de
+tiers payant, one décompte per claim) come straight from `/api/proxy/selfcare/...` endpoints via
+`fyde.http.download`; only the claim list needs the browser. See the file's header comment.
+
 ### The remaining scripts, ported from `../doc-downloaders`
 
 `../doc-downloaders` is a sibling repo of browser-automation (Playwright) scrapers for the same
