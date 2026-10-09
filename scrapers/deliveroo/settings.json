@@ -1,0 +1,27 @@
+{
+  "name": "Deliveroo",
+  "short_description": "Reçus Deliveroo",
+  "description": "Se connecte au compte Deliveroo (deliveroo.fr) pour récupérer les reçus des commandes livrées.",
+  "homepage": "https://deliveroo.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "deliveroo.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
