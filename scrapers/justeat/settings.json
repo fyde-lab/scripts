@@ -1,0 +1,27 @@
+{
+  "name": "Just Eat",
+  "short_description": "Commandes Just Eat",
+  "description": "Se connecte au compte Just Eat (just-eat.fr) et enregistre un justificatif par commande.",
+  "homepage": "https://www.just-eat.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "just-eat.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
