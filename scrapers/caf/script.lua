@@ -66,6 +66,10 @@
 
 local M = {}
 
+-- Login error contract shared with every scraper ported from github.com/konnectors (see
+-- README.md): a rejected username/password fails with exactly INVALID_CREDENTIALS, a rejected
+-- or unanswered one-time code with exactly MFA_FAILED.
+
 local TOKEN_PUBLIC_URL = "https://connect.caf.fr/token/public"
 local CONNEXION_URL = "https://connect.caf.fr/api/connexionmiddle/v3/connexion_personne"
 local ENVOI_OTP_URL = "https://connect.caf.fr/api/connexionmiddle/v1/mfa/envoi_otp"
@@ -147,6 +151,7 @@ local function login(params)
   fyde.progress.step("Fetching an anonymous session token")
   local token = fetch_public_token()
 
+  fyde.log.info("LOGIN_PAGE_FOUND")
   fyde.progress.step("Submitting credentials")
   local connexion_resp = fyde.http.post_json(CONNEXION_URL, {
     identifiant = params.nir,
@@ -163,11 +168,8 @@ local function login(params)
   end
   local connexion = fyde.json.decode(connexion_resp.body)
   if connexion.codeRetour ~= 0 then
-    error(string.format(
-      "login rejected (codeRetour=%s) - wrong nir/password, or the site changed in a way this "
-      .. "script doesn't handle yet: %s",
-      tostring(connexion.codeRetour), connexion_resp.body
-    ))
+    fyde.log.warn(string.format("login rejected (codeRetour=%s): %s", tostring(connexion.codeRetour), connexion_resp.body))
+    error("INVALID_CREDENTIALS", 0)
   end
 
   local needs_mfa = false
@@ -198,9 +200,11 @@ local function login(params)
     end
 
     fyde.progress.step("Waiting for the one-time code")
-    local otp = fyde.input.ask("CAF emailed a one-time code - enter it:"):gsub("%D", "")
+    local asked, answer = pcall(fyde.input.ask, "CAF emailed a one-time code - enter it:")
+    local otp = asked and tostring(answer):gsub("%D", "") or ""
     if #otp == 0 then
-      error("expected a numeric one-time code, got none")
+      fyde.log.warn("expected a numeric one-time code, got none")
+      error("MFA_FAILED", 0)
     end
 
     local verify_resp = fyde.http.post_json(VERIFIER_OTP_URL, {
@@ -215,7 +219,8 @@ local function login(params)
     end
     local verify = fyde.json.decode(verify_resp.body)
     if verify.codeRetour ~= 0 then
-      error("one-time code rejected: " .. verify_resp.body)
+      fyde.log.warn("one-time code rejected: " .. verify_resp.body)
+      error("MFA_FAILED", 0)
     end
     ccode = verify.ccode
     if not ccode then
@@ -305,6 +310,7 @@ function M.run(params)
   local dashboard_resp = fyde.http.get(DASHBOARD_URL)
   if dashboard_resp.body:find(LOGGED_IN_TITLE_MARKER, 1, true) then
     fyde.log.info("restored session is still valid, skipping login")
+    fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
 
