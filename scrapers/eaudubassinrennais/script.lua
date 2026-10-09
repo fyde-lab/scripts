@@ -15,6 +15,10 @@
 
 local M = {}
 
+-- Login error contract shared with every scraper ported from github.com/konnectors (see
+-- README.md): a rejected username/password fails with exactly INVALID_CREDENTIALS, a rejected
+-- or unanswered one-time code with exactly MFA_FAILED.
+
 local BASE = "https://monespace.eaudubassinrennais.fr"
 local HOME_URL = BASE .. "/wp/home.action"
 local LOGIN_URL = BASE .. "/wp/encryptionCheck.external"
@@ -96,8 +100,12 @@ function M.run(params)
   local check = fyde.http.get(HOME_URL)
   if is_logged_in(check.body) then
     fyde.log.info("restored session is still valid, skipping login")
+    fyde.log.info("ALREADY_LOGGED_IN")
   else
     fyde.progress.step("Logging in as " .. username)
+    if check.body:find('name="loginForm"', 1, true) then
+      fyde.log.info("LOGIN_PAGE_FOUND")
+    end
     local login_resp = login(username, password)
     if login_resp.status >= 400 then
       error("login request failed with HTTP status " .. login_resp.status)
@@ -105,7 +113,8 @@ function M.run(params)
 
     check = fyde.http.get(HOME_URL)
     if has_invalid_credentials_error(check.body) then
-      error("login failed: invalid username or password")
+      fyde.log.warn("login failed: invalid username or password")
+      error("INVALID_CREDENTIALS", 0)
     end
     if not is_logged_in(check.body) then
       error("login failed: still showing a login page after authenticating")
