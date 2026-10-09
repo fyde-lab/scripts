@@ -1,0 +1,27 @@
+{
+  "name": "MACIF",
+  "short_description": "Documents MACIF",
+  "description": "Se connecte à l'espace client MACIF (avec le code de vérification si demandé) pour récupérer les avis d'échéance et attestations.",
+  "homepage": "https://www.macif.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "macif.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
