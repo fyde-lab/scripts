@@ -53,6 +53,10 @@
 
 local M = {}
 
+-- Login error contract shared with every scraper ported from github.com/konnectors (see
+-- README.md): a rejected username/password fails with exactly INVALID_CREDENTIALS, a rejected
+-- or unanswered one-time code with exactly MFA_FAILED.
+
 local HOME_URL = "https://candidat.francetravail.fr/espacepersonnel/"
 
 local IDENTIFIANT_FIELD = "#identifiant"
@@ -89,10 +93,12 @@ function M.run(params)
   -- separate session/cookie state across runs (not yet verified to persist at all).
   if not on_login_form() then
     fyde.log.info("login form not shown on open - assuming an existing session is still valid")
+    fyde.log.info("ALREADY_LOGGED_IN")
     fyde.progress.step("Done")
     return
   end
 
+  fyde.log.info("LOGIN_PAGE_FOUND")
   fyde.progress.step("Submitting credentials")
   fyde.browser:fill(IDENTIFIANT_FIELD, params.username)
   fyde.browser:fill(PASSWORD_FIELD, params.password)
@@ -109,10 +115,10 @@ function M.run(params)
   end)
 
   if on_login_form() then
-    error(
-      "still showing the login form after submitting credentials - wrong identifiant/password, "
-        .. "or the device-profile check silently failed"
-    )
+    -- Most likely a wrong identifiant/password (the device-profile check failing silently would
+    -- look the same - unconfirmed).
+    fyde.log.warn("still showing the login form after submitting credentials")
+    error("INVALID_CREDENTIALS", 0)
   end
 
   -- TODO: once a real login attempt's post-submit page is captured, replace this diagnostic
