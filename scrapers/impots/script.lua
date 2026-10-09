@@ -54,6 +54,10 @@
 
 local M = {}
 
+-- Login error contract shared with every scraper ported from github.com/konnectors (see
+-- README.md): a rejected username/password fails with exactly INVALID_CREDENTIALS, a rejected
+-- or unanswered one-time code with exactly MFA_FAILED.
+
 local PART_BASE = "https://cfspart.impots.gouv.fr"
 local IDP_BASE = "https://cfspart-idp.impots.gouv.fr"
 
@@ -228,7 +232,9 @@ function M.run(params)
 
   if is_logged_in(home.body) then
     fyde.log.info("restored session is still valid, skipping login")
+    fyde.log.info("ALREADY_LOGGED_IN")
   else
+    fyde.log.info("LOGIN_PAGE_FOUND")
     fyde.progress.step("Resolving account type for " .. spi)
     local context_code = get_context(spi, login_page_url)
     if context_code ~= "LMDP" then
@@ -247,6 +253,7 @@ function M.run(params)
       error("login request failed with HTTP status " .. login_resp.status)
     end
 
+    local otp_submitted = false
     if is_otp_challenge(login_resp.body) then
       local otp_token = parse_otp_token(login_resp.body)
       if not otp_token then
@@ -255,7 +262,12 @@ function M.run(params)
         )
       end
       fyde.log.info("account requires an emailed security code")
-      local code = fyde.input.ask("Enter the 6-digit security code emailed to you: ")
+      local asked, code = pcall(fyde.input.ask, "Enter the 6-digit security code emailed to you: ")
+      if not asked or tostring(code):gsub("%s", "") == "" then
+        fyde.log.warn("no security code was provided")
+        error("MFA_FAILED", 0)
+      end
+      otp_submitted = true
       local otp_resp = submit_otp(otp_token, code, login_page_url)
       if otp_resp.status >= 400 then
         error("security code verification request failed with HTTP status " .. otp_resp.status)
@@ -266,10 +278,8 @@ function M.run(params)
     -- should complete the OIDC flow silently instead of showing the login form again.
     home = fyde.http.get(PART_BASE .. "/")
     if not is_logged_in(home.body) then
-      error(
-        "login failed: still seeing the login form after authenticating (wrong fiscal number/"
-          .. "password, bot-detection block, or an auth step this script doesn't handle)."
-      )
+      fyde.log.warn("login failed: still seeing the login form after authenticating")
+      error(otp_submitted and "MFA_FAILED" or "INVALID_CREDENTIALS", 0)
     end
     fyde.log.info("login succeeded")
   end
