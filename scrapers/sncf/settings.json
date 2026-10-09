@@ -1,0 +1,29 @@
+{
+  "name": "SNCF Connect",
+  "short_description": "Justificatifs de voyage SNCF",
+  "description": "Se connecte au compte SNCF Connect (sncf-connect.com) pour récupérer les justificatifs des voyages passés.",
+  "homepage": "https://www.sncf-connect.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "sncf-connect.com",
+    "sncf.com",
+    "sncf.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
