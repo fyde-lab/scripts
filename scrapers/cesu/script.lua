@@ -102,6 +102,10 @@
 
 local M = {}
 
+-- Login error contract shared with every scraper ported from github.com/konnectors (see
+-- README.md): a rejected username/password fails with exactly INVALID_CREDENTIALS, a rejected
+-- or unanswered one-time code with exactly MFA_FAILED.
+
 local LOGIN_URL = "https://www.cesu.urssaf.fr/decla/index.html?page=page_se_connecter&LANG=FR"
 
 local USERNAME_FIELD = "#username"
@@ -285,54 +289,60 @@ function M.run(params)
   -- PKCE-generating JS) on its own - there's no manual Location-header chasing to do here.
   fyde.browser:open(LOGIN_URL)
   local load_ok, load_err = pcall(function()
-    wait_for_through_navigation(USERNAME_FIELD, FORM_LOAD_ATTEMPTS, FORM_LOAD_ATTEMPT_TIMEOUT_MS)
+    wait_for_through_navigation(USERNAME_FIELD .. ", " .. LOGGED_IN_MARKER, FORM_LOAD_ATTEMPTS, FORM_LOAD_ATTEMPT_TIMEOUT_MS)
   end)
   if not load_ok then
     log_page_for_diagnosis("login form timeout")
     error(load_err)
   end
 
-  fyde.progress.step("Submitting credentials")
-  fyde.browser:fill(USERNAME_FIELD, params.username)
-  fyde.browser:fill(PASSWORD_FIELD, params.password)
-  fyde.browser:click(SUBMIT_CONTROL)
+  if browser_has(LOGGED_IN_MARKER) then
+    fyde.log.info("restored session is still valid, skipping login")
+    fyde.log.info("ALREADY_LOGGED_IN")
+  else
+    fyde.log.info("LOGIN_PAGE_FOUND")
+    fyde.progress.step("Submitting credentials")
+    fyde.browser:fill(USERNAME_FIELD, params.username)
+    fyde.browser:fill(PASSWORD_FIELD, params.password)
+    fyde.browser:click(SUBMIT_CONTROL)
 
-  local ok, err = pcall(function()
-    wait_for_through_navigation(
-      LOGGED_IN_MARKER .. ", " .. MFA_CODE_FIELD,
-      POST_SUBMIT_ATTEMPTS,
-      POST_SUBMIT_ATTEMPT_TIMEOUT_MS
-    )
-  end)
-  if not ok then
-    if browser_has(USERNAME_FIELD) then
+    local ok, err = pcall(function()
+      wait_for_through_navigation(
+        LOGGED_IN_MARKER .. ", " .. MFA_CODE_FIELD,
+        POST_SUBMIT_ATTEMPTS,
+        POST_SUBMIT_ATTEMPT_TIMEOUT_MS
+      )
+    end)
+    if not ok then
+      if browser_has(USERNAME_FIELD) then
+        fyde.log.warn("login did not succeed - still on the login form after submitting (rejected credentials)")
+        error("INVALID_CREDENTIALS", 0)
+      end
+      log_page_for_diagnosis("post-submit timeout")
+      error(err)
+    end
+
+    if browser_has(LOGGED_IN_MARKER) then
+      fyde.log.info("logged in without a one-time code step (device already remembered)")
+    elseif browser_has(MFA_CODE_FIELD) then
+      fyde.progress.step("Waiting for the one-time code")
+      if not pcall(submit_mfa_code) then
+        fyde.log.warn("the one-time code was not accepted")
+        error("MFA_FAILED", 0)
+      end
+    else
+      error("post-submit page matched neither the logged-in marker nor the MFA code field")
+    end
+
+    if not browser_has(LOGGED_IN_MARKER) then
       error(
-        "login did not succeed - still on the login form after submitting, which this site "
-          .. "shows for rejected credentials (wrong username/password), not a login/document "
-          .. "page change"
+        "login did not succeed - found no '"
+          .. LOGGED_IN_MARKER
+          .. "' logout link, so the session does not appear authenticated"
       )
     end
-    log_page_for_diagnosis("post-submit timeout")
-    error(err)
+    fyde.log.info("authenticated")
   end
-
-  if browser_has(LOGGED_IN_MARKER) then
-    fyde.log.info("logged in without a one-time code step (device already remembered)")
-  elseif browser_has(MFA_CODE_FIELD) then
-    fyde.progress.step("Waiting for the one-time code")
-    submit_mfa_code()
-  else
-    error("post-submit page matched neither the logged-in marker nor the MFA code field")
-  end
-
-  if not browser_has(LOGGED_IN_MARKER) then
-    error(
-      "login did not succeed - found no '"
-        .. LOGGED_IN_MARKER
-        .. "' logout link, so the session does not appear authenticated"
-    )
-  end
-  fyde.log.info("authenticated")
 
   fyde.progress.step("Listing bulletins de salaire")
   local dashboard_html = fyde.browser:html()
