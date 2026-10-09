@@ -1,0 +1,27 @@
+{
+  "name": "GEG",
+  "short_description": "Factures GEG (Grenoble)",
+  "description": "Se connecte à l'agence en ligne GEG (monagence.geg.fr) pour récupérer les factures de gaz et d'électricité de chaque contrat.",
+  "homepage": "https://www.geg.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "geg.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
