@@ -1,0 +1,30 @@
+{
+  "name": "e-Ticket (Qiis)",
+  "short_description": "Factures cantine e-Ticket",
+  "description": "Se connecte au compte famille e-Ticket (eticket.qiis.fr) pour récupérer les factures de cantine/périscolaire et les documents.",
+  "homepage": "https://eticket.qiis.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "qiis.fr",
+    "googleapis.com",
+    "firebaseio.com",
+    "firebasestorage.googleapis.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
