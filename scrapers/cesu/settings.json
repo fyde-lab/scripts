@@ -6,7 +6,10 @@
   "wreq_emulation": false,
   "debug_http_dump": true,
   "follow_redirects": false,
-  "allowed_domains": ["cesu.urssaf.fr"],
+  "allowed_domains": [
+    "urssaf.fr",
+    "challenges.cloudflare.com"
+  ],
   "parameters": {
     "username": {
       "label": "Identifiant",
