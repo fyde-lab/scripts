@@ -1,0 +1,27 @@
+{
+  "name": "Enercoop",
+  "short_description": "Factures d'électricité Enercoop",
+  "description": "Se connecte à l'espace client Enercoop (mon-espace.enercoop.fr) pour récupérer les factures d'électricité.",
+  "homepage": "https://www.enercoop.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "enercoop.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
