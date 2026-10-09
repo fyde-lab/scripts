@@ -118,14 +118,15 @@ local function login(username, password)
   -- The keypad only has digits 0-9 and the page asks for "les 8 chiffres": reject anything else
   -- before burning a (lockout-counted) login attempt on it.
   if not password:match("^%d%d%d%d%d%d%d%d$") then
-    error("password must be the 8-digit BoursoBank code (got " .. #password .. " chars, "
-      .. #password:gsub("%d", "") .. " non-digit)")
+    fyde.log.warn("password must be the 8-digit BoursoBank code (got " .. #password .. " chars)")
+    error("INVALID_CREDENTIALS", 0)
   end
 
   -- Same rule the site's own JS applies (new-forms.js `submitLogin`): 6 to 12 characters. A
   -- 16-digit card/account number here is the classic mistake.
   if #username < 6 or #username > 12 then
-    error("username must be the BoursoBank client ID (6-12 characters, got " .. #username .. ")")
+    fyde.log.warn("username must be the BoursoBank client ID (6-12 characters, got " .. #username .. ")")
+    error("INVALID_CREDENTIALS", 0)
   end
 
   -- Mirrors woob's boursorama module (modules/boursorama, PasswordPage.enter_password), which
@@ -135,6 +136,7 @@ local function login(username, password)
   if not token then
     error("login page has no form[_token] input (status " .. page.status .. ", url " .. page.url .. ")")
   end
+  fyde.log.info("LOGIN_PAGE_FOUND")
 
   -- Step 2: the virtual keypad (loaded via hinclude on the password step).
   local keyboard = fyde.http.get(URL_KEYBOARD)
@@ -386,12 +388,16 @@ local function download_rows(section, rows)
   return saved
 end
 
+-- Login error contract shared with every scraper ported from github.com/konnectors (see
+-- README.md): a rejected username/password fails with exactly INVALID_CREDENTIALS, a rejected
+-- or unanswered one-time code with exactly MFA_FAILED.
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
   set_domain_migration_cookie()
   local home = with_brs_mit(URL_DASHBOARD)
   if is_logged_in(home.body) then
     fyde.log.info("restored session is still valid, skipping login")
+    fyde.log.info("ALREADY_LOGGED_IN")
   else
     fyde.progress.step("Logging in")
     local resp = login(params.username, params.password)
@@ -400,7 +406,9 @@ function M.run(params)
     end
     home = is_logged_in(resp.body) and resp or fyde.http.get(URL_DASHBOARD)
     if not is_logged_in(home.body) then
-      error("login failed: no logout link after submitting credentials (landed on " .. home.url .. ")")
+      -- No logout link after posting the virtual-keypad password: the credentials were refused.
+      fyde.log.warn("login failed: no logout link after submitting credentials (landed on " .. home.url .. ")")
+      error("INVALID_CREDENTIALS", 0)
     end
     fyde.log.info("login succeeded")
   end
