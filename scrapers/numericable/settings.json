@@ -1,0 +1,27 @@
+{
+  "name": "Numericable",
+  "short_description": "Factures Numericable",
+  "description": "Se connecte à l'espace client Numericable (moncompte.numericable.fr) pour récupérer les factures.",
+  "homepage": "https://www.numericable.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "numericable.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
