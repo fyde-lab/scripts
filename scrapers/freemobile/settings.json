@@ -1,0 +1,27 @@
+{
+  "name": "Free Mobile",
+  "short_description": "Factures Free Mobile",
+  "description": "Se connecte à l'espace abonné Free Mobile (mobile.free.fr), avec le code reçu par SMS, pour récupérer les factures de chaque ligne.",
+  "homepage": "https://mobile.free.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "mobile.free.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant (numéro)",
+      "placeholder": "12345678",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
