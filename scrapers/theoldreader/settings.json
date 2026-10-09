@@ -1,0 +1,27 @@
+{
+  "name": "The Old Reader",
+  "short_description": "Factures The Old Reader",
+  "description": "Se connecte au compte The Old Reader (theoldreader.com) pour récupérer les factures de l'abonnement premium.",
+  "homepage": "https://theoldreader.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "theoldreader.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
