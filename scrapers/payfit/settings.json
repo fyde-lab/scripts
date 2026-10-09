@@ -1,0 +1,27 @@
+{
+  "name": "PayFit",
+  "short_description": "Bulletins de paie PayFit",
+  "description": "Se connecte à l'espace salarié PayFit (avec le code de vérification si demandé) pour récupérer les bulletins de paie.",
+  "homepage": "https://payfit.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "payfit.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
