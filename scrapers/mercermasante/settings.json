@@ -1,0 +1,25 @@
+{
+  "name": "Mercer Ma Santé",
+  "short_description": "Espace assuré Mercer (complémentaire santé)",
+  "description": "Se connecte à l'espace assuré Mercer Ma Santé (mercermasante.fr), la plateforme de gestion de la complémentaire santé d'entreprise de Mercer, et récupère les documents de l'assuré (relevés de remboursements, attestations, carte de tiers payant).",
+  "homepage": "https://mercermasante.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": ["mercermasante.fr", "challenges.cloudflare.com"],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "jdupont@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
