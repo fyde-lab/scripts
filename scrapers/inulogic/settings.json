@@ -1,0 +1,27 @@
+{
+  "name": "Inulogic",
+  "short_description": "Factures Inulogic",
+  "description": "Se connecte à la zone client Inulogic (inulogic.fr) pour récupérer les factures d'hébergement.",
+  "homepage": "https://www.inulogic.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "inulogic.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
