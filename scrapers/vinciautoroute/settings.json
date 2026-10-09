@@ -1,0 +1,27 @@
+{
+  "name": "VINCI Autoroutes",
+  "short_description": "Factures de télépéage VINCI Autoroutes",
+  "description": "Se connecte à l'espace abonnés VINCI Autoroutes pour récupérer les factures du badge de télépéage.",
+  "homepage": "https://www.vinci-autoroutes.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "vinci-autoroutes.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
