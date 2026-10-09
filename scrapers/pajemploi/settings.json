@@ -1,0 +1,27 @@
+{
+  "name": "Pajemploi",
+  "short_description": "Bulletins de salaire Pajemploi",
+  "description": "Se connecte à l'espace employeur Pajemploi (pajemploi.urssaf.fr) pour récupérer les bulletins de salaire et attestations fiscales.",
+  "homepage": "https://www.pajemploi.urssaf.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "pajemploi.urssaf.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant Pajemploi",
+      "placeholder": "PAJE12345678",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
