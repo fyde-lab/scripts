@@ -1,0 +1,27 @@
+{
+  "name": "Ascore Santé",
+  "short_description": "Décomptes de la mutuelle Ascore Santé",
+  "description": "Se connecte à l'espace assuré Ascore Santé (ascoregestion.com) pour récupérer les décomptes de remboursement.",
+  "homepage": "https://www.ascoregestion.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "ascoregestion.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
