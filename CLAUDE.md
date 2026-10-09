@@ -159,6 +159,10 @@ fiscal year) and RIBs from `/documents/compte-bancaire`. See the file's header c
 
 ### The remaining scripts, ported from `../doc-downloaders`
 
+**Superseded in part:** `edf`, `pajemploi` and `scaleway` have since been rewritten as ports of
+the konnectors (see "The scrapers ported from `github.com/konnectors`" below), and `boursorama`
+is covered by `boursobank`; what follows describes the earlier doc-downloaders ports.
+
 `../doc-downloaders` is a sibling repo of browser-automation (Playwright) scrapers for the same
 sites, run against a real, human-authenticated Chromium (see its own `CLAUDE.md`). Its scripts
 never automate login themselves (a human always logs in by hand, then presses ENTER) and often
