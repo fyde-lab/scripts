@@ -76,6 +76,14 @@ struct RunArgs {
     /// report. Use while actively debugging a scraper's HTTP traffic.
     #[arg(long)]
     dev: bool,
+
+    /// Show the embedded browser window used by `fyde.browser` (e.g. for a
+    /// script ported from `../doc-downloaders` that expects a human to log
+    /// in by hand) instead of the invisible one it uses by default. Has no
+    /// effect on a scraper that never calls `fyde.browser`, since the
+    /// window is only ever created lazily on first use.
+    #[arg(long)]
+    visible: bool,
 }
 
 #[derive(Parser)]
@@ -398,6 +406,7 @@ async fn run_scraper(args: &RunArgs, scraper_name: &str) -> Result<()> {
             settings.wreq_emulation,
             settings.follow_redirects,
             settings.allowed_domains,
+            args.visible,
         )
         .await
         .context("running the scraper's `run` function")
