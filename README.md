@@ -33,8 +33,8 @@ organization (Cozy Cloud's connectors) has a scraper here, ported from the konne
 (login flow, success/failure signals, document listing) - 110 scrapers, 7 of which already
 existed in this repo and were only aligned on the shared conventions below. The organization's
 repository list API wasn't reachable when this was done, so the repositories were found by
-probing names (114 found); a konnectors repository missing from these tables was simply not
-found.
+probing names. The status table below also lists the scrapers that aren't konnector ports
+(`didaxis`, `mercermasante`, no konnectors repo).
 
 ### Shared conventions
 
@@ -102,6 +102,7 @@ login) even if the site behaves as the konnector expected.
 | [`darty`](scrapers/darty/script.lua) | [darty](https://github.com/konnectors/darty) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`deezer`](scrapers/deezer/script.lua) | [deezer](https://github.com/konnectors/deezer) | browser | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | reCAPTCHA on login; receipts are HTML pages -> text PDFs |
 | [`deliveroo`](scrapers/deliveroo/script.lua) | [deliveroo](https://github.com/konnectors/deliveroo) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
+| [`didaxis`](scrapers/didaxis/script.lua) | — | HTTP | Verified | ⏳ not run | ⏳ not run | ✅² | ✅² | Payslips, employment contracts, bills, personal documents |
 | [`digiposte`](scrapers/digiposte/script.lua) | [cozy-konnector-digiposte](https://github.com/konnectors/cozy-konnector-digiposte) | browser + HTTP | Blocked | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | **Blocked**: API token needs the XSRF cookie value (not readable); hCaptcha on login |
 | [`directenergie`](scrapers/directenergie/script.lua) | [cozy-konnector-directenergie](https://github.com/konnectors/cozy-konnector-directenergie) | browser | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`doctolib`](scrapers/doctolib/script.lua) | [doctolib](https://github.com/konnectors/doctolib) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | 2FA field names unconfirmed |
@@ -142,6 +143,7 @@ login) even if the site behaves as the konnector expected.
 | [`malentille`](scrapers/malentille/script.lua) | [malentille](https://github.com/konnectors/malentille) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`materielnet`](scrapers/materielnet/script.lua) | [cozy-konnector-materielnet](https://github.com/konnectors/cozy-konnector-materielnet) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`mediapart`](scrapers/mediapart/script.lua) | [mediapart](https://github.com/konnectors/mediapart) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
+| [`mercermasante`](scrapers/mercermasante/script.lua) | — | browser | Broken | ⏳ not run | ⏳ not run | ✅² | ❌² | The logged-in dashboard renders, but the `a[href='/remboursements']` marker is gone (site nav changed): times out before listing documents |
 | [`mgen`](scrapers/mgen/script.lua) | [cozy-konnector-mgen](https://github.com/konnectors/cozy-konnector-mgen) | browser | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | Attestations (api.mgen.fr) not ported |
 | [`mint-energie`](scrapers/mint-energie/script.lua) | [mint-energie](https://github.com/konnectors/mint-energie) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`misterauto`](scrapers/misterauto/script.lua) | [misterauto](https://github.com/konnectors/misterauto) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
@@ -188,24 +190,6 @@ login) even if the site behaves as the konnector expected.
 | [`wanimo`](scrapers/wanimo/script.lua) | [wanimo](https://github.com/konnectors/wanimo) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
 | [`zalando`](scrapers/zalando/script.lua) | [zalando](https://github.com/konnectors/zalando) | browser | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested | Bot protection may block the webview |
 | [`zooplus`](scrapers/zooplus/script.lua) | [zooplus](https://github.com/konnectors/zooplus) | HTTP | WIP | ⏳ not run | ⏳ not run | ⏳ not tested | ⏳ not tested |  |
-
-### Other scrapers
-
-Scrapers that aren't ports of a konnector, run the same way on 2026-10-09 (legend above).
-
-| Scraper | Method | Status | Login OK | Documents fetched | Notes |
-|---|---|---|---|---|---|
-| [`didaxis`](scrapers/didaxis/script.lua) | HTTP | Verified | ✅² | ✅² | Payslips, employment contracts, bills, personal documents |
-| [`mercermasante`](scrapers/mercermasante/script.lua) | browser | Broken | ✅² | ❌² | The logged-in dashboard renders, but the `a[href='/remboursements']` marker is gone (site nav changed): times out before listing documents |
-
-### konnectors repositories without a scraper
-
-| konnectors repo | Reason |
-|---|---|
-| [axa](https://github.com/konnectors/axa) | Upstream repo is an unmodified template scraping toscrape.com - no AXA logic to port |
-| [leroymerlin](https://github.com/konnectors/leroymerlin) | Upstream repo is an unmodified template scraping toscrape.com - no Leroy Merlin logic to port |
-| [transavia](https://github.com/konnectors/transavia) | Default branch has no source code (README says "Work in progress, see branch wip") |
-| [cozy-konnector-google](https://github.com/konnectors/cozy-konnector-google) | Deprecated Google Contacts sync over OAuth - no login, no documents |
 
 ### Running the login smoke test
 
