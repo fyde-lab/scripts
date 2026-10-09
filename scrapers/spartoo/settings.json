@@ -1,0 +1,27 @@
+{
+  "name": "Spartoo",
+  "short_description": "Factures Spartoo",
+  "description": "Se connecte au compte client Spartoo (spartoo.com) pour récupérer les factures des commandes.",
+  "homepage": "https://www.spartoo.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "spartoo.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
