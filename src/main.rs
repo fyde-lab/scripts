@@ -261,6 +261,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
                         &settings.short_description,
                         settings.allowed_domains.clone(),
                         ScriptType::Scraper,
+                        std::collections::HashMap::new(),
                     )
                     .await
                     .with_context(|| format!("updating script {scraper_name}"))?;
@@ -278,6 +279,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
                         &settings.short_description,
                         settings.allowed_domains.clone(),
                         ScriptType::Scraper,
+                        std::collections::HashMap::new(),
                     )
                     .await
                     .with_context(|| format!("creating script {scraper_name}"))?;
