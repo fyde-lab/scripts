@@ -1,0 +1,27 @@
+{
+  "name": "ekWateur",
+  "short_description": "Factures ekWateur",
+  "description": "Se connecte à l'espace client ekWateur (mon-espace.ekwateur.fr) pour récupérer les factures et le justificatif de domicile.",
+  "homepage": "https://ekwateur.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "ekwateur.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
