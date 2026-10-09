@@ -1,0 +1,27 @@
+{
+  "name": "Bouygues Telecom",
+  "short_description": "Factures Bouygues Telecom",
+  "description": "Se connecte à l'espace client Bouygues Telecom (bouyguestelecom.fr/mon-compte), avec le code de vérification si demandé, pour récupérer les factures mobile et box.",
+  "homepage": "https://www.bouyguestelecom.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "bouyguestelecom.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
