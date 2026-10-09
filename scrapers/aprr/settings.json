@@ -1,0 +1,27 @@
+{
+  "name": "APRR",
+  "short_description": "Factures de télépéage APRR",
+  "description": "Se connecte à l'espace client APRR (espaceclient.aprr.fr) pour récupérer les factures mensuelles du badge de télépéage.",
+  "homepage": "https://espaceclient.aprr.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "aprr.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
