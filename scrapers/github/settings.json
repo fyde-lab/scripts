@@ -1,0 +1,33 @@
+{
+  "name": "GitHub",
+  "short_description": "Reçus de facturation GitHub",
+  "description": "Se connecte au compte GitHub (avec le code de double authentification si demandé) pour récupérer les reçus de facturation du compte ou d'une organisation.",
+  "homepage": "https://github.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "github.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant GitHub",
+      "placeholder": "octocat",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    },
+    "organization": {
+      "label": "Organisation (optionnel)",
+      "placeholder": "my-org",
+      "type": "string",
+      "required": false
+    }
+  }
+}
