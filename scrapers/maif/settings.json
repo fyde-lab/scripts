@@ -1,0 +1,21 @@
+{
+  "name": "MAIF",
+  "short_description": "Informations sociétaire MAIF",
+  "description": "Récupère, avec un jeton d'accès à l'API MAIF, les informations du sociétaire (contrats, habitations, échéancier, sinistres).",
+  "homepage": "https://www.maif.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "openapiweb.maif.fr"
+  ],
+  "parameters": {
+    "access_token": {
+      "label": "Jeton d'accès (API MAIF)",
+      "placeholder": "eyJ...",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
