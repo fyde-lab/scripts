@@ -1,0 +1,27 @@
+{
+  "name": "SFR",
+  "short_description": "Factures SFR",
+  "description": "Se connecte à l'espace client SFR (espace-client.sfr.fr) pour récupérer les factures mobile et box.",
+  "homepage": "https://www.sfr.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "sfr.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
