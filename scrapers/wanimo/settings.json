@@ -1,0 +1,27 @@
+{
+  "name": "Wanimo",
+  "short_description": "Factures Wanimo",
+  "description": "Se connecte au compte client Wanimo (wanimo.com) pour récupérer les factures des commandes.",
+  "homepage": "https://www.wanimo.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "wanimo.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
