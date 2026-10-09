@@ -1,0 +1,30 @@
+{
+  "name": "Bip&Go",
+  "short_description": "Factures de télépéage Bip&Go",
+  "description": "Se connecte à l'espace client Bip&Go (bipandgo.com) pour récupérer les factures du badge de télépéage.",
+  "homepage": "https://www.bipandgo.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "bipandgo.com",
+    "google.com",
+    "gstatic.com",
+    "recaptcha.net"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
