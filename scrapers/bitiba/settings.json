@@ -1,0 +1,28 @@
+{
+  "name": "Bitiba",
+  "short_description": "Factures Bitiba",
+  "description": "Se connecte au compte client Bitiba (bitiba.fr) pour récupérer les factures des commandes expédiées.",
+  "homepage": "https://www.bitiba.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "bitiba.fr",
+    "zooplus.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
