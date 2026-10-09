@@ -1,0 +1,27 @@
+{
+  "name": "BlaBlaCar",
+  "short_description": "Trajets BlaBlaCar",
+  "description": "Se connecte au compte BlaBlaCar (blablacar.fr) et enregistre un justificatif par trajet payé ou remboursé.",
+  "homepage": "https://www.blablacar.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "blablacar.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
