@@ -144,6 +144,19 @@ runs to skip all of that while the session lasts. Documents (attestation de couv
 tiers payant, one décompte per claim) come straight from `/api/proxy/selfcare/...` endpoints via
 `fyde.http.download`; only the claim list needs the browser. See the file's header comment.
 
+### `scripts/scrapers/boursobank/script.lua`
+
+BoursoBank (clients.boursobank.com, ex-Boursorama Banque), verified end to end against a real
+account (no HAR): plain `fyde.http`, login ported from `../../konnectors/boursorama` and aligned
+with woob's `boursorama` module (virtual keypad of base64 SVG digits -> `data-matrix-key`s). Two
+cookies are planted with `fyde.http.set_cookie` first: `__brs_mit` (read from the JS stub every
+page returns without it) and `brsDomainMigration=migrated` (without it the login POST gets a
+generic error instead of a credentials check). No SCA step on login so far; the session is
+reused across runs. Documents come from the same four sections as
+`../doc-downloaders/scrapers/boursorama`: `/documents/releves` (statements, fee summaries,
+contracts; "load more" pagination), other banks' documents in the coffre-fort (`?page=N`), `/documents/ifu` (per
+fiscal year) and RIBs from `/documents/compte-bancaire`. See the file's header comment.
+
 ### The remaining scripts, ported from `../doc-downloaders`
 
 `../doc-downloaders` is a sibling repo of browser-automation (Playwright) scrapers for the same

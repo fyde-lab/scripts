@@ -1,0 +1,25 @@
+{
+  "name": "BoursoBank",
+  "short_description": "Espace client de la banque en ligne BoursoBank",
+  "description": "Se connecte à l'espace client BoursoBank (clients.boursobank.com, anciennement Boursorama Banque) pour récupérer les relevés de compte et autres documents bancaires.",
+  "homepage": "https://www.boursobank.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": ["boursobank.com", "boursorama.com"],
+  "parameters": {
+    "username": {
+      "label": "Identifiant client",
+      "placeholder": "12345678",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe (8 chiffres)",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
