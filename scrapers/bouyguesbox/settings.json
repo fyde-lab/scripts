@@ -1,0 +1,33 @@
+{
+  "name": "Bouygues Telecom (box)",
+  "short_description": "Factures Bouygues Telecom (ancien connecteur)",
+  "description": "Se connecte à l'espace client Bouygues Telecom et récupère les factures de tous les comptes de facturation via l'API api.bouyguestelecom.fr.",
+  "homepage": "https://www.bouyguestelecom.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "bouyguestelecom.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant (e-mail ou numéro)",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    },
+    "lastname": {
+      "label": "Nom de famille",
+      "placeholder": "Dupont",
+      "type": "string",
+      "required": false
+    }
+  }
+}

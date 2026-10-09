@@ -1,0 +1,246 @@
+-- Scraper for Bouygues Telecom's customer area (bouyguestelecom.fr), legacy "box" konnector:
+-- downloads the bills of every billing account through api.bouyguestelecom.fr.
+--
+-- Ported from github.com/konnectors/cozy-konnector-bouyguesbox (src/index.js): login posts the
+-- CAS form of `www.mon-compte.bouyguestelecom.fr/cas/login` (username/password/lastname) -
+-- "Votre identifiant ou votre mot de passe est incorrect" means bad credentials. Then the OAuth2
+-- implicit flow `oauth2.bouyguestelecom.fr/authorize?client_id=a360.bouyguestelecom.fr&
+-- response_type=id_token token` redirects to `www.bouyguestelecom.fr/mon-compte/` with
+-- `access_token=...&...id_token=<JWT>` (the JWT's `id_personne` is the user id); staying on
+-- oauth2.bouyguestelecom.fr means the login didn't stick. Bills: `/personnes/<id>` ->
+-- `_links.factures.href` -> `comptesFacturation[].factures[]`, each with a
+-- `_links.facturePDF` (or `facturePDFDF`) resource whose `_actions.telecharger.action` is the
+-- PDF. The access token isn't a cookie, so a session is only "restored" when the CAS cookie
+-- still gets a token without re-posting credentials. See also `bouyguestelecom`, the newer
+-- browser-based port of the same site. Unverified (see README.md).
+
+local M = {}
+
+local API = "https://api.bouyguestelecom.fr"
+local CAS_URL = "https://www.mon-compte.bouyguestelecom.fr/cas/login"
+local AUTHORIZE_URL = "https://oauth2.bouyguestelecom.fr/authorize?client_id=a360.bouyguestelecom.fr"
+  .. "&response_type=id_token%20token&redirect_uri=https%3A%2F%2Fwww.bouyguestelecom.fr%2Fmon-compte%2F"
+
+-- luacheck: push ignore 211
+-- ---------------------------------------------------------------------------------------------
+-- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+--
+-- Login error contract: a rejected username/password always fails the run with exactly
+-- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
+-- `MFA_FAILED` (both raised with `error(code, 0)`, so the message carries no position prefix).
+-- Any other failure is a free-form error message.
+--
+-- Log markers (grepped by tests/login_smoke.sh): `LOGIN_PAGE_FOUND` once the login form has
+-- been seen, `ALREADY_LOGGED_IN` when a restored session made the login step unnecessary.
+-- ---------------------------------------------------------------------------------------------
+local INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
+local MFA_FAILED = "MFA_FAILED"
+
+local function fail(code, detail)
+  if detail then
+    fyde.log.warn(code .. ": " .. detail)
+  end
+  error(code, 0)
+end
+
+local function contains(haystack, needle)
+  return (haystack or ""):lower():find(needle:lower(), 1, true) ~= nil
+end
+
+local function contains_any(haystack, needles)
+  for _, needle in ipairs(needles) do
+    if contains(haystack, needle) then
+      return true
+    end
+  end
+  return false
+end
+
+local function trim(s)
+  return ((s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function sanitize(name)
+  name = trim((name or ""):gsub("%s+", " "))
+  name = name:gsub('[<>:"/\\|%?%*]', "_"):gsub("%c", "")
+  if name == "" then
+    name = "document"
+  end
+  return name
+end
+
+-- Asks the user for a one-time code through fyde.input.ask; an unanswered/empty prompt (or no
+-- input handler at all, e.g. an unattended run) is an MFA failure.
+local function ask_code(question)
+  local ok, code = pcall(fyde.input.ask, question)
+  if not ok or type(code) ~= "string" or trim(code) == "" then
+    fail(MFA_FAILED, "no one-time code was provided")
+  end
+  return (code:gsub("%s", ""))
+end
+
+local function absolute(base, href)
+  if not href or href == "" then
+    return base
+  end
+  href = href:gsub("&amp;", "&")
+  if href:match("^https?://") then
+    return href
+  end
+  local origin = base:match("^(https?://[^/]+)")
+  if href:sub(1, 2) == "//" then
+    return base:match("^(https?:)") .. href
+  end
+  if href:sub(1, 1) == "/" then
+    return origin .. href
+  end
+  if href:sub(1, 1) == "?" then
+    return (base:gsub("%?.*$", "")) .. href
+  end
+  local dir = (base:gsub("[?#].*$", "")):match("^(https?://.*/)") or (origin .. "/")
+  return dir .. href
+end
+
+-- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
+-- named input's current value (unchecked checkboxes/radios left out, like a browser does).
+local function read_form(page, selector)
+  local form = fyde.html.select(page.body, selector)[1]
+  if not form then
+    return nil
+  end
+  local fields = {}
+  for _, input in ipairs(fyde.html.select(form.html, "input[name]")) do
+    local kind = (input.attrs.type or "text"):lower()
+    if (kind ~= "checkbox" and kind ~= "radio") or input.attrs.checked then
+      fields[input.attrs.name] = input.attrs.value or ""
+    end
+  end
+  return absolute(page.url, form.attrs.action), fields
+end
+
+-- Fills `values` into the form matching `selector` on `page` and posts it.
+local function submit_form(page, selector, values, headers)
+  local action, fields = read_form(page, selector)
+  if not action then
+    error("no form matching '" .. selector .. "' on " .. tostring(page.url))
+  end
+  for name, value in pairs(values) do
+    fields[name] = value
+  end
+  return fyde.http.post_form(action, fields, headers)
+end
+
+local function has(page_or_html, selector)
+  local html = type(page_or_html) == "table" and page_or_html.body or page_or_html
+  return #fyde.html.select(html or "", selector) > 0
+end
+
+local function json_or_nil(body)
+  local ok, value = pcall(fyde.json.decode, body or "")
+  if ok then
+    return value
+  end
+  return nil
+end
+
+-- Downloads `url` and saves it as `filename` when it really is a PDF; returns true on success.
+local function save_pdf(url, filename, fields, headers)
+  local resp = fyde.http.download(url, headers)
+  local content_type = resp.content_type or ""
+  local is_pdf = content_type:find("pdf", 1, true) or (resp.body or ""):sub(1, 4) == "%PDF"
+  if resp.status == 200 and is_pdf then
+    fyde.save_document(sanitize(filename), resp.body, fields)
+    return true
+  end
+  fyde.log.warn(string.format("skipping %s (status %d, content-type %s)", filename, resp.status, content_type))
+  return false
+end
+-- luacheck: pop
+
+local function base64url_decode(s)
+  local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+  s = s:gsub("-", "+"):gsub("_", "/"):gsub("[^%w%+/]", "")
+  local bits = s:gsub(".", function(c)
+    local v = alphabet:find(c, 1, true) - 1
+    local out = ""
+    for i = 6, 1, -1 do
+      out = out .. ((v >> (i - 1)) & 1)
+    end
+    return out
+  end)
+  return (bits:gsub("%d%d%d?%d?%d?%d?%d?%d?", function(byte)
+    if #byte ~= 8 then
+      return ""
+    end
+    return string.char(tonumber(byte, 2))
+  end))
+end
+
+-- Follows the implicit OAuth2 flow; returns (access_token, id_personne) or nil.
+local function get_token()
+  local resp = fyde.http.get(AUTHORIZE_URL)
+  local token = resp.url:match("access_token=([^&]+)")
+  local jwt = resp.url:match("id_token=([^&]+)")
+  if not token or not jwt then
+    return nil
+  end
+  local claims = json_or_nil(base64url_decode(jwt:match("^[^.]+%.([^.]+)") or "")) or {}
+  return token, claims.id_personne
+end
+
+local function login(params)
+  fyde.progress.step("Logging in")
+  local page = fyde.http.get(CAS_URL)
+  if not has(page, "input[name='password']") then
+    error("Bouygues Telecom CAS login form not found on " .. page.url)
+  end
+  fyde.log.info("LOGIN_PAGE_FOUND")
+  local resp = submit_form(page, "form", { username = params.username, password = params.password, lastname = params.lastname or "" })
+  if contains(resp.body, "Votre identifiant ou votre mot de passe est incorrect") then
+    fail(INVALID_CREDENTIALS)
+  end
+end
+
+function M.run(params)
+  fyde.progress.step("Checking for an existing session")
+  local token, user = get_token()
+  if token then
+    fyde.log.info("ALREADY_LOGGED_IN")
+  else
+    login(params)
+    token, user = get_token()
+    if not token then
+      error("logged in, but no OAuth2 token was issued (the account may need its last name: LOGIN_FAILED.NEEDS_SECRET)")
+    end
+  end
+  local auth = { Authorization = "Bearer " .. token }
+  local function api(path)
+    return json_or_nil(fyde.http.get(API .. path, auth).body) or {}
+  end
+
+  fyde.progress.step("Downloading bills")
+  local person = api("/personnes/" .. tostring(user))
+  local accounts = api(person._links and person._links.factures and person._links.factures.href or "/")
+  for _, account in ipairs(accounts.comptesFacturation or {}) do
+    for _, bill in ipairs(account.factures or {}) do
+      local link = bill._links and (bill._links.facturePDF or bill._links.facturePDFDF)
+      if bill.soldeFacturePrec ~= nil and link then
+        local pdf = api(link.href)
+        local action = pdf._actions and pdf._actions.telecharger and pdf._actions.telecharger.action
+        if action then
+          local date = tostring(bill.dateFacturation):sub(1, 10)
+          save_pdf(API .. action, date:gsub("-", ""):sub(1, 6) .. "_bouygues_" .. tostring(bill.mntTotFacture) .. "EUR_" .. tostring(bill.idFacture) .. ".pdf", {
+            name = "Facture Bouygues Telecom " .. date,
+            type = "telecom_invoice",
+            source_category = "telecom",
+            purpose = "invoice",
+          }, auth)
+        end
+      end
+    end
+  end
+  fyde.progress.step("Done")
+end
+
+return M
