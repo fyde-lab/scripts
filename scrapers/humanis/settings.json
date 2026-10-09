@@ -1,0 +1,27 @@
+{
+  "name": "Humanis",
+  "short_description": "Relevés santé Humanis",
+  "description": "Se connecte à l'espace particuliers santé Humanis pour récupérer les e-relevés de remboursement.",
+  "homepage": "https://sante-espaceparticuliers.humanis.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "humanis.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
