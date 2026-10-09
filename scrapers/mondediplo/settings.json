@@ -1,0 +1,27 @@
+{
+  "name": "Le Monde diplomatique",
+  "short_description": "Achats Le Monde diplomatique",
+  "description": "Se connecte à la boutique du Monde diplomatique et enregistre un justificatif par achat (abonnements, numéros).",
+  "homepage": "https://www.monde-diplomatique.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "monde-diplomatique.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
