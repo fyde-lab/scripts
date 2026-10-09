@@ -1,0 +1,27 @@
+{
+  "name": "Mister Auto",
+  "short_description": "Factures Mister Auto",
+  "description": "Se connecte au compte client Mister Auto (mister-auto.com) pour récupérer les factures des commandes.",
+  "homepage": "https://www.mister-auto.com",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "mister-auto.com"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
