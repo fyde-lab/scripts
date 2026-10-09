@@ -1,0 +1,27 @@
+{
+  "name": "MGEN",
+  "short_description": "Remboursements santé MGEN",
+  "description": "Se connecte à l'espace adhérent MGEN (mgen.fr) pour récupérer les relevés de remboursement santé.",
+  "homepage": "https://www.mgen.fr",
+  "wreq_emulation": true,
+  "debug_http_dump": false,
+  "follow_redirects": true,
+  "allowed_domains": [
+    "mgen.fr"
+  ],
+  "parameters": {
+    "username": {
+      "label": "Identifiant",
+      "placeholder": "email@example.com",
+      "type": "string",
+      "required": true
+    },
+    "password": {
+      "label": "Mot de passe",
+      "placeholder": "••••••••",
+      "type": "string",
+      "required": true,
+      "secret": true
+    }
+  }
+}
