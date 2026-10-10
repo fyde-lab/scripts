@@ -21,5 +21,13 @@
       "required": true,
       "secret": true
     }
+  },
+  "status": {
+    "state": "verified",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
+    "login_ok": "passed",
+    "documents_fetched": "passed",
+    "notes": "Attestation de droits per beneficiary (and \"Toute la famille\"), relevés mensuels (up to 27 months), payment statements (last 6 months); verified 2026-10-10. Emailed code on every fresh login, session lasts a few minutes; the WAF rejects logins (\"The requested URL was rejected\") after ~8 in 20 minutes"
   }
 }

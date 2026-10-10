@@ -14,5 +14,13 @@
       "type": "string",
       "required": true
     }
+  },
+  "status": {
+    "state": "wip",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "not_applicable",
+    "login_ok": "not_tested",
+    "documents_fetched": "not_tested",
+    "notes": "Now Fulli (www.fulli.com, ex-APRR / Mango Mobilités): passwordless Keycloak login at sso.aprr.fr with an emailed code, so a wrong login can only end in `MFA_FAILED`; invoice page unknown (PDF/\"facture\" links looked for after login)"
   }
 }

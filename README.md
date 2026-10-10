@@ -33,7 +33,7 @@ organization (Cozy Cloud's connectors) has a scraper here, ported from the konne
 (login flow, success/failure signals, document listing) - 110 scrapers, 7 of which already
 existed in this repo and were only aligned on the shared conventions below. The organization's
 repository list API wasn't reachable when this was done, so the repositories were found by
-probing names. The status table below also lists the scrapers that aren't konnector ports
+probing names. The table below also lists the scrapers that aren't konnector ports
 (`didaxis`, `mercermasante`, no konnectors repo).
 
 ### Shared conventions
@@ -61,137 +61,141 @@ probing names. The status table below also lists the scrapers that aren't konnec
 
 ### Status
 
-Apart from the pre-existing scrapers (marked ²/¹ below), none of the ported scrapers has been
+Apart from the scrapers whose `state` is `verified` or `broken`, none of the ported scrapers has been
 run against the real sites yet: there were no HAR captures
 and no credentials, and the environment they were written in had no network access to the
 sites. They were checked with luacheck and by loading each one in a sandboxed Lua 5.4 VM with a
 mocked `fyde` table (catching syntax errors and early runtime errors), nothing more. The tests
 that can be run without credentials - "is the login page there" and "is a wrong
 username/password reported as `INVALID_CREDENTIALS`" - are automated by `tests/login_smoke.sh`;
-its output rows fill the two test columns below (last run on 2026-10-09 against every scraper,
-fresh storage, made-up credentials). When a scraper fails the smoke test, the Notes column gives the
-reason after "Smoke:".
+its results fill each manifest's `login_page_found`/`invalid_credentials_detected` (last run on 2026-10-09 against every scraper,
+fresh storage, made-up credentials).
 
-Legend: ✅ passed, ❌ failed, ⏳ not run yet. ¹ verified by earlier work on this repo, before the
-error-contract change. ² run against the real site with real credentials (and the session
-left in `data/`) on 2026-10-09. Status "Verified" means login and documents both passed that
-run, "Broken" that it failed against the live site. Status "Blocked" means a host limitation stops the documents (or the
-login) even if the site behaves as the konnector expected.
+Each scraper's status lives in the `status` object of its `scrapers/<name>/manifest.json`.
+`state` is one of
+`verified` (login and documents both passed a run against the real site with real credentials),
+`broken` (that run failed against the live site), `blocked` (a host limitation stops the
+documents, or the login, even if the site behaves as the konnector expected) or `wip`.
+`login_page_found` and `invalid_credentials_detected` come from the smoke test above, `login_ok`
+and `documents_fetched` from runs with real credentials (on 2026-10-09 unless `notes` says
+otherwise); each is `passed`, `failed`, `not_tested` or `not_applicable` (a passwordless login,
+where a wrong login can only end in `MFA_FAILED`). When a scraper fails the smoke test, `notes`
+gives the reason after "Smoke:".
 
-| Scraper | konnectors repo | Method | Status | Login page found | Invalid credentials detected | Login OK | Documents fetched | Notes |
-|---|---|---|---|---|---|---|---|---|
-| [`alan`](scrapers/alan/script.lua) | [alan](https://github.com/konnectors/alan) | browser | WIP | ✅ | ❌ | ⏳ not tested | ⏳ not tested | Konnector never automated login (site checks isTrusted); documents page URL unconfirmed; Smoke: password field not found |
-| [`amazon`](scrapers/amazon/script.lua) | [amazon](https://github.com/konnectors/amazon) | browser | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Captchas not solvable; invoices via popovers; Smoke: sign-in form not found |
-| [`ameli`](scrapers/ameli/script.lua) | [cozy-konnector-ameli](https://github.com/konnectors/cozy-konnector-ameli) | browser | Verified | ✅ | ✅ | ✅² | ✅² | Attestation de droits per beneficiary (and "Toute la famille"), relevés mensuels (up to 27 months), payment statements (last 6 months); verified 2026-10-10. Emailed code on every fresh login, session lasts a few minutes; the WAF rejects logins ("The requested URL was rejected") after ~8 in 20 minutes |
-| [`aprr`](scrapers/aprr/script.lua) | [aprr](https://github.com/konnectors/aprr) | HTTP | WIP | ✅ | — passwordless: `MFA_FAILED` | ⏳ not tested | ⏳ not tested | Now Fulli (www.fulli.com, ex-APRR / Mango Mobilités): passwordless Keycloak login at sso.aprr.fr with an emailed code, so a wrong login can only end in `MFA_FAILED`; invoice page unknown (PDF/"facture" links looked for after login) |
-| [`ascoresante`](scrapers/ascoresante/script.lua) | [ascoresante](https://github.com/konnectors/ascoresante) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`auchandrive`](scrapers/auchandrive/script.lua) | [auchandrive](https://github.com/konnectors/auchandrive) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Now auchan.fr's Keycloak login (compte.auchan.fr); reCAPTCHA v3 field left empty - bad credentials are still detected, a good login unconfirmed; invoices looked for as PDF/"facture" links on /client/mes-commandes |
-| [`autolib`](scrapers/autolib/script.lua) | [autolib](https://github.com/konnectors/autolib) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Service closed in 2018; Smoke: host unreachable |
-| [`bipandgo`](scrapers/bipandgo/script.lua) | [bipandgo](https://github.com/konnectors/bipandgo) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | reCAPTCHA on login (konnector used a paid solver) - may block the webview |
-| [`bitiba`](scrapers/bitiba/script.lua) | [bitiba](https://github.com/konnectors/bitiba) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`blablacar`](scrapers/blablacar/script.lua) | [blablacar](https://github.com/konnectors/blablacar) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | No receipts on the site: text PDF per ride; site is now a SPA; Smoke: login page answers HTTP 403 |
-| [`bookingdotcom`](scrapers/bookingdotcom/script.lua) | [bookingdotcom](https://github.com/konnectors/bookingdotcom) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Login moved to account.booking.com since; text PDF per reservation; Smoke: login form not found |
-| [`boulanger`](scrapers/boulanger/script.lua) | [boulanger](https://github.com/konnectors/boulanger) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`boursobank`](scrapers/boursobank/script.lua) | [boursorama](https://github.com/konnectors/boursorama) | HTTP | Verified | ✅ | ✅ | ✅² | ✅² | Statements, other banks' documents, IFU, RIBs |
-| [`bouyguesbox`](scrapers/bouyguesbox/script.lua) | [cozy-konnector-bouyguesbox](https://github.com/konnectors/cozy-konnector-bouyguesbox) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`bouyguestelecom`](scrapers/bouyguestelecom/script.lua) | [cozy-konnector-bouyguestelecom](https://github.com/konnectors/cozy-konnector-bouyguestelecom) | browser | Verified | ✅ | ✅ | ✅² | ✅² | Mobile and Bbox invoices; SMS confirmation code on login, session reused on the next run; one old (2021) invoice isn't a PDF and is skipped |
-| [`caf`](scrapers/caf/script.lua) | [caf](https://github.com/konnectors/caf) | HTTP | Verified | ✅ | ✅ | ✅² | ✅² | Attestations (paiements, mns, qf, rms); remembered device, no one-time code asked |
-| [`cdiscount`](scrapers/cdiscount/script.lua) | [cdiscount](https://github.com/konnectors/cdiscount) | browser | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Order selection relies on the select change event; Smoke: login form not found |
-| [`cesml`](scrapers/cesml/script.lua) | [cesml](https://github.com/konnectors/cesml) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: host timed out |
-| [`cesu`](scrapers/cesu/script.lua) | [cozy-konnector-cesu](https://github.com/konnectors/cozy-konnector-cesu) | browser | Broken | ❌ | ❌ | ✅² | ❌² | Session reused, but the "Mes déclarations" / "Mon avantage fiscal" menu links are no longer found: no documents; Smoke: reported `ALREADY_LOGGED_IN` on a fresh `--storage` because the session lives in the webview's localStorage, which the sdk keeps in one profile shared by every run and scraper (`~/.local/share/fyde-scripts`) instead of under `--storage` |
-| [`cic`](scrapers/cic/script.lua) | [cic](https://github.com/konnectors/cic) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Excel export not readable: asks a CSV export (unconfirmed) saved as text PDF; app-push SCA confirmed by the user |
-| [`cultura`](scrapers/cultura/script.lua) | [cultura](https://github.com/konnectors/cultura) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`darty`](scrapers/darty/script.lua) | [darty](https://github.com/konnectors/darty) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: login form not found (HTTP 403) |
-| [`deezer`](scrapers/deezer/script.lua) | [deezer](https://github.com/konnectors/deezer) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | reCAPTCHA on login; receipts are HTML pages -> text PDFs |
-| [`deliveroo`](scrapers/deliveroo/script.lua) | [deliveroo](https://github.com/konnectors/deliveroo) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`didaxis`](scrapers/didaxis/script.lua) | — | HTTP | Verified | ✅ | ✅ | ✅² | ✅² | Payslips, employment contracts, bills, personal documents |
-| [`digiposte`](scrapers/digiposte/script.lua) | [cozy-konnector-digiposte](https://github.com/konnectors/cozy-konnector-digiposte) | browser + HTTP | Blocked | ✅ | ✅ | ⏳ not tested | ⏳ not tested | **Blocked**: API token needs the XSRF cookie value (not readable); hCaptcha on login |
-| [`directenergie`](scrapers/directenergie/script.lua) | [cozy-konnector-directenergie](https://github.com/konnectors/cozy-konnector-directenergie) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`doctolib`](scrapers/doctolib/script.lua) | [doctolib](https://github.com/konnectors/doctolib) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | 2FA field names unconfirmed |
-| [`easyjet`](scrapers/easyjet/script.lua) | [easyjet](https://github.com/konnectors/easyjet) | HTTP | WIP | ✅ | ❌ | ⏳ not tested | ⏳ not tested | Site rebuilt since; text PDF per booking; Smoke: login answers HTTP 403 |
-| [`eaudubassinrennais`](scrapers/eaudubassinrennais/script.lua) | [eaudubassinrennais](https://github.com/konnectors/eaudubassinrennais) | HTTP | Verified | ✅ | ✅ | ✅² | ✅² | Bills |
-| [`eaudugrandlyon`](scrapers/eaudugrandlyon/script.lua) | [eaudugrandlyon](https://github.com/konnectors/eaudugrandlyon) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`edf`](scrapers/edf/script.lua) | [edf](https://github.com/konnectors/edf) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Bot protection may block the webview |
-| [`ekwateur`](scrapers/ekwateur/script.lua) | [ekwateur](https://github.com/konnectors/ekwateur) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`electricitestrasbourg`](scrapers/electricitestrasbourg/script.lua) | [electricitestrasbourg](https://github.com/konnectors/electricitestrasbourg) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | PDF fetched with GET instead of the konnector's POST (unconfirmed); Smoke: host unreachable |
-| [`enercoop`](scrapers/enercoop/script.lua) | [cozy-konnector-enercoop](https://github.com/konnectors/cozy-konnector-enercoop) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`engie`](scrapers/engie/script.lua) | [engie](https://github.com/konnectors/engie) | browser | WIP | ✅ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: submit button not found |
-| [`eovimcdparticuliers`](scrapers/eovimcdparticuliers/script.lua) | [eovimcdparticuliers](https://github.com/konnectors/eovimcdparticuliers) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: host unreachable |
-| [`eticket`](scrapers/eticket/script.lua) | [eticket](https://github.com/konnectors/eticket) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Firebase websocket replaced by the Firebase REST API (unconfirmed) |
-| [`facebook`](scrapers/facebook/script.lua) | [cozy-konnector-facebook](https://github.com/konnectors/cozy-konnector-facebook) | HTTP | Blocked | ✅ | ✅ | ⏳ not tested | ⏳ not tested | **Blocked**: OAuth token instead of password; photos are JPEG (save_document is PDF-only) |
-| [`fnac`](scrapers/fnac/script.lua) | [fnac](https://github.com/konnectors/fnac) | browser + HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Browser login; documents come on the next run (cookies reach fyde.http then); Smoke: login form not found (Datadome?) |
-| [`fortuneo`](scrapers/fortuneo/script.lua) | [fortuneo](https://github.com/konnectors/fortuneo) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | CSV-in-ZIP export not readable: operations table saved as text PDF; Smoke: login form not found |
-| [`francetravail`](scrapers/francetravail/script.lua) | [poleemploi](https://github.com/konnectors/poleemploi) | browser | Broken | ❌ | ❌ | ❌² | ⏳ not tested | Timed out waiting for the browser on the `#identifiant` field of candidat.francetravail.fr/espacepersonnel/; Smoke: timed out waiting for the browser |
-| [`free`](scrapers/free/script.lua) | [cozy-konnector-free](https://github.com/konnectors/cozy-konnector-free) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`freemobile`](scrapers/freemobile/script.lua) | [cozy-konnector-free-mobile](https://github.com/konnectors/cozy-konnector-free-mobile) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`gazdebordeaux`](scrapers/gazdebordeaux/script.lua) | [gazdebordeaux](https://github.com/konnectors/gazdebordeaux) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`geg`](scrapers/geg/script.lua) | [geg](https://github.com/konnectors/geg) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | PDF fetched with GET instead of POST (unconfirmed); Smoke: host unreachable |
-| [`generali`](scrapers/generali/script.lua) | [cozy-konnector-generali](https://github.com/konnectors/cozy-konnector-generali) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`github`](scrapers/github/script.lua) | [github](https://github.com/konnectors/github) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`glisshop`](scrapers/glisshop/script.lua) | [glisshop](https://github.com/konnectors/glisshop) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`harmonie`](scrapers/harmonie/script.lua) | [cozy-konnector-harmonie](https://github.com/konnectors/cozy-konnector-harmonie) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | API token unreachable, download controls clicked instead |
-| [`humanis`](scrapers/humanis/script.lua) | [humanis](https://github.com/konnectors/humanis) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Now Malakoff Humanis: credentials checked on its CIAM JSON API (connexion.malakoffhumanis.com); documents API not ported, a successful login stops with an explicit error |
-| [`impots`](scrapers/impots/script.lua) | [impots](https://github.com/konnectors/impots) | HTTP | Verified | ✅ | ✅ | ✅² | ✅² | Tax notices (income, property), online tax returns, declarative situation notices, tax reminders |
-| [`inulogic`](scrapers/inulogic/script.lua) | [inulogic](https://github.com/konnectors/inulogic) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: host unreachable |
-| [`justeat`](scrapers/justeat/script.lua) | [justeat](https://github.com/konnectors/justeat) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`lamutuellegenerale`](scrapers/lamutuellegenerale/script.lua) | [lamutuellegenerale](https://github.com/konnectors/lamutuellegenerale) | browser | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: login form not found |
-| [`ldlc`](scrapers/ldlc/script.lua) | [ldlc](https://github.com/konnectors/ldlc) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | reCAPTCHA on login; documents come on the next run |
-| [`leclercdrive`](scrapers/leclercdrive/script.lua) | [leclercdrive](https://github.com/konnectors/leclercdrive) | HTTP | WIP | ✅ | ❌ | ⏳ not tested | ⏳ not tested | Datadome captcha not solvable; Smoke: Datadome captcha |
-| [`lucca`](scrapers/lucca/script.lua) | [lucca](https://github.com/konnectors/lucca) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Payslips behind a 6-digit code reported as MFA_FAILED |
-| [`luko`](scrapers/luko/script.lua) | [luko](https://github.com/konnectors/luko) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Company stopped in 2023; API likely gone; Smoke: host unreachable |
-| [`macif`](scrapers/macif/script.lua) | [macif](https://github.com/konnectors/macif) | browser | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: login form not found |
-| [`maif`](scrapers/maif/script.lua) | [cozy-konnector-maif](https://github.com/konnectors/cozy-konnector-maif) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | OAuth token instead of password; data saved as text PDF; konnector unmaintained since 2020; Smoke: host unreachable |
-| [`malakoffmederic`](scrapers/malakoffmederic/script.lua) | [cozy-konnector-malakoffmederic](https://github.com/konnectors/cozy-konnector-malakoffmederic) | browser | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | DWR login driven through the browser; Smoke: login form not found |
-| [`malentille`](scrapers/malentille/script.lua) | [malentille](https://github.com/konnectors/malentille) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`materielnet`](scrapers/materielnet/script.lua) | [cozy-konnector-materielnet](https://github.com/konnectors/cozy-konnector-materielnet) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`mediapart`](scrapers/mediapart/script.lua) | [mediapart](https://github.com/konnectors/mediapart) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`mercermasante`](scrapers/mercermasante/script.lua) | — | browser | Verified | ✅ | ✅ | ✅² | ✅² | Attestation de couverture, carte de tiers payant, reimbursement statements; SMS code on login, session reused on the next run |
-| [`mgen`](scrapers/mgen/script.lua) | [cozy-konnector-mgen](https://github.com/konnectors/cozy-konnector-mgen) | browser | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Attestations (api.mgen.fr) not ported; Smoke: login form not found |
-| [`mint-energie`](scrapers/mint-energie/script.lua) | [mint-energie](https://github.com/konnectors/mint-energie) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`misterauto`](scrapers/misterauto/script.lua) | [misterauto](https://github.com/konnectors/misterauto) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`mondediplo`](scrapers/mondediplo/script.lua) | [mondediplo](https://github.com/konnectors/mondediplo) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`monoprix`](scrapers/monoprix/script.lua) | [monoprix](https://github.com/konnectors/monoprix) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Upstream konnector never saved documents; order history saved as text PDF; Smoke: login form not found |
-| [`msf`](scrapers/msf/script.lua) | [msf](https://github.com/konnectors/msf) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`n26`](scrapers/n26/script.lua) | [n26](https://github.com/konnectors/n26) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | App approval confirmed by the user through fyde.input.ask |
-| [`nalo`](scrapers/nalo/script.lua) | [nalo](https://github.com/konnectors/nalo) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`nespresso`](scrapers/nespresso/script.lua) | [nespresso](https://github.com/konnectors/nespresso) | HTTP | WIP | ✅ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: login answers HTTP 403 |
-| [`net-entreprise-micro`](scrapers/net-entreprise-micro/script.lua) | [net-entreprise-micro](https://github.com/konnectors/net-entreprise-micro) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`netflix`](scrapers/netflix/script.lua) | [netflix](https://github.com/konnectors/netflix) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`numericable`](scrapers/numericable/script.lua) | [cozy-konnector-numericable](https://github.com/konnectors/cozy-konnector-numericable) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Merged into SFR; site may be gone |
-| [`o2`](scrapers/o2/script.lua) | [o2](https://github.com/konnectors/o2) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`opngo`](scrapers/opngo/script.lua) | [opngo](https://github.com/konnectors/opngo) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | PDF fetched with GET instead of POST (unconfirmed) |
-| [`orange`](scrapers/orange/script.lua) | [cozy-konnector-orange](https://github.com/konnectors/cozy-konnector-orange) | browser | WIP | ✅ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: password step not shown |
-| [`ovh`](scrapers/ovh/script.lua) | [ovh](https://github.com/konnectors/ovh) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | API credentials (appKey/appSecret/consumerKey), requests signed with SHA-1 |
-| [`pajemploi`](scrapers/pajemploi/script.lua) | [cozy-konnector-pajemploi](https://github.com/konnectors/cozy-konnector-pajemploi) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Now an Angular SPA logging in through login.urssaf.fr (same login as cesu); documents API (api.urssaf.fr bearer token) not ported, a successful login stops with an explicit error |
-| [`payfit`](scrapers/payfit/script.lua) | [payfit](https://github.com/konnectors/payfit) | browser | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Payslips page URL unconfirmed; API token unreachable; Smoke: login form not found |
-| [`planeteoui`](scrapers/planeteoui/script.lua) | [planeteoui](https://github.com/konnectors/planeteoui) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Customers moved to Mint Énergie: same flow as `mint-energie` (client.mint-energie.com) |
-| [`prixtel`](scrapers/prixtel/script.lua) | [prixtel](https://github.com/konnectors/prixtel) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | reCAPTCHA on login; API token unreachable, download buttons clicked instead |
-| [`probikeshop`](scrapers/probikeshop/script.lua) | [probikeshop](https://github.com/konnectors/probikeshop) | browser | WIP | ✅ | — passwordless: `MFA_FAILED` | ⏳ not tested | ⏳ not tested | Now Shopify customer accounts: passwordless email-code login, so a wrong login can only end in `MFA_FAILED`; invoices looked for as PDF/"facture" links on account.probikeshop.fr/orders |
-| [`productboard`](scrapers/productboard/script.lua) | [productboard](https://github.com/konnectors/productboard) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Workspace subdomain is a parameter (konnector hardcoded cozycloud); Smoke: login form not found |
-| [`red`](scrapers/red/script.lua) | [red](https://github.com/konnectors/red) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`saur`](scrapers/saur/script.lua) | [saur](https://github.com/konnectors/saur) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: HTTP 500 |
-| [`scaleway`](scrapers/scaleway/script.lua) | [scaleway](https://github.com/konnectors/scaleway) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | reCAPTCHA expected by the API; session JWT not deleted (no DELETE in fyde.http) |
-| [`sfr`](scrapers/sfr/script.lua) | [sfr](https://github.com/konnectors/sfr) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`sfrbox`](scrapers/sfrbox/script.lua) | [cozy-konnector-sfrbox](https://github.com/konnectors/cozy-konnector-sfrbox) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`showroomprive`](scrapers/showroomprive/script.lua) | [showroomprive](https://github.com/konnectors/showroomprive) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`silae`](scrapers/silae/script.lua) | [silae](https://github.com/konnectors/silae) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | SOAP replaced by the ASMX HTTP-POST binding (unconfirmed); Smoke: host unreachable |
-| [`sncf`](scrapers/sncf/script.lua) | [cozy-konnector-sncf](https://github.com/konnectors/cozy-konnector-sncf) | browser | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: login form not found |
-| [`sosh`](scrapers/sosh/script.lua) | [cozy-konnector-sosh](https://github.com/konnectors/cozy-konnector-sosh) | browser | WIP | ✅ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: password step not shown |
-| [`spartoo`](scrapers/spartoo/script.lua) | [spartoo](https://github.com/konnectors/spartoo) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`stickersdiscount`](scrapers/stickersdiscount/script.lua) | [stickersdiscount](https://github.com/konnectors/stickersdiscount) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`tagandpass`](scrapers/tagandpass/script.lua) | [tagandpass](https://github.com/konnectors/tagandpass) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`theoldreader`](scrapers/theoldreader/script.lua) | [cozy-konnector-theoldreader](https://github.com/konnectors/cozy-konnector-theoldreader) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested |  |
-| [`thomann`](scrapers/thomann/script.lua) | [thomann](https://github.com/konnectors/thomann) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Now thomann.fr, behind Cloudflare and an invisible Turnstile: login driven in the webview |
-| [`trainline`](scrapers/trainline/script.lua) | [cozy-konnector-trainline](https://github.com/konnectors/cozy-konnector-trainline) | HTTP | WIP | ✅ | ❌ | ⏳ not tested | ⏳ not tested | API v5.1 likely replaced since; Smoke: sign-in answers HTTP 404 |
-| [`uber`](scrapers/uber/script.lua) | [cozy-konnector-uber](https://github.com/konnectors/cozy-konnector-uber) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | 2017-era flow, almost certainly outdated; Smoke: login form not found |
-| [`unibet`](scrapers/unibet/script.lua) | [unibet](https://github.com/konnectors/unibet) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: login answers HTTP 404 |
-| [`venteprivee`](scrapers/venteprivee/script.lua) | [venteprivee](https://github.com/konnectors/venteprivee) | HTTP | WIP | ✅ | ❌ | ⏳ not tested | ⏳ not tested | Veepee login now JS + captcha; Smoke: made-up credentials accepted: run ends OK with no documents |
-| [`veoliaeau`](scrapers/veoliaeau/script.lua) | [veoliaeau](https://github.com/konnectors/veoliaeau) | browser | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: login form not found |
-| [`viasante`](scrapers/viasante/script.lua) | [viasante](https://github.com/konnectors/viasante) | HTTP | WIP | ❌ | ❌ | ⏳ not tested | ⏳ not tested | Smoke: host unreachable |
-| [`vinciautoroute`](scrapers/vinciautoroute/script.lua) | [vinciautoroute](https://github.com/konnectors/vinciautoroute) | browser | Blocked | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Now Ulys: login on connect.ulys.com in the webview (Friendly Captcha solved by clicking it); **Blocked** past it: account.ulys.com refuses WebKitGTK, so no invoices |
-| [`wanimo`](scrapers/wanimo/script.lua) | [wanimo](https://github.com/konnectors/wanimo) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
-| [`zalando`](scrapers/zalando/script.lua) | [zalando](https://github.com/konnectors/zalando) | browser | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Bot protection may block the webview |
-| [`zooplus`](scrapers/zooplus/script.lua) | [zooplus](https://github.com/konnectors/zooplus) | HTTP | WIP | ✅ | ✅ | ⏳ not tested | ⏳ not tested | Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified |
+| Scraper | konnectors repo | Method |
+|---|---|---|
+| [`alan`](scrapers/alan/script.lua) | [alan](https://github.com/konnectors/alan) | browser |
+| [`amazon`](scrapers/amazon/script.lua) | [amazon](https://github.com/konnectors/amazon) | browser |
+| [`ameli`](scrapers/ameli/script.lua) | [cozy-konnector-ameli](https://github.com/konnectors/cozy-konnector-ameli) | browser |
+| [`aprr`](scrapers/aprr/script.lua) | [aprr](https://github.com/konnectors/aprr) | HTTP |
+| [`ascoresante`](scrapers/ascoresante/script.lua) | [ascoresante](https://github.com/konnectors/ascoresante) | HTTP |
+| [`auchandrive`](scrapers/auchandrive/script.lua) | [auchandrive](https://github.com/konnectors/auchandrive) | HTTP |
+| [`autolib`](scrapers/autolib/script.lua) | [autolib](https://github.com/konnectors/autolib) | HTTP |
+| [`bipandgo`](scrapers/bipandgo/script.lua) | [bipandgo](https://github.com/konnectors/bipandgo) | browser |
+| [`bitiba`](scrapers/bitiba/script.lua) | [bitiba](https://github.com/konnectors/bitiba) | HTTP |
+| [`blablacar`](scrapers/blablacar/script.lua) | [blablacar](https://github.com/konnectors/blablacar) | HTTP |
+| [`bookingdotcom`](scrapers/bookingdotcom/script.lua) | [bookingdotcom](https://github.com/konnectors/bookingdotcom) | HTTP |
+| [`boulanger`](scrapers/boulanger/script.lua) | [boulanger](https://github.com/konnectors/boulanger) | HTTP |
+| [`boursobank`](scrapers/boursobank/script.lua) | [boursorama](https://github.com/konnectors/boursorama) | HTTP |
+| [`bouyguesbox`](scrapers/bouyguesbox/script.lua) | [cozy-konnector-bouyguesbox](https://github.com/konnectors/cozy-konnector-bouyguesbox) | HTTP |
+| [`bouyguestelecom`](scrapers/bouyguestelecom/script.lua) | [cozy-konnector-bouyguestelecom](https://github.com/konnectors/cozy-konnector-bouyguestelecom) | browser |
+| [`caf`](scrapers/caf/script.lua) | [caf](https://github.com/konnectors/caf) | HTTP |
+| [`cdiscount`](scrapers/cdiscount/script.lua) | [cdiscount](https://github.com/konnectors/cdiscount) | browser |
+| [`cesml`](scrapers/cesml/script.lua) | [cesml](https://github.com/konnectors/cesml) | HTTP |
+| [`cesu`](scrapers/cesu/script.lua) | [cozy-konnector-cesu](https://github.com/konnectors/cozy-konnector-cesu) | browser |
+| [`cic`](scrapers/cic/script.lua) | [cic](https://github.com/konnectors/cic) | HTTP |
+| [`cultura`](scrapers/cultura/script.lua) | [cultura](https://github.com/konnectors/cultura) | HTTP |
+| [`darty`](scrapers/darty/script.lua) | [darty](https://github.com/konnectors/darty) | HTTP |
+| [`deezer`](scrapers/deezer/script.lua) | [deezer](https://github.com/konnectors/deezer) | browser |
+| [`deliveroo`](scrapers/deliveroo/script.lua) | [deliveroo](https://github.com/konnectors/deliveroo) | HTTP |
+| [`didaxis`](scrapers/didaxis/script.lua) | — | HTTP |
+| [`digiposte`](scrapers/digiposte/script.lua) | [cozy-konnector-digiposte](https://github.com/konnectors/cozy-konnector-digiposte) | browser + HTTP |
+| [`directenergie`](scrapers/directenergie/script.lua) | [cozy-konnector-directenergie](https://github.com/konnectors/cozy-konnector-directenergie) | browser |
+| [`doctolib`](scrapers/doctolib/script.lua) | [doctolib](https://github.com/konnectors/doctolib) | HTTP |
+| [`easyjet`](scrapers/easyjet/script.lua) | [easyjet](https://github.com/konnectors/easyjet) | HTTP |
+| [`eaudubassinrennais`](scrapers/eaudubassinrennais/script.lua) | [eaudubassinrennais](https://github.com/konnectors/eaudubassinrennais) | HTTP |
+| [`eaudugrandlyon`](scrapers/eaudugrandlyon/script.lua) | [eaudugrandlyon](https://github.com/konnectors/eaudugrandlyon) | HTTP |
+| [`edf`](scrapers/edf/script.lua) | [edf](https://github.com/konnectors/edf) | browser |
+| [`ekwateur`](scrapers/ekwateur/script.lua) | [ekwateur](https://github.com/konnectors/ekwateur) | HTTP |
+| [`electricitestrasbourg`](scrapers/electricitestrasbourg/script.lua) | [electricitestrasbourg](https://github.com/konnectors/electricitestrasbourg) | HTTP |
+| [`enercoop`](scrapers/enercoop/script.lua) | [cozy-konnector-enercoop](https://github.com/konnectors/cozy-konnector-enercoop) | HTTP |
+| [`engie`](scrapers/engie/script.lua) | [engie](https://github.com/konnectors/engie) | browser |
+| [`eovimcdparticuliers`](scrapers/eovimcdparticuliers/script.lua) | [eovimcdparticuliers](https://github.com/konnectors/eovimcdparticuliers) | HTTP |
+| [`eticket`](scrapers/eticket/script.lua) | [eticket](https://github.com/konnectors/eticket) | HTTP |
+| [`facebook`](scrapers/facebook/script.lua) | [cozy-konnector-facebook](https://github.com/konnectors/cozy-konnector-facebook) | HTTP |
+| [`fnac`](scrapers/fnac/script.lua) | [fnac](https://github.com/konnectors/fnac) | browser + HTTP |
+| [`fortuneo`](scrapers/fortuneo/script.lua) | [fortuneo](https://github.com/konnectors/fortuneo) | HTTP |
+| [`francetravail`](scrapers/francetravail/script.lua) | [poleemploi](https://github.com/konnectors/poleemploi) | browser |
+| [`free`](scrapers/free/script.lua) | [cozy-konnector-free](https://github.com/konnectors/cozy-konnector-free) | HTTP |
+| [`freemobile`](scrapers/freemobile/script.lua) | [cozy-konnector-free-mobile](https://github.com/konnectors/cozy-konnector-free-mobile) | HTTP |
+| [`gazdebordeaux`](scrapers/gazdebordeaux/script.lua) | [gazdebordeaux](https://github.com/konnectors/gazdebordeaux) | HTTP |
+| [`geg`](scrapers/geg/script.lua) | [geg](https://github.com/konnectors/geg) | HTTP |
+| [`generali`](scrapers/generali/script.lua) | [cozy-konnector-generali](https://github.com/konnectors/cozy-konnector-generali) | HTTP |
+| [`github`](scrapers/github/script.lua) | [github](https://github.com/konnectors/github) | HTTP |
+| [`glisshop`](scrapers/glisshop/script.lua) | [glisshop](https://github.com/konnectors/glisshop) | HTTP |
+| [`harmonie`](scrapers/harmonie/script.lua) | [cozy-konnector-harmonie](https://github.com/konnectors/cozy-konnector-harmonie) | browser |
+| [`humanis`](scrapers/humanis/script.lua) | [humanis](https://github.com/konnectors/humanis) | HTTP |
+| [`impots`](scrapers/impots/script.lua) | [impots](https://github.com/konnectors/impots) | HTTP |
+| [`inulogic`](scrapers/inulogic/script.lua) | [inulogic](https://github.com/konnectors/inulogic) | HTTP |
+| [`justeat`](scrapers/justeat/script.lua) | [justeat](https://github.com/konnectors/justeat) | HTTP |
+| [`lamutuellegenerale`](scrapers/lamutuellegenerale/script.lua) | [lamutuellegenerale](https://github.com/konnectors/lamutuellegenerale) | browser |
+| [`ldlc`](scrapers/ldlc/script.lua) | [ldlc](https://github.com/konnectors/ldlc) | browser |
+| [`leclercdrive`](scrapers/leclercdrive/script.lua) | [leclercdrive](https://github.com/konnectors/leclercdrive) | HTTP |
+| [`lucca`](scrapers/lucca/script.lua) | [lucca](https://github.com/konnectors/lucca) | HTTP |
+| [`luko`](scrapers/luko/script.lua) | [luko](https://github.com/konnectors/luko) | HTTP |
+| [`macif`](scrapers/macif/script.lua) | [macif](https://github.com/konnectors/macif) | browser |
+| [`maif`](scrapers/maif/script.lua) | [cozy-konnector-maif](https://github.com/konnectors/cozy-konnector-maif) | HTTP |
+| [`malakoffmederic`](scrapers/malakoffmederic/script.lua) | [cozy-konnector-malakoffmederic](https://github.com/konnectors/cozy-konnector-malakoffmederic) | browser |
+| [`malentille`](scrapers/malentille/script.lua) | [malentille](https://github.com/konnectors/malentille) | HTTP |
+| [`materielnet`](scrapers/materielnet/script.lua) | [cozy-konnector-materielnet](https://github.com/konnectors/cozy-konnector-materielnet) | HTTP |
+| [`mediapart`](scrapers/mediapart/script.lua) | [mediapart](https://github.com/konnectors/mediapart) | HTTP |
+| [`mercermasante`](scrapers/mercermasante/script.lua) | — | browser |
+| [`mgen`](scrapers/mgen/script.lua) | [cozy-konnector-mgen](https://github.com/konnectors/cozy-konnector-mgen) | browser |
+| [`mint-energie`](scrapers/mint-energie/script.lua) | [mint-energie](https://github.com/konnectors/mint-energie) | HTTP |
+| [`misterauto`](scrapers/misterauto/script.lua) | [misterauto](https://github.com/konnectors/misterauto) | HTTP |
+| [`mondediplo`](scrapers/mondediplo/script.lua) | [mondediplo](https://github.com/konnectors/mondediplo) | HTTP |
+| [`monoprix`](scrapers/monoprix/script.lua) | [monoprix](https://github.com/konnectors/monoprix) | HTTP |
+| [`msf`](scrapers/msf/script.lua) | [msf](https://github.com/konnectors/msf) | HTTP |
+| [`n26`](scrapers/n26/script.lua) | [n26](https://github.com/konnectors/n26) | HTTP |
+| [`nalo`](scrapers/nalo/script.lua) | [nalo](https://github.com/konnectors/nalo) | HTTP |
+| [`nespresso`](scrapers/nespresso/script.lua) | [nespresso](https://github.com/konnectors/nespresso) | HTTP |
+| [`net-entreprise-micro`](scrapers/net-entreprise-micro/script.lua) | [net-entreprise-micro](https://github.com/konnectors/net-entreprise-micro) | HTTP |
+| [`netflix`](scrapers/netflix/script.lua) | [netflix](https://github.com/konnectors/netflix) | browser |
+| [`numericable`](scrapers/numericable/script.lua) | [cozy-konnector-numericable](https://github.com/konnectors/cozy-konnector-numericable) | HTTP |
+| [`o2`](scrapers/o2/script.lua) | [o2](https://github.com/konnectors/o2) | HTTP |
+| [`opngo`](scrapers/opngo/script.lua) | [opngo](https://github.com/konnectors/opngo) | HTTP |
+| [`orange`](scrapers/orange/script.lua) | [cozy-konnector-orange](https://github.com/konnectors/cozy-konnector-orange) | browser |
+| [`ovh`](scrapers/ovh/script.lua) | [ovh](https://github.com/konnectors/ovh) | HTTP |
+| [`pajemploi`](scrapers/pajemploi/script.lua) | [cozy-konnector-pajemploi](https://github.com/konnectors/cozy-konnector-pajemploi) | browser |
+| [`payfit`](scrapers/payfit/script.lua) | [payfit](https://github.com/konnectors/payfit) | browser |
+| [`planeteoui`](scrapers/planeteoui/script.lua) | [planeteoui](https://github.com/konnectors/planeteoui) | HTTP |
+| [`prixtel`](scrapers/prixtel/script.lua) | [prixtel](https://github.com/konnectors/prixtel) | browser |
+| [`probikeshop`](scrapers/probikeshop/script.lua) | [probikeshop](https://github.com/konnectors/probikeshop) | browser |
+| [`productboard`](scrapers/productboard/script.lua) | [productboard](https://github.com/konnectors/productboard) | HTTP |
+| [`red`](scrapers/red/script.lua) | [red](https://github.com/konnectors/red) | browser |
+| [`saur`](scrapers/saur/script.lua) | [saur](https://github.com/konnectors/saur) | HTTP |
+| [`scaleway`](scrapers/scaleway/script.lua) | [scaleway](https://github.com/konnectors/scaleway) | HTTP |
+| [`sfr`](scrapers/sfr/script.lua) | [sfr](https://github.com/konnectors/sfr) | browser |
+| [`sfrbox`](scrapers/sfrbox/script.lua) | [cozy-konnector-sfrbox](https://github.com/konnectors/cozy-konnector-sfrbox) | HTTP |
+| [`showroomprive`](scrapers/showroomprive/script.lua) | [showroomprive](https://github.com/konnectors/showroomprive) | HTTP |
+| [`silae`](scrapers/silae/script.lua) | [silae](https://github.com/konnectors/silae) | HTTP |
+| [`sncf`](scrapers/sncf/script.lua) | [cozy-konnector-sncf](https://github.com/konnectors/cozy-konnector-sncf) | browser |
+| [`sosh`](scrapers/sosh/script.lua) | [cozy-konnector-sosh](https://github.com/konnectors/cozy-konnector-sosh) | browser |
+| [`spartoo`](scrapers/spartoo/script.lua) | [spartoo](https://github.com/konnectors/spartoo) | HTTP |
+| [`stickersdiscount`](scrapers/stickersdiscount/script.lua) | [stickersdiscount](https://github.com/konnectors/stickersdiscount) | HTTP |
+| [`tagandpass`](scrapers/tagandpass/script.lua) | [tagandpass](https://github.com/konnectors/tagandpass) | HTTP |
+| [`theoldreader`](scrapers/theoldreader/script.lua) | [cozy-konnector-theoldreader](https://github.com/konnectors/cozy-konnector-theoldreader) | HTTP |
+| [`thomann`](scrapers/thomann/script.lua) | [thomann](https://github.com/konnectors/thomann) | browser |
+| [`trainline`](scrapers/trainline/script.lua) | [cozy-konnector-trainline](https://github.com/konnectors/cozy-konnector-trainline) | HTTP |
+| [`uber`](scrapers/uber/script.lua) | [cozy-konnector-uber](https://github.com/konnectors/cozy-konnector-uber) | HTTP |
+| [`unibet`](scrapers/unibet/script.lua) | [unibet](https://github.com/konnectors/unibet) | HTTP |
+| [`venteprivee`](scrapers/venteprivee/script.lua) | [venteprivee](https://github.com/konnectors/venteprivee) | HTTP |
+| [`veoliaeau`](scrapers/veoliaeau/script.lua) | [veoliaeau](https://github.com/konnectors/veoliaeau) | browser |
+| [`viasante`](scrapers/viasante/script.lua) | [viasante](https://github.com/konnectors/viasante) | HTTP |
+| [`vinciautoroute`](scrapers/vinciautoroute/script.lua) | [vinciautoroute](https://github.com/konnectors/vinciautoroute) | browser |
+| [`wanimo`](scrapers/wanimo/script.lua) | [wanimo](https://github.com/konnectors/wanimo) | HTTP |
+| [`zalando`](scrapers/zalando/script.lua) | [zalando](https://github.com/konnectors/zalando) | browser |
+| [`zooplus`](scrapers/zooplus/script.lua) | [zooplus](https://github.com/konnectors/zooplus) | HTTP |
 
 ### Running the login smoke test
 

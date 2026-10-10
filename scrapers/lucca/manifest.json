@@ -30,5 +30,13 @@
       "type": "string",
       "required": false
     }
+  },
+  "status": {
+    "state": "wip",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
+    "login_ok": "not_tested",
+    "documents_fetched": "not_tested",
+    "notes": "Payslips behind a 6-digit code reported as MFA_FAILED"
   }
 }

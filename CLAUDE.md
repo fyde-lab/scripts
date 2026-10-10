@@ -210,8 +210,8 @@ best-guess as if it were verified.
 ### The scrapers ported from `github.com/konnectors`
 
 Most scrapers under `scrapers/` are ports of Cozy Cloud's konnectors (one per repository of the
-`konnectors` GitHub organization - see `README.md`'s status table for the list, the upstream repo
-of each, and what is and isn't confirmed). Each script's header comment says which upstream files
+`konnectors` GitHub organization - see `README.md`'s table for the list and the upstream repo of
+each, and each scraper's `manifest.json` `status` for what is and isn't confirmed). Each script's header comment says which upstream files
 it was ported from and which parts couldn't be carried over. They all follow the same contract,
 which any new scraper should follow too:
 

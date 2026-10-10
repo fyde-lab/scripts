@@ -19,5 +19,13 @@
       "type": "string",
       "required": true
     }
+  },
+  "status": {
+    "state": "wip",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "not_applicable",
+    "login_ok": "not_tested",
+    "documents_fetched": "not_tested",
+    "notes": "Now Shopify customer accounts: passwordless email-code login, so a wrong login can only end in `MFA_FAILED`; invoices looked for as PDF/\"facture\" links on account.probikeshop.fr/orders"
   }
 }

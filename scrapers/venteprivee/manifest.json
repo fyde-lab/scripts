@@ -23,5 +23,13 @@
       "required": true,
       "secret": true
     }
+  },
+  "status": {
+    "state": "wip",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "failed",
+    "login_ok": "not_tested",
+    "documents_fetched": "not_tested",
+    "notes": "Veepee login now JS + captcha; Smoke: made-up credentials accepted: run ends OK with no documents"
   }
 }

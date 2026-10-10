@@ -25,5 +25,13 @@
       "required": true,
       "secret": true
     }
+  },
+  "status": {
+    "state": "blocked",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
+    "login_ok": "not_tested",
+    "documents_fetched": "not_tested",
+    "notes": "**Blocked**: API token needs the XSRF cookie value (not readable); hCaptcha on login"
   }
 }

@@ -21,5 +21,13 @@
       "required": true,
       "secret": true
     }
+  },
+  "status": {
+    "state": "broken",
+    "login_page_found": "failed",
+    "invalid_credentials_detected": "failed",
+    "login_ok": "failed",
+    "documents_fetched": "not_tested",
+    "notes": "Timed out waiting for the browser on the `#identifiant` field of candidat.francetravail.fr/espacepersonnel/; Smoke: timed out waiting for the browser"
   }
 }

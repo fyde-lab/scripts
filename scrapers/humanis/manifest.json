@@ -21,5 +21,13 @@
       "required": true,
       "secret": true
     }
+  },
+  "status": {
+    "state": "wip",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
+    "login_ok": "not_tested",
+    "documents_fetched": "not_tested",
+    "notes": "Now Malakoff Humanis: credentials checked on its CIAM JSON API (connexion.malakoffhumanis.com); documents API not ported, a successful login stops with an explicit error"
   }
 }

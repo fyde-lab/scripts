@@ -21,5 +21,13 @@
       "required": true,
       "secret": true
     }
+  },
+  "status": {
+    "state": "verified",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
+    "login_ok": "passed",
+    "documents_fetched": "passed",
+    "notes": "Statements, other banks' documents, IFU, RIBs"
   }
 }

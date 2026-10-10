@@ -23,5 +23,13 @@
       "required": true,
       "secret": true
     }
+  },
+  "status": {
+    "state": "wip",
+    "login_page_found": "failed",
+    "invalid_credentials_detected": "failed",
+    "login_ok": "not_tested",
+    "documents_fetched": "not_tested",
+    "notes": "Attestations (api.mgen.fr) not ported; Smoke: login form not found"
   }
 }
