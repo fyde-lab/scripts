@@ -4,7 +4,7 @@
 --
 -- Every capability this script uses comes from the `fyde` host table, implemented by
 -- fyde-sdk's scrapers domain (see ../sdk/src/domains/scrapers/host/*.rs):
--- fyde.log, fyde.progress, fyde.input, fyde.browser.
+-- fyde.log, fyde.progress, fyde.input, fyde.browser, fyde.save_document.
 --
 -- **Why this drives a real browser instead of `fyde.http`.** Clicking "Se connecter" on
 -- www.cesu.urssaf.fr sends the browser through a full OAuth2/OIDC authorization-code-with-PKCE

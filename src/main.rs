@@ -23,9 +23,7 @@ struct Cli {
 enum Command {
     /// Runs one or more Lua scraper scripts against `fyde-sdk`'s `scrapers`
     /// service, outside of a full `Client`/server connection: cookies and
-    /// session data persist as JSON files (`fyde_sdk::init_dev_scrapers`
-    /// always selects its `scrapers::StorageConfig::File` backend — there is
-    /// no local SQLite database here to pick `Sqlite` instead), and scraped
+    /// session data persist as JSON files under `--storage`, and scraped
     /// documents are saved as plain files instead of being encrypted and
     /// uploaded.
     Run(RunArgs),
@@ -127,16 +125,15 @@ struct ScraperSettings {
     /// space is limited (e.g. a marketplace list row).
     short_description: String,
     /// Whether `fyde.http` applies `wreq`'s Chrome TLS/HTTP2 fingerprint
-    /// emulation for this scraper. Enabled by default for every scraper
-    /// except `ameli`, whose WAF blocks `wreq`'s TLS fingerprint outright
-    /// regardless of emulation (see `scrapers/ameli/script.lua`'s header
-    /// comment).
+    /// emulation for this scraper. Required; turned off only for a few
+    /// scrapers (e.g. `ameli`, whose WAF blocks `wreq`'s TLS fingerprint
+    /// outright regardless of emulation - see `scrapers/ameli/script.lua`'s
+    /// header comment).
     wreq_emulation: bool,
     /// Opts this scraper's `fyde.http` calls into recording response
     /// bodies in the run's debug report (see `ScrapersService::run`'s
-    /// `debug_http_dump` parameter) - moved here from `--secrets` since
-    /// it's a property of the scraper, not a secret. Defaults to `false`
-    /// when omitted, and `--dev` forces it on regardless.
+    /// `debug_http_dump` parameter). Defaults to `false` when omitted, and
+    /// `--dev` forces it on regardless.
     #[serde(default)]
     debug_http_dump: bool,
     /// Whether `fyde.http` automatically follows HTTP redirects for this
@@ -291,8 +288,6 @@ async fn publish(args: PublishArgs) -> Result<()> {
     Ok(())
 }
 
-/// Lists the name of every scraper under `scrapers/` (i.e. every directory
-/// directly under it containing a `script.lua`).
 /// Loads every scraper's `script.lua` and reports any that fail to parse or
 /// don't return a table with a `run` function, failing the process (non-zero
 /// exit) if any do.
@@ -355,6 +350,8 @@ fn check_script(name: &str, script: &str) -> Result<()> {
     Ok(())
 }
 
+/// Lists the name of every scraper under `scrapers/` (i.e. every directory
+/// directly under it containing a `script.lua`), sorted.
 fn list_scraper_names() -> Result<Vec<String>> {
     let mut names = Vec::new();
 

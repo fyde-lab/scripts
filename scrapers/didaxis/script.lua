@@ -4,13 +4,13 @@
 -- everything over plain HTTP + HTML parsing instead of a real browser: login is a single POST
 -- to the site's authentication endpoint, and each of the four document sections is a GET
 -- followed by scraping <a href> links for the site's readfile.php?file=<base64 path> downloads.
--- There is no JS engine here, so the DataTable's "show 100 rows" <select> and the year-tab
+-- `fyde.http` runs no JS, so the DataTable's "show 100 rows" <select> and the year-tab
 -- clicks from the browser-driven version aren't replayed - this script scrapes whatever the
 -- section page renders server-side on first load.
 --
 -- Every capability this script uses comes from the `fyde` host table, implemented by
 -- fyde-sdk's scrapers domain (see ../sdk/src/domains/scrapers/host/*.rs):
--- fyde.log, fyde.http, fyde.html, fyde.json, fyde.progress, fyde.save_document.
+-- fyde.log, fyde.http, fyde.html, fyde.progress, fyde.save_document.
 
 local M = {}
 
@@ -172,9 +172,10 @@ function M.run(params)
   local username = params.username
   local password = params.password
 
-  -- fyde.http's cookie jar is restored from fyde.session (see host/session.rs) before this
-  -- script even starts, so a still-valid cookie from a previous run can land us on an
-  -- already-authenticated section page here, skipping the login POST entirely.
+  -- fyde.http's cookie jar is restored from the previous run's saved cookies (see
+  -- ../sdk/src/domains/scrapers/cookies/) before this script even starts, so a still-valid
+  -- cookie can land us on an already-authenticated section page here, skipping the login POST
+  -- entirely.
   fyde.progress.step("Checking for an existing session")
   local check = fyde.http.get(SECTIONS[1].url)
   if is_logged_in(check.body) then

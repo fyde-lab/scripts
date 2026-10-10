@@ -93,8 +93,8 @@ function M.run(params)
   local username = params.username
   local password = params.password
 
-  -- fyde.http's cookie jar is restored from fyde.session before this script even starts, so a
-  -- still-valid JSESSIONID from a previous run can land us on the authenticated dashboard here,
+  -- fyde.http's cookie jar is restored from the previous run's saved cookies before this script
+  -- even starts, so a still-valid JSESSIONID can land us on the authenticated dashboard here,
   -- skipping the login POST entirely.
   fyde.progress.step("Checking for an existing session")
   local check = fyde.http.get(HOME_URL)

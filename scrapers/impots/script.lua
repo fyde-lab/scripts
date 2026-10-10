@@ -39,8 +39,8 @@
 -- collect links that look like documents.
 --
 -- The login page also runs ShieldSquare/Radware bot-management (aperture.js / perfdrive.com /
--- eupulse.shieldsquare.net) in the browser. That script isn't evaluated here (no JS engine),
--- so requests may get flagged or rate-limited in ways a real browser wouldn't be - if login
+-- eupulse.shieldsquare.net) in the browser. `fyde.http` doesn't evaluate that script (it runs
+-- no JS), so requests may get flagged or rate-limited in ways a real browser wouldn't be - if login
 -- keeps failing with a plausible-looking response, that's the most likely cause, not a bug in
 -- the field names below.
 --
@@ -222,7 +222,7 @@ function M.run(params)
   -- needs - without this it always answers context "ERR". `login_page_url` is where this
   -- lands after following the oauth2 redirect - the same URL a real browser would send back
   -- as Referer on the GetContexte/login POSTs below, since it's submitting the form found on
-  -- that page. fyde.http's cookie jar is restored from fyde.session (see host/session.rs)
+  -- that page. fyde.http's cookie jar is restored from the previous run's saved cookies
   -- before this script even starts, so a still-valid idp session cookie from a previous run can
   -- also mean this GET already lands us on the authenticated homepage, completing the OIDC
   -- dance silently and skipping the rest of the login flow below entirely.

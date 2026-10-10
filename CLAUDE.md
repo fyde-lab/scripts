@@ -38,12 +38,15 @@ repo — `fyde_sdk::init_dev_scrapers` is the one function this program calls to
 
 ```sh
 cargo build
-cargo run -- didaxis                          # runs scrapers/didaxis/script.lua
-cargo run -- didaxis impots --documents-dir data/documents  # runs both, in order
+cargo run -- run didaxis                          # runs scrapers/didaxis/script.lua
+cargo run -- run didaxis impots --documents-dir data/documents  # runs both, in order
+cargo run -- check                                # loads every script without running it
 ```
 
-There is no test suite here — the logic worth testing (the dev documents service, the
-scrapers service itself) lives in and is tested by `../sdk`.
+There is no Rust test suite here — the logic worth testing (the dev documents service, the
+scrapers service itself) lives in and is tested by `../sdk`. `cargo run -- check` only catches
+Lua syntax errors and scripts that don't return a `run` function; `tests/login_smoke.sh` (see
+below) exercises the logins against the live sites.
 
 Config: each scraper's parameters come from `--secrets` (default `secret.json`, gitignored),
 a JSON map keyed by scraper name (the script's parent directory name, e.g. `"didaxis"`,
@@ -58,15 +61,15 @@ Every scraper also has a `scrapers/<name>/settings.json`, next to its `script.lu
 it's committed alongside the script. It's a `{"name": string, "description": string,
 "short_description": string, "homepage": string, "wreq_emulation": bool, "debug_http_dump":
 bool, "follow_redirects": bool, "allowed_domains": [string]}` object. `name`/`description`/`short_description` are
-marketplace metadata — `cargo run -- publish` reads them (plus `logo.PNG`, next to
+marketplace metadata — `cargo run -- publish` reads them (plus `logo.png`, next to
 `script.lua`) and sends them through to `ScriptsClient::create_script`/`update_script` when
 publishing that scraper as a public script, so a published script's display name, blurb, and
 banner image come from here rather than from the scraper's directory name. `homepage` isn't
 read by this program yet. `wreq_emulation` is forwarded to
 `ScrapersService::run`'s `wreq_emulation` parameter, toggling `fyde.http`'s Chrome TLS/HTTP2
-fingerprint emulation (`wreq_util::Profile::Chrome131`) for that scraper — on by default for
-every scraper except `ameli`, whose WAF blocks `wreq`'s TLS fingerprint outright regardless of
-emulation (see `scrapers/ameli/script.lua`'s header comment). `debug_http_dump` (optional,
+fingerprint emulation (`wreq_util::Profile::Chrome131`) for that scraper — on for every
+scraper except a few (e.g. `ameli`, whose WAF blocks `wreq`'s TLS fingerprint outright regardless
+of emulation; see `scrapers/ameli/script.lua`'s header comment). `debug_http_dump` (optional,
 defaults to `false`) is forwarded to `ScrapersService::run`'s `debug_http_dump` parameter,
 opting that scraper's run into recording `fyde.http.get`/`post_form`'s response bodies in the
 per-run debug report `../sdk`'s `reports` sub-domain saves (never request headers/bodies or
@@ -102,8 +105,10 @@ vendored, patched BoringSSL used by `wreq`, the scrapers domain's HTTP client).
 
 ### `src/main.rs`
 
-Parses CLI args — a required, variadic list of scraper names (e.g. `didaxis impots`), each the
-name of a folder under `scrapers/` — and runs each in turn via `run_scraper`: reads
+Three subcommands: `run`, `publish` (sends every scraper to a fyde server's scripts service as
+a public script) and `check` (loads every script in the same restricted Lua stdlib as the sdk,
+without calling `run`). `run` takes a variadic list of scraper names (e.g. `didaxis impots`), each
+the name of a folder under `scrapers/`, and runs each in turn via `run_scraper`: reads
 `scrapers/<name>/script.lua`, loads that scraper's `parameters` from `--secrets` and its
 `wreq_emulation`/`debug_http_dump`/`follow_redirects`/`allowed_domains` settings from
 `scrapers/<name>/settings.json` (both keyed by the same name), builds an `on_progress`/
@@ -111,9 +116,8 @@ name of a folder under `scrapers/` — and runs each in turn via `run_scraper`: 
 see `fyde_sdk::ClientConfig`'s doc comments for why the sdk's own host functions no longer do
 this directly), calls `fyde_sdk::init_dev_scrapers` to get a `scrapers::Service`, then calls
 its `run(name, script, parameters, debug_http_dump, wreq_emulation, follow_redirects,
-allowed_domains)`. The
-per-run debug report is saved by `../sdk`'s `scrapers::reports` sub-domain itself, under
-`--storage`'s `reports/` subdirectory — this crate no longer writes one of its own.
+allowed_domains, visible)`. The per-run debug report is saved by `../sdk`'s `scrapers::reports`
+sub-domain itself, under `--storage`'s `reports/` subdirectory, not by this crate.
 
 ### `scripts/scrapers/didaxis/script.lua` / `scripts/scrapers/impots/script.lua`
 

@@ -302,7 +302,7 @@ end
 
 function M.run(params)
   -- fyde.http's cookie jar is restored from the previous run's saved cookies (see
-  -- host/session.rs) before this script even starts - the portal session this flow establishes
+  -- ../sdk/src/domains/scrapers/cookies/) before this script even starts - the portal session this flow establishes
   -- (LtpaToken2/JSESSIONID/CFSESSIONID, see header comment) can still be valid, which would land
   -- us on the real dashboard here without ever hitting CAF's login API or OTP step again. Mirrors
   -- didaxis/script.lua's "Checking for an existing session" pattern.

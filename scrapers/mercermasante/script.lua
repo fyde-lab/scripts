@@ -41,7 +41,8 @@
 --
 -- Every capability this script uses comes from the `fyde` host table, implemented by
 -- fyde-sdk's scrapers domain (see ../sdk/src/domains/scrapers/host/*.rs):
--- fyde.log, fyde.progress, fyde.html, fyde.input, fyde.browser, fyde.http, fyde.save_document.
+-- fyde.log, fyde.progress, fyde.html, fyde.json, fyde.input, fyde.browser, fyde.http,
+-- fyde.save_document.
 
 local M = {}
 
