@@ -45,7 +45,7 @@ enum Command {
 
     /// Lists every scraper under `scrapers/` (every directory containing a
     /// `script.lua`), with the display name and short description from its
-    /// `settings.json`.
+    /// `manifest.json`.
     List,
 }
 
@@ -74,7 +74,7 @@ struct RunArgs {
     secrets: PathBuf,
 
     /// Force `debug_http_dump` on for every scraper run, regardless of what
-    /// each scraper's `settings.json` sets it to - recording all
+    /// each scraper's `manifest.json` sets it to - recording all
     /// `fyde.http.get`/`post_form` response bodies in the run's debug
     /// report. Use while actively debugging a scraper's HTTP traffic.
     #[arg(long)]
@@ -113,11 +113,11 @@ struct ScraperConfig {
     parameters: Value,
 }
 
-/// A scraper's `scrapers/<name>/settings.json`, next to its `script.lua` -
+/// A scraper's `scrapers/<name>/manifest.json`, next to its `script.lua` -
 /// settings specific to the script itself rather than a secret, so (unlike
 /// `--secrets`) it's committed alongside the script.
 #[derive(Deserialize)]
-struct ScraperSettings {
+struct ScraperManifest {
     /// Display name for the published script, shown in a marketplace
     /// listing (e.g. "Didaxis") - distinct from the scraper's directory
     /// name under `scrapers/` (e.g. "didaxis"), which is only used locally
@@ -241,7 +241,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
         let script_path = script_dir.join("script.lua");
         let script = std::fs::read_to_string(&script_path)
             .with_context(|| format!("reading Lua script {}", script_path.display()))?;
-        let settings = load_settings(&script_dir, &scraper_name)?;
+        let manifest = load_manifest(&script_dir, &scraper_name)?;
         let logo_path = script_dir.join("logo.png");
         let logo = if logo_path.is_file() {
             std::fs::read(&logo_path)
@@ -250,19 +250,19 @@ async fn publish(args: PublishArgs) -> Result<()> {
             Vec::new()
         };
 
-        match existing.iter().find(|s| s.name() == settings.name) {
+        match existing.iter().find(|s| s.name() == manifest.name) {
             Some(current) => {
                 client
                     .scripts()
                     .update_script(
                         current.id(),
-                        &settings.name,
+                        &manifest.name,
                         true,
                         logo,
                         &script,
-                        &settings.description,
-                        &settings.short_description,
-                        settings.allowed_domains.clone(),
+                        &manifest.description,
+                        &manifest.short_description,
+                        manifest.allowed_domains.clone(),
                         ScriptType::Scraper,
                         std::collections::HashMap::new(),
                     )
@@ -274,13 +274,13 @@ async fn publish(args: PublishArgs) -> Result<()> {
                 client
                     .scripts()
                     .create_script(
-                        &settings.name,
+                        &manifest.name,
                         true,
                         logo,
                         &script,
-                        &settings.description,
-                        &settings.short_description,
-                        settings.allowed_domains.clone(),
+                        &manifest.description,
+                        &manifest.short_description,
+                        manifest.allowed_domains.clone(),
                         ScriptType::Scraper,
                         std::collections::HashMap::new(),
                     )
@@ -327,7 +327,7 @@ fn check() -> Result<()> {
 }
 
 /// Prints one line per scraper under `scrapers/`: its directory name (what
-/// `run` takes), then its `settings.json` display name and short
+/// `run` takes), then its `manifest.json` display name and short
 /// description.
 fn list() -> Result<()> {
     let names = list_scraper_names()?;
@@ -335,10 +335,10 @@ fn list() -> Result<()> {
 
     for scraper_name in names {
         let script_dir = PathBuf::from("scrapers").join(&scraper_name);
-        let settings = load_settings(&script_dir, &scraper_name)?;
+        let manifest = load_manifest(&script_dir, &scraper_name)?;
         println!(
             "{scraper_name:<width$}  {} - {}",
-            settings.name, settings.short_description
+            manifest.name, manifest.short_description
         );
     }
 
@@ -404,8 +404,8 @@ async fn run_scraper(args: &RunArgs, scraper_name: &str) -> Result<()> {
         .with_context(|| format!("reading Lua script {}", script_path.display()))?;
 
     let parameters = load_parameters(&args.secrets, scraper_name)?;
-    let settings = load_settings(&script_dir, scraper_name)?;
-    let debug_http_dump = settings.debug_http_dump || args.dev;
+    let manifest = load_manifest(&script_dir, scraper_name)?;
+    let debug_http_dump = manifest.debug_http_dump || args.dev;
 
     let on_progress: Arc<dyn Fn(ProgressEvent) + Send + Sync> =
         Arc::new(|event| print_progress(&event));
@@ -427,9 +427,9 @@ async fn run_scraper(args: &RunArgs, scraper_name: &str) -> Result<()> {
             &script,
             parameters,
             debug_http_dump,
-            settings.wreq_emulation,
-            settings.follow_redirects,
-            settings.allowed_domains,
+            manifest.wreq_emulation,
+            manifest.follow_redirects,
+            manifest.allowed_domains,
             args.visible,
         )
         .await
@@ -461,9 +461,9 @@ fn load_parameters(path: &PathBuf, scraper_name: &str) -> Result<Value> {
     Ok(config.parameters)
 }
 
-/// Reads `scrapers/<scraper_name>/settings.json` (next to `script.lua`).
-fn load_settings(script_dir: &Path, scraper_name: &str) -> Result<ScraperSettings> {
-    let path = script_dir.join("settings.json");
+/// Reads `scrapers/<scraper_name>/manifest.json` (next to `script.lua`).
+fn load_manifest(script_dir: &Path, scraper_name: &str) -> Result<ScraperManifest> {
+    let path = script_dir.join("manifest.json");
     let text = std::fs::read_to_string(&path).with_context(|| {
         format!(
             "reading {} (add one with a \"wreq_emulation\" bool for {})",

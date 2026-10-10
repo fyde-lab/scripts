@@ -12,7 +12,7 @@
 --      going through the native value setter so React sees the values), submitted via
 --      `#login-form button[type=submit]`.
 --   2. Turnstile passes on its own in the headless webview - provided its iframe can load,
---      hence `challenges.cloudflare.com` in settings.json's `allowed_domains` (and the sdk
+--      hence `challenges.cloudflare.com` in manifest.json's `allowed_domains` (and the sdk
 --      letting `about:blank`/`about:srcdoc` frames through). `wait_for_turnstile` just waits
 --      for its token before submitting.
 --   3. Valid credentials lead to a 2FA screen ("Vérifions votre identité") offering an SMS code

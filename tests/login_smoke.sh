@@ -6,7 +6,7 @@
 #   1. the login page is reachable and recognised  -> the run logs LOGIN_PAGE_FOUND
 #   2. a made-up username/password is rejected      -> the run fails with INVALID_CREDENTIALS
 #
-# Each scraper is run once with fake credentials built from its settings.json parameter
+# Each scraper is run once with fake credentials built from its manifest.json parameter
 # placeholders (so e.g. numeric-only logins get a numeric value), with a fresh, throwaway
 # storage directory (no restored session) and stdin closed (any OTP prompt gets no answer).
 #
@@ -32,9 +32,9 @@ for name in "$@"; do
   python3 - "$name" "$work/secrets.json" <<'PY'
 import json, sys
 name, out = sys.argv[1], sys.argv[2]
-settings = json.load(open(f"scrapers/{name}/settings.json"))
+manifest = json.load(open(f"scrapers/{name}/manifest.json"))
 params = {}
-for key, spec in (settings.get("parameters") or {"username": {}, "password": {}}).items():
+for key, spec in (manifest.get("parameters") or {"username": {}, "password": {}}).items():
     placeholder = str(spec.get("placeholder", ""))
     if spec.get("secret") or "•" in placeholder:
         params[key] = "fyde-smoke-Wrong-Passw0rd"

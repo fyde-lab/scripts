@@ -57,7 +57,7 @@ it, so a script is free to read whatever fields it needs (conventionally
 `username`/`password`) back out of it. Copy `secret.json.example` to `secret.json` and fill it
 in to run locally — never read or commit the real `secret.json`.
 
-Every scraper also has a `scrapers/<name>/settings.json`, next to its `script.lua` — unlike
+Every scraper also has a `scrapers/<name>/manifest.json`, next to its `script.lua` — unlike
 `--secrets`, this holds settings specific to the script itself rather than credentials, so
 it's committed alongside the script. It's a `{"name": string, "description": string,
 "short_description": string, "homepage": string, "wreq_emulation": bool, "debug_http_dump":
@@ -89,8 +89,8 @@ explicitly to the real site(s) it talks to (e.g. `["impots.gouv.fr"]` covers bot
 `cfspart.impots.gouv.fr` and `cfspart-idp.impots.gouv.fr`).
 
 Pass `--dev` to force `debug_http_dump` on for every scraper run regardless of what each
-scraper's `settings.json` sets — a shortcut for "I'm actively debugging this script's HTTP
-traffic" that doesn't require editing `settings.json`. The `create-script` and `fix-script`
+scraper's `manifest.json` sets — a shortcut for "I'm actively debugging this script's HTTP
+traffic" that doesn't require editing `manifest.json`. The `create-script` and `fix-script`
 skills always run with `--dev`, since both loops diagnose failures from the debug report's
 dumped HTTP bodies.
 
@@ -109,11 +109,11 @@ vendored, patched BoringSSL used by `wreq`, the scrapers domain's HTTP client).
 Four subcommands: `run`, `publish` (sends every scraper to a fyde server's scripts service as
 a public script), `check` (loads every script in the same restricted Lua stdlib as the sdk,
 without calling `run`) and `list` (prints every scraper's directory name with the `name`/
-`short_description` from its `settings.json`). `run` takes a variadic list of scraper names (e.g. `didaxis impots`), each
+`short_description` from its `manifest.json`). `run` takes a variadic list of scraper names (e.g. `didaxis impots`), each
 the name of a folder under `scrapers/`, and runs each in turn via `run_scraper`: reads
 `scrapers/<name>/script.lua`, loads that scraper's `parameters` from `--secrets` and its
 `wreq_emulation`/`debug_http_dump`/`follow_redirects`/`allowed_domains` settings from
-`scrapers/<name>/settings.json` (both keyed by the same name), builds an `on_progress`/
+`scrapers/<name>/manifest.json` (both keyed by the same name), builds an `on_progress`/
 `on_question` pair (printing progress to the terminal and blocking on stdin for a question —
 see `fyde_sdk::ClientConfig`'s doc comments for why the sdk's own host functions no longer do
 this directly), calls `fyde_sdk::init_dev_scrapers` to get a `scrapers::Service`, then calls

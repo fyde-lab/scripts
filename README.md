@@ -200,7 +200,7 @@ tests/login_smoke.sh                # every scraper
 tests/login_smoke.sh edf free sncf  # some of them
 ```
 
-Each scraper is run once with made-up credentials (built from its `settings.json` parameter
+Each scraper is run once with made-up credentials (built from its `manifest.json` parameter
 placeholders), a fresh storage directory and stdin closed; the script prints one markdown table
 row per scraper (login page found / invalid credentials detected) and keeps the full logs under
 `data/smoke/`. Browser-driven scrapers need a display (or Xvfb).
