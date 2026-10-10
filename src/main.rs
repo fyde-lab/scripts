@@ -42,6 +42,11 @@ enum Command {
     /// function, with no network calls or `--secrets` needed, so it's safe
     /// to run in CI.
     Check,
+
+    /// Lists every scraper under `scrapers/` (every directory containing a
+    /// `script.lua`), with the display name and short description from its
+    /// `settings.json`.
+    List,
 }
 
 #[derive(Parser)]
@@ -179,6 +184,7 @@ async fn main() -> Result<()> {
         Some(Command::Run(args)) => run(args).await,
         Some(Command::Publish(args)) => publish(args).await,
         Some(Command::Check) => check(),
+        Some(Command::List) => list(),
         None => {
             Cli::command().print_help()?;
             Ok(())
@@ -314,6 +320,25 @@ fn check() -> Result<()> {
         anyhow::bail!(
             "{} scraper script(s) failed validation: {failed:?}",
             failed.len()
+        );
+    }
+
+    Ok(())
+}
+
+/// Prints one line per scraper under `scrapers/`: its directory name (what
+/// `run` takes), then its `settings.json` display name and short
+/// description.
+fn list() -> Result<()> {
+    let names = list_scraper_names()?;
+    let width = names.iter().map(String::len).max().unwrap_or(0);
+
+    for scraper_name in names {
+        let script_dir = PathBuf::from("scrapers").join(&scraper_name);
+        let settings = load_settings(&script_dir, &scraper_name)?;
+        println!(
+            "{scraper_name:<width$}  {} - {}",
+            settings.name, settings.short_description
         );
     }
 

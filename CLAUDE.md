@@ -41,6 +41,7 @@ cargo build
 cargo run -- run didaxis                          # runs scrapers/didaxis/script.lua
 cargo run -- run didaxis impots --documents-dir data/documents  # runs both, in order
 cargo run -- check                                # loads every script without running it
+cargo run -- list                                 # lists every scraper with its name/short description
 ```
 
 There is no Rust test suite here — the logic worth testing (the dev documents service, the
@@ -105,9 +106,10 @@ vendored, patched BoringSSL used by `wreq`, the scrapers domain's HTTP client).
 
 ### `src/main.rs`
 
-Three subcommands: `run`, `publish` (sends every scraper to a fyde server's scripts service as
-a public script) and `check` (loads every script in the same restricted Lua stdlib as the sdk,
-without calling `run`). `run` takes a variadic list of scraper names (e.g. `didaxis impots`), each
+Four subcommands: `run`, `publish` (sends every scraper to a fyde server's scripts service as
+a public script), `check` (loads every script in the same restricted Lua stdlib as the sdk,
+without calling `run`) and `list` (prints every scraper's directory name with the `name`/
+`short_description` from its `settings.json`). `run` takes a variadic list of scraper names (e.g. `didaxis impots`), each
 the name of a folder under `scrapers/`, and runs each in turn via `run_scraper`: reads
 `scrapers/<name>/script.lua`, loads that scraper's `parameters` from `--secrets` and its
 `wreq_emulation`/`debug_http_dump`/`follow_redirects`/`allowed_domains` settings from
