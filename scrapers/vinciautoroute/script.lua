@@ -1,18 +1,35 @@
--- Scraper for VINCI Autoroutes' subscriber area (espaceabonnes.vinci-autoroutes.com): downloads
--- the toll-badge invoices.
+-- Scraper for VINCI Autoroutes' toll-badge customer area, now Ulys (account.ulys.com): login
+-- check only - documents blocked, see below.
 --
--- Ported from github.com/konnectors/vinciautoroute (src/index.js): the area redirects to its
--- OpenID Connect login page; `oidc-bcu.vinci-autoroutes.com/account/loginStatus` (email,
--- clientId=BCU.EspaceAbonnes) gives the account type (`Accounts[0].AccountTypeEnum`), then the
--- login page's `form` is posted with username/password/accountType - "...saisi est incorrect"
--- means bad credentials. Invoices: the `.table tbody tr` rows of `/FacturesConso/Factures` (id,
--- ..., period, ..., amount, ..., date, PDF link). The consumption import is data, not documents.
--- Unverified (see README.md).
+-- Originally ported from github.com/konnectors/vinciautoroute, whose
+-- espaceabonnes.vinci-autoroutes.com now redirects to account.ulys.com, and whose
+-- oidc-bcu.vinci-autoroutes.com no longer answers. The new customer area is an Angular SPA
+-- signing in through an IdentityServer at connect.ulys.com (client `BCU.EspaceClient`, redirect
+-- `https://account.ulys.com/oidc-callback`, both from the SPA's bundle). Its server-rendered
+-- `/Account/Login` form (`#username`/`#password`, `#login` button) is gated by a Friendly Captcha
+-- widget that a plain HTTP post can't satisfy ("Merci de prouver que vous n'êtes pas un robot"),
+-- but that solves itself in the webview once `.frc-button` is clicked (proof of work, ~5s), which
+-- enables `#login`. Bad credentials re-render the form with "Votre identifiant ou votre mot de
+-- passe n’est pas correct". All of the above is confirmed against the live site.
+--
+-- **Blocked past the login:** a successful login hands back to account.ulys.com, whose SPA
+-- refuses WebKitGTK outright ("Votre Espace Client ne fonctionne pas sur ce navigateur : Safari
+-- 11.x sur Linux"), and `fyde.browser` exposes neither the current URL (to exchange the
+-- authorization code with `fyde.http` instead) nor a way to change its user agent. So invoices
+-- (`api.ulys.invoices.r` on the SPA's API) aren't fetched: leaving connect.ulys.com counts as
+-- logged in, and the run then stops with an explicit error. See README.md.
 
 local M = {}
 
-local BASE = "https://espaceabonnes.vinci-autoroutes.com"
-local BILLS_URL = BASE .. "/FacturesConso/Factures"
+local AUTHORIZE_URL = "https://connect.ulys.com/connect/authorize?client_id=BCU.EspaceClient"
+  .. "&response_type=code&scope=openid%20email&redirect_uri=https%3A%2F%2Faccount.ulys.com%2Foidc-callback"
+  .. "&state=fyde&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"
+local LOGIN_FORM = "form#fullLogin"
+local CAPTCHA_BUTTON = ".frc-button"
+-- Only rendered after a rejected login (the field-level messages are always in the markup).
+local BAD_CREDENTIALS = { "mot de passe n’est pas correct", "mot de passe n'est pas correct" }
+-- What account.ulys.com's SPA shows WebKitGTK - also the sign the login went through.
+local LEFT_LOGIN = { "ne fonctionne pas sur ce navigateur", "Espace Client" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -151,53 +168,89 @@ local function save_pdf(url, filename, fields, headers)
 end
 -- luacheck: pop
 
+local function sleep(ms)
+  pcall(function()
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
+  end)
+end
+
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+local function body_text(html)
+  local body = fyde.html.select(html, "body")[1]
+  return body and body.text or ""
+end
+
+-- "login" while connect.ulys.com's form is shown, "left" once the browser is past it.
+local function current_state(html)
+  if has(html, LOGIN_FORM) then
+    return "login"
+  elseif contains_any(body_text(html), LEFT_LOGIN) then
+    return "left"
+  end
+  return nil
+end
+
 local function login(params)
-  fyde.progress.step("Logging in")
-  local page = fyde.http.get(BASE .. "/")
-  if not has(page, "form input[name='password'], form input[type='password']") then
-    page = fyde.http.get(page.url)
-  end
-  if not has(page, "form") then
-    error("VINCI login form not found on " .. page.url)
-  end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local status = json_or_nil(fyde.http.post_form("https://oidc-bcu.vinci-autoroutes.com/account/loginStatus",
-    { email = params.username, clientId = "BCU.EspaceAbonnes" }).body) or {}
-  local account_type = status.Accounts and status.Accounts[1] and status.Accounts[1].AccountTypeEnum
-  if not account_type then
-    fail(INVALID_CREDENTIALS, "unknown e-mail")
+  fyde.progress.step("Logging in")
+  fyde.browser:fill("#username", params.username)
+  fyde.browser:fill("#password", params.password)
+  fyde.browser:click(CAPTCHA_BUTTON)
+  local ready = false
+  for _ = 1, 30 do
+    sleep(1000)
+    local button = fyde.html.select(page_html(), "#login")[1]
+    if button and button.attrs.disabled == nil then
+      ready = true
+      break
+    end
   end
-  local resp = submit_form(page, "form", { username = params.username, password = params.password, accountType = tostring(account_type) })
-  if contains(resp.body, "saisi est incorrect") then
-    fail(INVALID_CREDENTIALS)
+  if not ready then
+    error("Ulys' anti-robot check (Friendly Captcha) did not complete")
   end
+  fyde.browser:click("#login")
+  sleep(2000)
+  for _ = 1, 40 do
+    local html = page_html()
+    if has(html, LOGIN_FORM) and contains_any(body_text(html), BAD_CREDENTIALS) then
+      fail(INVALID_CREDENTIALS)
+    elseif current_state(html) == "left" then
+      return
+    end
+    sleep(1000)
+  end
+  if has(page_html(), LOGIN_FORM) then
+    fail(INVALID_CREDENTIALS, "still on the login form")
+  end
+  error("Ulys login did not complete")
 end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local page = fyde.http.get(BILLS_URL)
-  if page.url:find("espaceabonnes.vinci-autoroutes.com", 1, true) and has(page, ".table") then
-    fyde.log.info("ALREADY_LOGGED_IN")
-  else
-    login(params)
-    page = fyde.http.get(BILLS_URL)
-  end
-
-  fyde.progress.step("Downloading invoices")
-  for _, row in ipairs(fyde.html.select(page.body, ".table tbody tr")) do
-    local link = fyde.html.select(row.html, "a")[1]
-    local cells = fyde.html.select(row.html, "td")
-    if link and link.attrs.href and cells[1] then
-      local id, period = trim(cells[1].text), cells[3] and trim(cells[3].text) or ""
-      save_pdf(BASE .. link.attrs.href, sanitize(period) .. "_vinci_" .. sanitize(id) .. ".pdf", {
-        name = "Facture VINCI Autoroutes " .. period,
-        type = "transport_invoice",
-        source_category = "transport",
-        purpose = "invoice",
-      })
+  fyde.browser:open(AUTHORIZE_URL)
+  local state
+  for _ = 1, 45 do
+    sleep(1000)
+    state = current_state(page_html())
+    if state then
+      break
     end
   end
-  fyde.progress.step("Done")
+  if state == "left" then
+    fyde.log.info("ALREADY_LOGGED_IN")
+  elseif state == "login" then
+    login(params)
+  else
+    error("Ulys login page not found on connect.ulys.com")
+  end
+  error("logged in, but Ulys' customer area refuses this browser engine, so invoices can't be "
+    .. "fetched - see this script's header comment", 0)
 end
 
 return M

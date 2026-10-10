@@ -1,25 +1,26 @@
--- Scraper for the APRR (Autoroutes Paris-Rhin-Rhône) customer area (espaceclient.aprr.fr):
--- downloads the monthly toll-badge invoices.
+-- Scraper for APRR's toll-badge customer area, now Fulli (www.fulli.com, which replaced APRR's
+-- espaceclient.aprr.fr and Mango Mobilités in 2023): downloads the toll-badge invoices.
 --
--- Ported from github.com/konnectors/aprr (src/index.js): an ASP.NET WebForms site, logged into
--- by posting the page's own `form` with every hidden field (__VIEWSTATE & co) plus the login
--- control's fields and its `__EVENTTARGET`; a session is valid when the
--- `#ctl00_customerArea_LbnDisconnect` logout link is rendered. Invoices are the rows of
--- `#divMyInvoicesContent table`, each downloadable at `conso_factures.aspx?facture=<id>`.
--- The konnector's trip/consumption import (GetTrajets.aspx) is data, not documents, so it is
--- not ported. Unverified against the live site (see README.md).
+-- Originally ported from github.com/konnectors/aprr, whose ASP.NET espaceclient.aprr.fr now just
+-- redirects to a dead mango-mobilitesbyaprr.com host (its TLS certificate doesn't match). Rebuilt
+-- against the live site: `www.fulli.com/customer/login` hands over to a Keycloak SSO
+-- (sso.aprr.fr, realm `Clients`) whose login is passwordless - `form#kc-form-identifier` takes
+-- the email/customer number, then `form#kc-otp-form` asks for a 6-digit code sent by email
+-- ("si une adresse e-mail correspond", so an unknown identifier is never reported as such: a
+-- wrong login surfaces as MFA_FAILED, not INVALID_CREDENTIALS). A rejected code re-renders the
+-- OTP form with "Le code est invalide ou a expiré.". The password parameter is unused.
+-- Confirmed against the live site: the SSO hand-over, both forms and the rejected-code answer.
+-- Not verified (no account): the page a successful login lands on and where invoices are
+-- listed - invoices are looked for as PDF/"facture" links on that page (see README.md).
 
 local M = {}
 
-local BASE = "https://espaceclient.aprr.fr/aprr"
-local LOGIN_URL = BASE .. "/Pages/connexion.aspx"
-local BILLS_URL = BASE .. "/Pages/MaConsommation/conso_factures.aspx"
-
-local LOGGED_IN = "#ctl00_customerArea_LbnDisconnect"
-local LOGIN_FIELD = "ctl00$PlaceHolderMain$ConsoBlocTemplateControl$ConnexionAscx$TbxLogin"
-local PASSWORD_FIELD = "ctl00$PlaceHolderMain$ConsoBlocTemplateControl$ConnexionAscx$TbxPassword"
-local SUBMIT_TARGET = "ctl00$PlaceHolderMain$ConsoBlocTemplateControl$ConnexionAscx$LbnButtonConnection"
-local BAD_CREDENTIALS = { "mot de passe incorrect", "identifiant ou mot de passe", "identifiants incorrects", "erron" }
+local ORIGIN = "https://www.fulli.com"
+local LOGIN_URL = ORIGIN .. "/customer/login"
+local SSO_HOST = "sso.aprr.fr"
+local IDENTIFIER_FORM = "form#kc-form-identifier"
+local OTP_FORM = "form#kc-otp-form"
+local BAD_CODE = { "code est invalide", "a expiré" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -158,50 +159,58 @@ local function save_pdf(url, filename, fields, headers)
 end
 -- luacheck: pop
 
+local function on_sso(page)
+  return contains(page.url, SSO_HOST)
+end
+
 local function login(params)
   fyde.progress.step("Logging in")
   local page = fyde.http.get(LOGIN_URL)
-  if not has(page, "input[name='" .. LOGIN_FIELD .. "']") then
-    error("APRR login form not found on " .. page.url)
+  if not has(page, IDENTIFIER_FORM) then
+    error("Fulli login form not found on " .. page.url)
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = submit_form(page, "form", {
-    [LOGIN_FIELD] = params.username,
-    [PASSWORD_FIELD] = params.password,
-    __EVENTTARGET = SUBMIT_TARGET,
-  })
-  if has(resp, LOGGED_IN) then
-    return
+  page = submit_form(page, IDENTIFIER_FORM, { identifier = params.username })
+  if not has(page, OTP_FORM) then
+    error("Fulli did not ask for the emailed code after the identifier (landed on " .. page.url .. ")")
   end
-  -- The konnector's validate() fails (LOGIN_FAILED) whenever the logout link is missing.
-  fail(INVALID_CREDENTIALS, contains_any(resp.body, BAD_CREDENTIALS) and "rejected by APRR" or "no logout link after login")
+  local code = ask_code("Code de vérification reçu par e-mail de Fulli (APRR)")
+  page = submit_form(page, OTP_FORM, { otp = code, form_action = "" })
+  if has(page, OTP_FORM) or on_sso(page) then
+    fail(MFA_FAILED, contains_any(page.body, BAD_CODE) and "code rejected by Fulli" or "still on the SSO after the code")
+  end
+  return page
 end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local page = fyde.http.get(BILLS_URL)
-  if has(page, LOGGED_IN) then
+  -- With a session, the login link no longer hands over to the SSO.
+  local page = fyde.http.get(LOGIN_URL)
+  if not on_sso(page) then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
-    login(params)
-    page = fyde.http.get(BILLS_URL)
+    page = login(params)
   end
 
   fyde.progress.step("Downloading invoices")
-  local rows = fyde.html.select(page.body, "#divMyInvoicesContent table tbody tr")
-  for i, row in ipairs(rows) do
-    local cells = fyde.html.select(row.html, "td")
-    local id = cells[1] and trim(cells[1].text) or ""
-    if id ~= "" then
-      local month = cells[2] and trim(cells[2].text) or ""
-      fyde.progress.update(i, #rows, month)
-      save_pdf(BILLS_URL .. "?facture=" .. id, month .. "_aprr_" .. id .. ".pdf", {
-        name = "Facture APRR " .. month,
+  local seen, count = {}, 0
+  for _, link in ipairs(fyde.html.select(page.body, "a[href]")) do
+    local href = link.attrs.href or ""
+    local text = trim(link.text or "")
+    if (href:lower():find("%.pdf") or contains_any(href .. " " .. text, { "facture", "invoice" })) and not seen[href] then
+      seen[href] = true
+      count = count + 1
+      local label = text ~= "" and text or tostring(count)
+      save_pdf(absolute(page.url, href), "fulli_" .. sanitize(label) .. ".pdf", {
+        name = "Facture Fulli (APRR) " .. label,
         type = "invoice",
         source_category = "transport",
         purpose = "invoice",
       })
     end
+  end
+  if count == 0 then
+    fyde.log.warn("no invoice link found on " .. page.url)
   end
   fyde.progress.step("Done")
 end

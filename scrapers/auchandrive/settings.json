@@ -1,14 +1,12 @@
 {
   "name": "Auchan Drive",
-  "short_description": "Commandes Auchan Drive",
-  "description": "Se connecte au compte client Auchan Drive (auchandrive.fr) pour lister les commandes passées.",
-  "homepage": "https://www.auchandrive.fr",
+  "short_description": "Factures Auchan (ex-Auchan Drive)",
+  "description": "Se connecte au compte client auchan.fr (ex-Auchan Drive) pour récupérer les factures des commandes.",
+  "homepage": "https://www.auchan.fr",
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
-  "allowed_domains": [
-    "auchandrive.fr"
-  ],
+  "allowed_domains": ["auchan.fr"],
   "parameters": {
     "username": {
       "label": "Identifiant",

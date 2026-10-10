@@ -1,19 +1,27 @@
--- Scraper for Thomann (thomann.de), the music-instrument retailer: downloads order invoices.
+-- Scraper for Thomann (thomann.fr), the music-instrument retailer: downloads order invoices.
 --
--- Ported from github.com/konnectors/thomann (src/index.js): the French index page for cookies,
--- then `/fr/mythomann_login.html` takes uname/passw/loginpermanent/o/logintry/usezip; not
--- landing on `/fr/mythomann.html` means bad credentials. Orders: the `.mythomann-order-teaser`
--- blocks of `/fr/mythomann_orderlist.html` ("Commande <n> Prix total <amount> € ... du
--- dd.mm.yyyy", details link), paginated by `#order-list .fx-pagination__pages-button` after the
--- active one; each details page has an `a.mythomann-order-history__entry-pdf-button` invoice.
--- Unverified (see README.md).
+-- Originally ported from github.com/konnectors/thomann (thomann.de/fr), which now redirects to
+-- thomann.fr - behind a Cloudflare "Just a moment..." challenge that plain HTTP can't pass, and
+-- with an invisible Turnstile widget on the login form that only resolves on submit. So it is
+-- driven through `fyde.browser` (with challenges.cloudflare.com allowed): `/mythomann_login.html`
+-- has `input[name='uname']`/`input[name='passw']` and a "Se connecter" submit button; bad
+-- credentials re-render the form with "La connexion a échouée – Email ou mot de passe
+-- incorrect." after ~10s (both confirmed against the live site). Orders, unverified (no
+-- account): the `.mythomann-order-teaser` blocks of `/mythomann_orderlist.html` ("Commande <n>
+-- ... du dd.mm.yyyy", details link), paginated by `#order-list .fx-pagination__pages-button`
+-- after the active one; each details page has an `a.mythomann-order-history__entry-pdf-button`
+-- invoice, downloaded through the webview. See README.md.
 
 local M = {}
 
-local BASE = "https://www.thomann.de"
-local LOGIN_URL = BASE .. "/fr/mythomann_login.html"
-local ACCOUNT_URL = BASE .. "/fr/mythomann.html"
-local ORDERS_URL = BASE .. "/fr/mythomann_orderlist.html"
+local BASE = "https://www.thomann.fr"
+local LOGIN_URL = BASE .. "/mythomann_login.html"
+local ORDERS_URL = BASE .. "/mythomann_orderlist.html"
+local PASSWORD_FIELD = "input[name='passw']"
+local SUBMIT = "form:has(input[name='passw']) button[type='submit']"
+local LOGGED_IN = "a[href*='logout'], a[href*='mythomann_orderlist']"
+local BAD_CREDENTIALS = { "mot de passe incorrect", "connexion a échoué" }
+local PDF_BUTTON = "a.mythomann-order-history__entry-pdf-button"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -152,58 +160,100 @@ local function save_pdf(url, filename, fields, headers)
 end
 -- luacheck: pop
 
+local function sleep(ms)
+  pcall(function()
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
+  end)
+end
+
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+local function body_text(html)
+  local body = fyde.html.select(html, "body")[1]
+  return body and body.text or ""
+end
+
+-- Opens `url` and waits (up to `timeout_ms`, past the Cloudflare challenge) for one of
+-- `selectors` to show up; returns the page's markup either way.
+local function open(url, selectors, timeout_ms)
+  fyde.browser:open(url)
+  local html = ""
+  for _ = 1, math.ceil(timeout_ms / 1000) do
+    sleep(1000)
+    html = page_html()
+    for _, selector in ipairs(selectors) do
+      if has(html, selector) then
+        return html
+      end
+    end
+  end
+  return html
+end
+
 local function login(params)
-  fyde.progress.step("Logging in")
-  fyde.http.get(BASE .. "/fr/index.html")
-  local page = fyde.http.get(LOGIN_URL)
-  if not has(page, "input[name='passw']") then
-    error("Thomann login form not found on " .. page.url)
-  end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = fyde.http.post_form(LOGIN_URL, {
-    uname = params.username,
-    passw = params.password,
-    loginpermanent = "on",
-    o = LOGIN_URL,
-    logintry = "1",
-    usezip = "0",
-  })
-  if resp.url ~= ACCOUNT_URL then
-    fail(INVALID_CREDENTIALS)
+  fyde.progress.step("Logging in")
+  fyde.browser:fill("input[name='uname']", params.username)
+  fyde.browser:fill(PASSWORD_FIELD, params.password)
+  fyde.browser:click(SUBMIT)
+  -- The invisible Turnstile runs first: the answer takes ~10s.
+  for _ = 1, 45 do
+    sleep(1000)
+    local html = page_html()
+    if has(html, PASSWORD_FIELD) and contains_any(body_text(html), BAD_CREDENTIALS) then
+      fail(INVALID_CREDENTIALS)
+    elseif not has(html, PASSWORD_FIELD) and has(html, LOGGED_IN) then
+      return
+    end
   end
+  if has(page_html(), PASSWORD_FIELD) then
+    fail(INVALID_CREDENTIALS, "still on the login form")
+  end
+  error("Thomann login did not complete (no account page after submitting)")
 end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local check = fyde.http.get(ACCOUNT_URL)
-  if check.url == ACCOUNT_URL and not has(check, "input[name='passw']") then
+  local html = open(LOGIN_URL, { PASSWORD_FIELD, LOGGED_IN }, 45000)
+  if has(html, PASSWORD_FIELD) then
+    login(params)
+  elseif has(html, LOGGED_IN) then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
-    login(params)
+    error("Thomann login page not found (Cloudflare challenge not passed?)")
   end
 
   fyde.progress.step("Downloading invoices")
-  local page = fyde.http.get(ORDERS_URL)
+  local page = open(ORDERS_URL, { ".mythomann-order-teaser", "#order-list" }, 30000)
   for _ = 1, 50 do
-    for _, teaser in ipairs(fyde.html.select(page.body, ".mythomann-order-teaser")) do
+    for _, teaser in ipairs(fyde.html.select(page, ".mythomann-order-teaser")) do
       local details = fyde.html.select(teaser.html, ".mythomann-order-teaser__details-wrapper > a")[1]
       local text = teaser.text:gsub("%s+", " ")
       local number = text:match("Commande ([%d%.]+)") or "commande"
       local day, month, year = text:match("du (%d+)%.(%d+)%.(%d+)")
       if details and details.attrs.href then
-        local detail = fyde.http.get(absolute(BASE, details.attrs.href))
-        local pdf = fyde.html.select(detail.body, "a.mythomann-order-history__entry-pdf-button")[1]
-        if pdf and pdf.attrs.href then
-          save_pdf(absolute(BASE, pdf.attrs.href), (year and (year .. "-" .. month .. "-" .. day) or "") .. "_thomann_" .. number .. ".pdf", {
+        open(absolute(BASE, details.attrs.href), { PDF_BUTTON }, 20000)
+        local ok, bytes = pcall(function()
+          return fyde.browser:download(PDF_BUTTON, 60000)
+        end)
+        if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
+          fyde.save_document(sanitize((year and (year .. "-" .. month .. "-" .. day) or "") .. "_thomann_" .. number .. ".pdf"), bytes, {
             name = "Facture Thomann " .. number,
             type = "other_invoice",
             source_category = "shopping",
             purpose = "invoice",
           })
+        else
+          fyde.log.warn("no invoice PDF for order " .. number .. ": " .. tostring(ok and "not a PDF" or bytes))
         end
       end
     end
-    local buttons = fyde.html.select(page.body, "#order-list > .fx-pagination > .fx-pagination__pages > .fx-pagination__pages-button")
+    local buttons = fyde.html.select(page, "#order-list > .fx-pagination > .fx-pagination__pages > .fx-pagination__pages-button")
     local next_url
     for i, button in ipairs(buttons) do
       if (button.attrs.class or ""):find("fx-pagination__pages-button--active", 1, true) and buttons[i + 1] then
@@ -213,7 +263,7 @@ function M.run(params)
     if not next_url then
       break
     end
-    page = fyde.http.get(BASE .. next_url)
+    page = open(absolute(BASE, next_url), { ".mythomann-order-teaser" }, 30000)
   end
   fyde.progress.step("Done")
 end

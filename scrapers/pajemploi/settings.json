@@ -1,14 +1,12 @@
 {
   "name": "Pajemploi",
   "short_description": "Bulletins de salaire Pajemploi",
-  "description": "Se connecte à l'espace employeur Pajemploi (pajemploi.urssaf.fr) pour récupérer les bulletins de salaire et attestations fiscales.",
-  "homepage": "https://www.pajemploi.urssaf.fr",
+  "description": "Se connecte à l'espace employeur Pajemploi (pajemploi.urssaf.fr) (identifiants Urssaf). Connexion uniquement pour l'instant : les bulletins de salaire et attestations fiscales ne sont pas encore récupérés.",
+  "homepage": "https://pajemploi.urssaf.fr",
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
-  "allowed_domains": [
-    "pajemploi.urssaf.fr"
-  ],
+  "allowed_domains": ["urssaf.fr", "challenges.cloudflare.com"],
   "parameters": {
     "username": {
       "label": "Identifiant Pajemploi",

@@ -1,24 +1,24 @@
--- Scraper for Auchan Drive's customer account (auchandrive.fr): lists past orders.
+-- Scraper for Auchan Drive's customer account, now part of auchan.fr: downloads order invoices.
 --
--- Ported from github.com/konnectors/auchandrive (src/index.js): a drive store is first picked
--- (`/drive/mag/St-Quentin-985/`, with the prehome as Referer) so the site sets its store
--- cookies, then `form[name="formIdentification"]` is posted from `/drive/client/identification`
--- (emailValidate/passwordValidate/t-zoneid=identification). The session is valid when the
--- "Me connecter" link (`span[title="Me connecter"]`) is gone.
---
--- Documents: the site never offered PDF receipts - the konnector rendered each picked-up
--- ("Retirée") order's print page (`/drive/impression/imprimeanciennecommande/<order>`) into a
--- PDF itself (pdfjs + html2pdf.js). This port does the same with a text-only PDF of the
--- order's `div.liste-courses` product table. Auchan Drive has since moved to auchan.fr, so
--- this site may no longer exist. Unverified (see README.md).
+-- Originally ported from github.com/konnectors/auchandrive, whose auchandrive.fr site now
+-- redirects to auchan.fr, where the old `/drive/client/identification` form is gone (404).
+-- Rebuilt against the live site: `www.auchan.fr/client/mes-commandes` redirects a logged-out
+-- visitor to a Keycloak SSO (compte.auchan.fr, realm `auchan.fr`) whose `form#kc-form-login`
+-- takes `username`/`password`. The form carries a reCAPTCHA v3 field (`g-recaptcha-response`)
+-- that this host can't fill; posted empty, bad credentials still get "Nom d'utilisateur ou mot
+-- de passe invalide." (confirmed against the live site) - whether a correct login goes through
+-- without a token is not. Success hands back to `mes-commandes?auth_callback=1`.
+-- Documents: the konnector rendered drive orders' print pages into PDFs itself; that page is gone
+-- too. Not verified (no account): invoices are looked for as PDF/"facture" links on the orders
+-- page (see README.md).
 
 local M = {}
 
-local BASE = "https://www.auchandrive.fr/drive"
-local LOGIN_URL = BASE .. "/client/identification"
-local ORDERS_URL = BASE .. "/client/mescommandes"
-local LOGIN_FORM = "form[name='formIdentification']"
-local LOGGED_OUT = "span[title='Me connecter']"
+local ORIGIN = "https://www.auchan.fr"
+local ORDERS_URL = ORIGIN .. "/client/mes-commandes"
+local SSO_HOST = "compte.auchan.fr"
+local LOGIN_FORM = "form#kc-form-login"
+local BAD_CREDENTIALS = { "mot de passe invalide", "Invalid username or password" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -219,59 +219,60 @@ local function html_lines(html)
 end
 -- luacheck: pop
 
-local function login(params)
+local function on_sso(page)
+  return contains(page.url, SSO_HOST)
+end
+
+-- `page` is the SSO login page the orders page redirected to.
+local function login(params, page)
   fyde.progress.step("Logging in")
-  fyde.http.get(BASE .. "/mag/St-Quentin-985/", { Referer = BASE .. "/prehome/" })
-  local page = fyde.http.get(LOGIN_URL)
   if not has(page, LOGIN_FORM) then
-    error("Auchan Drive login form not found on " .. page.url)
+    error("Auchan login form not found on " .. page.url)
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
   local resp = submit_form(page, LOGIN_FORM, {
-    emailValidate = params.username,
-    passwordValidate = params.password,
-    ["t-zoneid"] = "identification",
+    username = params.username,
+    password = params.password,
+    rememberMe = "on",
   })
-  if has(resp, LOGGED_OUT) then
-    fail(INVALID_CREDENTIALS, "'Me connecter' still shown after login")
+  if has(resp, LOGIN_FORM) or on_sso(resp) then
+    if contains_any(resp.body, BAD_CREDENTIALS) then
+      fail(INVALID_CREDENTIALS)
+    end
+    error("Auchan login did not complete (reCAPTCHA?) - still on " .. resp.url)
   end
+  return resp
 end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
   local page = fyde.http.get(ORDERS_URL)
-  if has(page, "table tr td") and not has(page, LOGGED_OUT) then
+  if not on_sso(page) then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
-    login(params)
+    login(params, page)
     page = fyde.http.get(ORDERS_URL)
   end
 
-  fyde.progress.step("Saving picked-up orders")
-  local rows = fyde.html.select(page.body, "table tr")
-  for i, row in ipairs(rows) do
-    local cells = fyde.html.select(row.html, "td")
-    if #cells >= 7 and trim(cells[7].text) == "Retir\195\169e" then
-      local order, date, amount = trim(cells[1].text), trim(cells[3].text), trim(cells[5].text)
-      fyde.progress.update(i, #rows, order)
-      local url = BASE .. "/impression/imprimeanciennecommande/" .. order
-      local print_page = fyde.http.get(url)
-      local lines = { "Magasin : " .. trim(cells[2].text), "Date : " .. date, "Montant : " .. amount, "Source : " .. url, "" }
-      for _, product in ipairs(fyde.html.select(print_page.body, "div.liste-courses table tr")) do
-        local p = fyde.html.select(product.html, "td")
-        if #p >= 7 then
-          lines[#lines + 1] = string.format("%s x %s - %s", trim(p[2].text), trim(p[1].text), trim(p[7].text))
-        end
-      end
-      local d, m, y = date:match("(%d%d)/(%d%d)/(%d%d%d%d)")
-      fyde.save_document((y and (y .. "-" .. m .. "-" .. d) or sanitize(date)) .. "_" .. amount:gsub("%s", "") .. "_" .. order .. ".pdf",
-        text_pdf("Commande Auchan Drive " .. order, lines), {
-          name = "Commande Auchan Drive " .. date,
-          type = "invoice",
-          source_category = "alimentation",
-          purpose = "invoice",
-        })
+  fyde.progress.step("Downloading invoices")
+  local seen, count = {}, 0
+  for _, link in ipairs(fyde.html.select(page.body, "a[href]")) do
+    local href = link.attrs.href or ""
+    local text = trim(link.text or "")
+    if (href:lower():find("%.pdf") or contains_any(href .. " " .. text, { "facture", "invoice" })) and not seen[href] then
+      seen[href] = true
+      count = count + 1
+      local label = text ~= "" and text or tostring(count)
+      save_pdf(absolute(page.url, href), "auchan_" .. count .. "_" .. sanitize(label) .. ".pdf", {
+        name = "Facture Auchan " .. label,
+        type = "invoice",
+        source_category = "alimentation",
+        purpose = "invoice",
+      })
     end
+  end
+  if count == 0 then
+    fyde.log.warn("no invoice link found on " .. page.url)
   end
   fyde.progress.step("Done")
 end

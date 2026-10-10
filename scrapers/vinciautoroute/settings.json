@@ -1,14 +1,12 @@
 {
   "name": "VINCI Autoroutes",
-  "short_description": "Factures de télépéage VINCI Autoroutes",
-  "description": "Se connecte à l'espace abonnés VINCI Autoroutes pour récupérer les factures du badge de télépéage.",
-  "homepage": "https://www.vinci-autoroutes.com",
+  "short_description": "Télépéage VINCI Autoroutes (Ulys)",
+  "description": "Se connecte à l'espace client Ulys (ex-espace abonnés VINCI Autoroutes). Vérification des identifiants uniquement : l'espace client refuse le navigateur intégré, les factures ne sont pas récupérées.",
+  "homepage": "https://account.ulys.com",
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
-  "allowed_domains": [
-    "vinci-autoroutes.com"
-  ],
+  "allowed_domains": ["ulys.com", "friendlycaptcha.com", "frcapi.com", "friendlycaptcha.eu"],
   "parameters": {
     "username": {
       "label": "Identifiant",

@@ -1,14 +1,12 @@
 {
   "name": "Thomann",
   "short_description": "Factures Thomann",
-  "description": "Se connecte au compte client Thomann (thomann.de) pour récupérer les factures des commandes.",
-  "homepage": "https://www.thomann.de",
+  "description": "Se connecte au compte client Thomann (thomann.fr) pour récupérer les factures des commandes.",
+  "homepage": "https://www.thomann.fr",
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
-  "allowed_domains": [
-    "thomann.de"
-  ],
+  "allowed_domains": ["thomann.fr", "challenges.cloudflare.com"],
   "parameters": {
     "username": {
       "label": "Identifiant",

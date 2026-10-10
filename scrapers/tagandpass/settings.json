@@ -6,9 +6,7 @@
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
-  "allowed_domains": [
-    "tag.fr"
-  ],
+  "allowed_domains": ["tag.fr", "reso-m.fr"],
   "parameters": {
     "username": {
       "label": "Identifiant",

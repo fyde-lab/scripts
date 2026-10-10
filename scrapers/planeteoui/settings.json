@@ -1,14 +1,12 @@
 {
   "name": "Planète OUI",
-  "short_description": "Factures Planète OUI",
-  "description": "Se connecte à l'espace client Planète OUI / OUI Energy pour récupérer les factures d'électricité de chaque point de livraison.",
-  "homepage": "https://www.planete-oui.fr",
+  "short_description": "Factures Planète OUI (Mint Énergie)",
+  "description": "Se connecte à l'espace client Mint Énergie, qui a repris les clients Planète OUI, pour récupérer les factures d'électricité et de gaz.",
+  "homepage": "https://client.mint-energie.com",
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
-  "allowed_domains": [
-    "planete-oui.fr"
-  ],
+  "allowed_domains": ["mint-energie.com"],
   "parameters": {
     "username": {
       "label": "Identifiant",

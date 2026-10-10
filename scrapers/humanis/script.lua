@@ -1,18 +1,24 @@
--- Scraper for Humanis' health member area (sante-espaceparticuliers.humanis.com): downloads the
--- monthly health statements ("e-relevés santé").
+-- Scraper for Humanis' health customer area, now Malakoff Humanis' "espace particulier"
+-- (espace-particulier.malakoffhumanis.com): login check only, documents not ported yet.
 --
--- Ported from github.com/konnectors/humanis (src/index.js): a Drupal login - the home page's
--- `form` (name/pass); a `.messages--error` block means bad credentials. Statements: the
--- `.estatement-row` entries of `/e-releves-et-remboursements/vos-e-releves-sante` (`.date
--- .text` month, `.amount .text`, `.download-pdf-document` link), skipping 0.00 € ones. The
--- konnector also parsed reimbursement details to link them to the statements' PDF text, which
--- is metadata, not documents. Humanis has since merged into Malakoff Humanis, so this site may
--- be gone. Unverified (see README.md).
+-- Originally ported from github.com/konnectors/humanis, whose sante-espaceparticuliers.humanis.com
+-- Drupal site now redirects to particulier.malakoffhumanis.com. The new customer area is an
+-- Angular SPA that logs in through a CIAM at connexion.malakoffhumanis.com/particuliers - a React
+-- app whose JSON API this script talks to directly:
+-- - `POST <ciam>/login/api/authenticate` with `{"module": "UsernameAndPassword", "definition":
+--   {"username", "password"}}` answers 401 `{"code": 2001, "message": "Invalid credentials"}` for
+--   bad credentials (confirmed against the live site); a good login answers with the next module
+--   (a 2FA step - TwoFASms/TwoFAEmail/... - or Success), not verified (no account).
+-- Documents would then come from the SPA's OAuth2 code flow (`<ciam>/auth/oauth2.0/v1/authorize`)
+-- and api.malakoffhumanis.com/ciam (`ppa/application/documents/v1`, with the SPA's `apiKey`),
+-- whose client id and calls live in lazily loaded chunks - not ported: a successful login stops
+-- with an explicit error. See README.md.
 
 local M = {}
 
-local BASE = "https://sante-espaceparticuliers.humanis.com/"
-local STATEMENTS_URL = BASE .. "e-releves-et-remboursements/vos-e-releves-sante"
+local CIAM = "https://connexion.malakoffhumanis.com/particuliers"
+local AUTHENTICATE_URL = CIAM .. "/login/api/authenticate"
+local JSON = { Accept = "application/json" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -153,45 +159,30 @@ end
 
 local function login(params)
   fyde.progress.step("Logging in")
-  local page = fyde.http.get(BASE)
-  if not has(page, "input[name='pass']") then
-    error("Humanis login form not found on " .. page.url)
+  local resp = fyde.http.post_json(AUTHENTICATE_URL, {
+    module = "UsernameAndPassword",
+    definition = { username = params.username, password = params.password },
+  }, JSON)
+  local body = json_or_nil(resp.body)
+  if not body then
+    error("Malakoff Humanis login API not found (HTTP " .. resp.status .. " from " .. AUTHENTICATE_URL .. ")")
   end
+  -- No HTML form here: the login API answering in JSON is the "login page".
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = submit_form(page, "form", { name = params.username, pass = params.password })
-  if has(resp, ".messages--error") then
-    local err = fyde.html.select(resp.body, ".messages--error")[1]
-    fail(INVALID_CREDENTIALS, trim(err.text))
+  if resp.status == 401 or body.code == 2001 then
+    fail(INVALID_CREDENTIALS, body.message)
   end
+  if resp.status >= 300 then
+    error("Malakoff Humanis login answered HTTP " .. resp.status .. ": " .. tostring(body.message))
+  end
+  return body
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
-  local page = fyde.http.get(STATEMENTS_URL)
-  if has(page, ".estatement-row") or has(page, "a[href*='logout']") then
-    fyde.log.info("ALREADY_LOGGED_IN")
-  else
-    login(params)
-    page = fyde.http.get(STATEMENTS_URL)
-  end
-
-  fyde.progress.step("Downloading statements")
-  for _, row in ipairs(fyde.html.select(page.body, ".estatement-row")) do
-    local link = fyde.html.select(row.html, ".download-pdf-document")[1]
-    local month = fyde.html.select(row.html, ".date .text")[1]
-    local amount = fyde.html.select(row.html, ".amount .text")[1]
-    amount = amount and trim(amount.text) or ""
-    if link and link.attrs.href and amount ~= "0.00 \226\130\172" then
-      save_pdf(absolute(BASE, link.attrs.href), sanitize(month and trim(month.text) or "releve") .. "_" .. sanitize(amount) .. "_Humanis.pdf", {
-        name = "Relevé santé Humanis " .. (month and trim(month.text) or ""),
-        type = "health_invoice",
-        source_category = "insurance",
-        source_sub_category = "health",
-        purpose = "report",
-      })
-    end
-  end
-  fyde.progress.step("Done")
+  -- No session check: nothing past the login is ported, so there's no session to reuse yet.
+  local answer = login(params)
+  error("credentials accepted (next step: " .. tostring(answer.module) .. "), but the Malakoff Humanis "
+    .. "documents API isn't ported yet - see this script's header comment", 0)
 end
 
 return M

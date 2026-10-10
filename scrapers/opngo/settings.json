@@ -6,9 +6,7 @@
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
-  "allowed_domains": [
-    "opngo.com"
-  ],
+  "allowed_domains": ["opngo.com", "indigoneo.com"],
   "parameters": {
     "username": {
       "label": "Identifiant",

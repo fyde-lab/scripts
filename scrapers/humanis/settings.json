@@ -1,14 +1,12 @@
 {
   "name": "Humanis",
-  "short_description": "Relevés santé Humanis",
-  "description": "Se connecte à l'espace particuliers santé Humanis pour récupérer les e-relevés de remboursement.",
-  "homepage": "https://sante-espaceparticuliers.humanis.com",
+  "short_description": "Relevés santé Humanis (Malakoff Humanis)",
+  "description": "Se connecte à l'espace particulier Malakoff Humanis (ex-Humanis). Vérification des identifiants uniquement pour l'instant : les documents ne sont pas encore récupérés.",
+  "homepage": "https://espace-particulier.malakoffhumanis.com",
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
-  "allowed_domains": [
-    "humanis.com"
-  ],
+  "allowed_domains": ["malakoffhumanis.com"],
   "parameters": {
     "username": {
       "label": "Identifiant",

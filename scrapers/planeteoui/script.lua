@@ -1,18 +1,19 @@
--- Scraper for Planète OUI / OUI Energy's customer area (planete-oui.fr): downloads the bills
--- of every delivery point.
+-- Scraper for Planète OUI's customer area, now Mint Énergie's (client.mint-energie.com):
+-- downloads the electricity/gas bills.
 --
--- Ported from github.com/konnectors/planeteoui (src/index.js): login posts `#connexion form`
--- (email/password) from `/Espace-Client/Connexion`; logged in shows an
--- `a[href='/Espace-Client/Deconnexion']` link, errors are in `.error`. Delivery points: the
--- `.listesPdls a` links of `/Espace-Client/Accueil` (`?site=<id>&...`); after selecting one,
--- `/Espace-Client/Mes-Factures` lists its bills in `.tableFacturation tbody tr` (month, ...,
--- amount, PDF link relative to `/Espace-Client/`). Planète OUI has since become Ohm Énergie's
--- / another supplier's brand, so this site may be gone. Unverified (see README.md).
+-- Originally ported from github.com/konnectors/planeteoui, whose planete-oui.fr customer area
+-- (`/Espace-Client/Connexion`, `/Espace-Client/Mes-Factures`) is gone: every planete-oui.fr page
+-- now redirects to mint-energie.com, Planète OUI's customers having moved to Mint Énergie. So this
+-- now uses the same flow as `scrapers/mint-energie` (whose bad-credentials answer is confirmed
+-- against the live site): the ASP.NET `Pages/Connexion/connexion.aspx` form (`TB_Login`/
+-- `TB_Password`), a session shown by the `#header1_LB_Exit` logout link, bills listed as
+-- `.factulist` entries on `Pages/Compte/informations_paiement.aspx`. Successful login and bills
+-- not verified (no account, see README.md).
 
 local M = {}
 
-local BASE = "https://www.planete-oui.fr"
-local LOGGED_IN = "a[href='/Espace-Client/Deconnexion']"
+local BASE = "https://www.mint-energie.com"
+local BILLS_URL = BASE .. "/Pages/Compte/informations_paiement.aspx"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -153,44 +154,41 @@ end
 
 local function login(params)
   fyde.progress.step("Logging in")
-  local page = fyde.http.get(BASE .. "/Espace-Client/Connexion")
-  if not has(page, "#connexion form") then
-    error("Planète OUI login form not found on " .. page.url)
+  local page = fyde.http.get(BASE .. "/Pages/Connexion/connexion.aspx")
+  if not has(page, "input[name='TB_Password'], input[id$='TB_Password']") then
+    error("Mint Énergie (ex-Planète OUI) login form not found on " .. page.url)
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = submit_form(page, "#connexion form", { email = params.username, password = params.password })
-  if not has(resp, LOGGED_IN) then
-    local err = fyde.html.select(resp.body, ".error")[1]
-    fail(INVALID_CREDENTIALS, err and trim(err.text))
+  local resp = submit_form(page, "form", { TB_Login = params.username, TB_Password = params.password, BT_Connexion = "se connecter" })
+  if not has(resp, "#header1_LB_Exit") then
+    fail(INVALID_CREDENTIALS)
   end
 end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local home = fyde.http.get(BASE .. "/Espace-Client/Accueil")
-  if has(home, LOGGED_IN) then
+  local page = fyde.http.get(BILLS_URL)
+  if has(page, "#header1_LB_Exit") then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
-    home = fyde.http.get(BASE .. "/Espace-Client/Accueil")
+    page = fyde.http.get(BILLS_URL)
   end
 
   fyde.progress.step("Downloading bills")
-  for _, site in ipairs(fyde.html.select(home.body, ".listesPdls a")) do
-    fyde.http.get(BASE .. "/Espace-Client/Accueil" .. (site.attrs.href or ""))
-    local bills = fyde.http.get(BASE .. "/Espace-Client/Mes-Factures")
-    for _, row in ipairs(fyde.html.select(bills.body, ".tableFacturation tbody tr")) do
-      local link = fyde.html.select(row.html, "a")[1]
-      local cells = fyde.html.select(row.html, "td")
-      if link and link.attrs.href and cells[1] then
-        local month = trim(cells[1].text)
-        save_pdf(BASE .. "/Espace-Client/" .. link.attrs.href:gsub("^/", ""), sanitize(trim(site.text)) .. "_" .. sanitize(month) .. "_planete-oui.pdf", {
-          name = "Facture Planète OUI " .. month .. " (" .. trim(site.text) .. ")",
-          type = "energy_invoice",
-          source_category = "energy",
-          purpose = "invoice",
-        })
-      end
+  for _, bill in ipairs(fyde.html.select(page.body, ".factulist")) do
+    local link = fyde.html.select(bill.html, "div.colC a")[1]
+    local date = fyde.html.select(bill.html, "div.colA b")[1]
+    local amount = fyde.html.select(bill.html, "div.colB b")[1]
+    if link and link.attrs.href then
+      date = date and trim(date.text) or ""
+      local d, m, y = date:match("(%d+)/(%d+)/(%d+)")
+      save_pdf(absolute(BILLS_URL, link.attrs.href), (y and (y .. "-" .. m .. "-" .. d) or sanitize(date)) .. "_planete-oui-mint_" .. sanitize(amount and amount.text or "") .. ".pdf", {
+        name = "Facture Mint Énergie (ex-Planète OUI) " .. date,
+        type = "energy_invoice",
+        source_category = "energy",
+        purpose = "invoice",
+      })
     end
   end
   fyde.progress.step("Done")

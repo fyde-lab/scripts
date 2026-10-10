@@ -1,27 +1,18 @@
 {
   "name": "APRR",
-  "short_description": "Factures de télépéage APRR",
-  "description": "Se connecte à l'espace client APRR (espaceclient.aprr.fr) pour récupérer les factures mensuelles du badge de télépéage.",
-  "homepage": "https://espaceclient.aprr.fr",
+  "short_description": "Factures de télépéage APRR (Fulli)",
+  "description": "Se connecte à l'espace client Fulli (ex-APRR / Mango Mobilités, www.fulli.com) avec un code reçu par e-mail pour récupérer les factures du badge de télépéage.",
+  "homepage": "https://www.fulli.com",
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
-  "allowed_domains": [
-    "aprr.fr"
-  ],
+  "allowed_domains": ["fulli.com", "aprr.fr"],
   "parameters": {
     "username": {
-      "label": "Identifiant",
+      "label": "E-mail ou numéro client",
       "placeholder": "email@example.com",
       "type": "string",
       "required": true
-    },
-    "password": {
-      "label": "Mot de passe",
-      "placeholder": "••••••••",
-      "type": "string",
-      "required": true,
-      "secret": true
     }
   }
 }

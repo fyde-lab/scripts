@@ -1,16 +1,26 @@
 -- Scraper for Probikeshop (probikeshop.fr), the cycling retailer: downloads order invoices.
 --
--- Ported from github.com/konnectors/probikeshop (src/index.js): `/mon-compte/` answers (in an
--- error payload) a page with `form[action="/login.html"]`, posted back with every input plus
--- `signin[email]`/`signin[password]` - HTTP 401 = bad credentials. Orders: the
--- `.orders_table tr` rows of `/mon-compte/commandes/` (id, "d mois yyyy" date, amount, ...,
--- invoice link in the 6th cell). Unverified (see README.md).
+-- Originally ported from github.com/konnectors/probikeshop, whose `/mon-compte/` login form is
+-- gone: probikeshop.fr is now a Shopify store using Shopify's customer accounts
+-- (account.probikeshop.fr, through shop.app's OAuth bounce), a JS-only, passwordless login. So it
+-- is driven through `fyde.browser`: `probikeshop.fr/account` renders an email form
+-- (`#customer-authentication-web-email` + a submit button - confirmed), then a single text
+-- input for the 6-digit code Shopify emails (confirmed). Shopify never says whether an email has
+-- an account, so a wrong login surfaces as MFA_FAILED, never INVALID_CREDENTIALS; the password
+-- parameter is unused. Not verified (no account): the logged-in pages - the session is taken as
+-- valid when the account page renders no email form, and invoices are looked for as PDF/
+-- "facture" links on account.probikeshop.fr/orders, downloaded through the webview (see
+-- README.md).
 
 local M = {}
 
-local BASE = "https://www.probikeshop.fr"
-local ORDERS_URL = BASE .. "/mon-compte/commandes/"
-local LOGIN_FORM = "form[action='/login.html']"
+local ACCOUNT_URL = "https://probikeshop.fr/account"
+local ORDERS_URL = "https://account.probikeshop.fr/orders"
+local EMAIL_FIELD = "#customer-authentication-web-email"
+local CODE_FIELD = "form input[type='text'], input[autocomplete='one-time-code']"
+local SUBMIT = "form button[type='submit']"
+local LOGGED_IN = "a[href*='/orders'], a[href*='logout']"
+local INVOICE_LINKS = "a[href$='.pdf'], a[href*='invoice'], a[href*='facture']"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -149,50 +159,86 @@ local function save_pdf(url, filename, fields, headers)
 end
 -- luacheck: pop
 
+local function sleep(ms)
+  pcall(function()
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
+  end)
+end
+
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+-- Polls the page for up to `timeout_ms` for the first of `states` ({ name, selector }) present.
+local function wait_state(states, timeout_ms)
+  for _ = 1, math.ceil(timeout_ms / 1000) do
+    local html = page_html()
+    for _, state in ipairs(states) do
+      if has(html, state[2]) then
+        return state[1], html
+      end
+    end
+    sleep(1000)
+  end
+  return nil, page_html()
+end
+
 local function login(params)
-  fyde.progress.step("Logging in")
-  local page = fyde.http.get(BASE .. "/mon-compte/")
-  if not has(page, LOGIN_FORM) then
-    -- The form comes embedded in a JSON-ish error payload; unescape it before parsing.
-    page = { url = page.url, body = page.body:gsub('\\"', '"'):gsub("&quot;", ""):gsub("\\/", "/") }
-  end
-  if not has(page, LOGIN_FORM) then
-    error("Probikeshop login form not found on " .. page.url)
-  end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = submit_form(page, LOGIN_FORM, { ["signin[email]"] = params.username, ["signin[password]"] = params.password })
-  if resp.status == 401 then
-    fail(INVALID_CREDENTIALS)
-  elseif resp.status >= 400 then
-    error("Probikeshop login answered HTTP " .. resp.status .. " (vendor down)")
+  fyde.progress.step("Logging in")
+  fyde.browser:fill(EMAIL_FIELD, params.username)
+  fyde.browser:click(SUBMIT)
+  sleep(1500)
+  if wait_state({ { "code", CODE_FIELD } }, 30000) ~= "code" then
+    error("Probikeshop did not ask for the emailed code after the email")
+  end
+  fyde.browser:fill(CODE_FIELD, ask_code("Code reçu par e-mail de Probikeshop"))
+  fyde.browser:click(SUBMIT)
+  sleep(2000)
+  local state = wait_state({ { "logged_in", LOGGED_IN }, { "code", CODE_FIELD } }, 30000)
+  if state ~= "logged_in" then
+    fail(MFA_FAILED, "no account page after the code")
   end
 end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local page = fyde.http.get(ORDERS_URL)
-  if has(page, ".orders_table") then
+  fyde.browser:open(ACCOUNT_URL)
+  sleep(1500)
+  local state = wait_state({ { "login", EMAIL_FIELD }, { "logged_in", LOGGED_IN } }, 45000)
+  if state == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
-  else
+  elseif state == "login" then
     login(params)
-    page = fyde.http.get(ORDERS_URL)
-    if not has(page, ".orders_table") then
-      fail(INVALID_CREDENTIALS, "orders not reachable after login")
-    end
+  else
+    error("Probikeshop login page not found on " .. ACCOUNT_URL)
   end
 
   fyde.progress.step("Downloading invoices")
-  for _, row in ipairs(fyde.html.select(page.body, ".orders_table tr")) do
-    local cells = fyde.html.select(row.html, "td")
-    local link = cells[6] and fyde.html.select(cells[6].html, "a")[1]
-    if link and link.attrs.href then
-      local id, date, amount = trim(cells[1].text), trim(cells[2].text), trim(cells[3].text)
-      save_pdf(BASE .. link.attrs.href, sanitize(date) .. "_" .. sanitize(amount) .. "_" .. id .. "_probikeshop.pdf", {
-        name = "Facture Probikeshop " .. id,
+  fyde.browser:open(ORDERS_URL)
+  sleep(1500)
+  local _, html = wait_state({ { "invoices", INVOICE_LINKS } }, 20000)
+  local links = fyde.html.select(html, INVOICE_LINKS)
+  if #links == 0 then
+    fyde.log.warn("no invoice link found on " .. ORDERS_URL)
+  end
+  for i, link in ipairs(links) do
+    local label = trim(link.text or "")
+    local ok, bytes = pcall(function()
+      return fyde.browser:download("a[href='" .. link.attrs.href .. "']", 60000)
+    end)
+    if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
+      fyde.save_document(sanitize("probikeshop_" .. i .. "_" .. (label ~= "" and label or "facture") .. ".pdf"), bytes, {
+        name = "Facture Probikeshop " .. (label ~= "" and label or tostring(i)),
         type = "invoice",
         source_category = "shopping",
         purpose = "invoice",
       })
+    else
+      fyde.log.warn("could not download " .. link.attrs.href .. ": " .. tostring(ok and "not a PDF" or bytes))
     end
   end
   fyde.progress.step("Done")

@@ -1,13 +1,16 @@
 {
   "name": "Probikeshop",
   "short_description": "Factures Probikeshop",
-  "description": "Se connecte au compte client Probikeshop (probikeshop.fr) pour récupérer les factures des commandes.",
-  "homepage": "https://www.probikeshop.fr",
+  "description": "Se connecte au compte client Probikeshop (probikeshop.fr, code reçu par e-mail) pour récupérer les factures des commandes.",
+  "homepage": "https://probikeshop.fr",
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
   "allowed_domains": [
-    "probikeshop.fr"
+    "probikeshop.fr",
+    "shop.app",
+    "shopify.com",
+    "shopifycdn.com"
   ],
   "parameters": {
     "username": {
@@ -15,13 +18,6 @@
       "placeholder": "email@example.com",
       "type": "string",
       "required": true
-    },
-    "password": {
-      "label": "Mot de passe",
-      "placeholder": "••••••••",
-      "type": "string",
-      "required": true,
-      "secret": true
     }
   }
 }
