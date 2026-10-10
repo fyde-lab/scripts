@@ -66,11 +66,13 @@
 -- is what that validation actually listens for, so clicking it after filling both fields works
 -- the same way a real keystroke would (confirmed, not just expected).
 --
--- **No document-fetching logic yet.** Past login, `fyde.browser` has no bridge back to
--- `fyde.http` (its webview cookie jar is entirely separate from `fyde.http`'s own - see
--- `browser::Service::submit`'s doc comment), so the "monthly statements" page this script used
--- to probe (still true: unconfirmed selectors) would also need driving through `fyde.browser`,
--- not ported back to `fyde.http`, once this login flow itself is confirmed working.
+-- **Documents** (confirmed 2026-10-09 against a real account), all downloaded by clicking in
+-- the webview with `fyde.browser:download` - `fyde.http` doesn't hold the webview's session
+-- cookies until the run ends, and the session rarely outlives a run:
+--   - one "attestation de droits" per beneficiary of the account (`ATTESTATION_URL`);
+--   - every "relevé mensuel" the site keeps (up to 27 months, `MONTHLY_URL`);
+--   - every payment statement ("décompte") of the last 6 months (`PAYMENTS_URL`).
+-- See the constants above each `fetch_*` function for how each page is laid out.
 
 local M = {}
 
@@ -177,6 +179,8 @@ local function login(params)
     end)
     if html_ok then
       fyde.log.info("post-submit timeout - page length: " .. #html)
+      local body = fyde.html.select(html, "body")[1]
+      fyde.log.info("post-submit timeout - page text: " .. ((body and body.text or ""):gsub("%s+", " ")):sub(1, 300):gsub("[\128-\255]+$", ""))
       fyde.log.info("post-submit timeout - still has SUBMIT_CONTROL: " .. tostring(html:find(SUBMIT_CONTROL:sub(2), 1, true) ~= nil))
       for _, marker in ipairs({ "BoutonGenerationOTP", "numOTP1", "deconnexionButton", "userfield" }) do
         fyde.log.info("post-submit timeout - has " .. marker .. ": " .. tostring(html:find(marker, 1, true) ~= nil))
@@ -195,6 +199,11 @@ local function login(params)
     if browser_has(USER_FIELD) then
       fyde.log.warn("still on the login form after submitting: credentials rejected")
       error("INVALID_CREDENTIALS", 0)
+    end
+    -- The site's WAF answers too many logins in a short time (observed after ~8 in 20 minutes)
+    -- with a bare "The requested URL was rejected" page, for a while.
+    if html_ok and html:find("requested URL was rejected", 1, true) then
+      error("the site's firewall rejected the login (too many recent attempts?) - retry later", 0)
     end
     error("timed out waiting for the page after submitting credentials", 0)
   end
@@ -297,6 +306,7 @@ local function visible_text(html)
   text = text:gsub("<[^>]*>", " ")
   text = text:gsub("<[^>]*$", " ")
   text = text:gsub("&nbsp;", " ")
+  text = text:gsub("\194\160", " ")
   text = text:gsub("&#39;", "'")
   text = text:gsub("%s+", " ")
   return text
@@ -367,7 +377,8 @@ local function fetch_payments()
     local kind = (href:match("PDFServletDetailPaiement(%u+)%.dopdf") or "xx"):lower()
     local at = html:find(href, search_from, true) or search_from
     search_from = at + 1
-    local before = visible_text(html:sub(math.max(1, at - 6000), at))
+    -- Everything up to the link: a month's heading can sit far above its later rows.
+    local before = visible_text(html:sub(1, at))
 
     -- The row's own "29 sept." (and the label after it), under the last "septembre 2026" heading.
     local year, day, month, label
@@ -417,17 +428,22 @@ local function option_selector(index)
   return ATTESTATION_OPTION .. ":nth-child(" .. index .. " of " .. ATTESTATION_OPTION .. ")"
 end
 
-local function fetch_attestations()
-  fyde.progress.step("Opening the attestation de droits page")
+-- Opens the attestation page afresh (a download replaces the form, and a fresh page has nobody
+-- selected yet) and returns it with the beneficiary menu open.
+local function open_attestation_page()
   fyde.browser:open(ATTESTATION_URL)
   sleep(1500)
   if not wait_across_navigation(ATTESTATION_COMBO, PAGE_TIMEOUT_MS) then
     log_controls("attestation page", fyde.browser:html())
     error("no beneficiary field on the attestation de droits page", 0)
   end
+  return open_attestation_menu()
+end
 
+local function fetch_attestations()
+  fyde.progress.step("Opening the attestation de droits page")
   local options = {}
-  for index, option in ipairs(fyde.html.select(open_attestation_menu(), ATTESTATION_OPTION)) do
+  for index, option in ipairs(fyde.html.select(open_attestation_page(), ATTESTATION_OPTION)) do
     local name = trim(option.text)
     -- A "select everyone" entry, if any, isn't a beneficiary of its own.
     if name ~= "" and not name:lower():find("tous", 1, true) then
@@ -444,18 +460,10 @@ local function fetch_attestations()
   local saved = 0
   for n, option in ipairs(options) do
     fyde.progress.update(n, #options, option.name)
-    -- Leave exactly this beneficiary selected: the menu may allow several at once.
-    local menu = open_attestation_menu()
-    for index, el in ipairs(fyde.html.select(menu, ATTESTATION_OPTION)) do
-      local selected = (el.attrs or {})["aria-selected"] == "true"
-      if selected ~= (index == option.index) then
-        fyde.browser:click(option_selector(index))
-        sleep(500)
-        if not browser_has(ATTESTATION_OPTION) and index ~= option.index then
-          open_attestation_menu()
-        end
-      end
+    if n > 1 then
+      open_attestation_page()
     end
+    fyde.browser:click(option_selector(option.index))
     sleep(1000)
     if not wait_across_navigation(ATTESTATION_DOWNLOAD .. ":not([disabled])", 10000) then
       log_controls("attestation " .. n, fyde.browser:html())

@@ -126,13 +126,18 @@ with a single `run(parameters)` function, and only call into the `fyde` host tab
 
 ### `scripts/scrapers/ameli/script.lua`
 
-Scaffold for the "compte ameli" personal space (assure.ameli.fr, Assurance Maladie/CPAM) —
-**unverified**, unlike the two scripts above: `assure.ameli.fr` returns a bot-protection
-"Request Rejected" page to plain HTTP requests, and there's no test account to reverse-engineer
-the real login/document flow by hand through a browser the way didaxis/impots were. The login
-URL, form fields, and document selectors are marked `TODO` in the file's header comment and
-need confirming against the live site with a real account before this script will actually
-work.
+Compte ameli (assure.ameli.fr, Assurance Maladie/CPAM), verified end to end against a real
+account (no HAR). Logs in through `fyde.browser` (plain HTTP is rejected by the login page's
+bot-mitigation JS), then clicks "recevoir un code" and asks for the emailed 6-digit code via
+`fyde.input.ask` on every fresh login - the session only lasts a few minutes, so most runs need
+a code. Every wait after a click goes through `wait_across_navigation` (short repeated
+`wait_for`s), since a single long `wait_for` issued during the navigation a click triggers dies
+with the old page. Documents, all downloaded by clicking in the webview with
+`fyde.browser:download`: one attestation de droits per beneficiary (`/compte/asdo/
+attestation-droits`, Vuetify combobox, page reloaded between beneficiaries), every relevé mensuel
+(`/compte/aspm/releves-mensuels`, "Afficher plus" until exhausted; identical buttons reached
+through their row with `:nth-child(k of :has(...))`) and every payment of the last 6 months
+(`as_paiements_page`'s `PDFServletDetailPaiement*.dopdf` links). See the file's header comment.
 
 ### `scripts/scrapers/mercermasante/script.lua`
 
