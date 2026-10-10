@@ -47,6 +47,18 @@ enum Command {
     /// `script.lua`), with the display name and short description from its
     /// `manifest.json`.
     List,
+
+    /// Prints the `status` object of one or more scrapers' `manifest.json`
+    /// (every scraper under `scrapers/` when no name is given): its overall
+    /// state, the result of each login/documents check, and its notes.
+    Status(StatusArgs),
+}
+
+#[derive(Parser)]
+struct StatusArgs {
+    /// Names of the scrapers to print the status of, each the name of a
+    /// folder under `scrapers/`. Prints every scraper's when none are given.
+    scrapers: Vec<String>,
 }
 
 #[derive(Parser)]
@@ -159,6 +171,76 @@ struct ScraperManifest {
     /// to.
     #[serde(default)]
     allowed_domains: Vec<String>,
+    /// How far this scraper has been confirmed to work - only read by the
+    /// `status` command, never by a run.
+    status: ScraperStatus,
+}
+
+/// A scraper's `manifest.json` `status` object (see `README.md`'s Status
+/// section for where each check's result comes from).
+#[derive(Deserialize)]
+struct ScraperStatus {
+    state: ScraperState,
+    /// Whether `tests/login_smoke.sh` found the login page/endpoint.
+    login_page_found: CheckResult,
+    /// Whether `tests/login_smoke.sh`'s made-up credentials were reported
+    /// as `INVALID_CREDENTIALS`.
+    invalid_credentials_detected: CheckResult,
+    /// Whether a run with real credentials got past the login.
+    login_ok: CheckResult,
+    /// Whether a run with real credentials saved the scraper's documents.
+    documents_fetched: CheckResult,
+    /// Free-form details: what is and isn't confirmed, and why a smoke
+    /// test failed (after "Smoke:").
+    #[serde(default)]
+    notes: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ScraperState {
+    /// Login and documents both passed a run against the real site.
+    Verified,
+    /// A run against the real site failed.
+    Broken,
+    /// A host limitation stops the documents (or the login) even if the
+    /// site behaves as expected.
+    Blocked,
+    /// Not run against the real site with real credentials yet.
+    Wip,
+}
+
+impl ScraperState {
+    fn label(&self) -> &'static str {
+        match self {
+            Self::Verified => "verified",
+            Self::Broken => "broken",
+            Self::Blocked => "blocked",
+            Self::Wip => "wip",
+        }
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum CheckResult {
+    Passed,
+    Failed,
+    NotTested,
+    /// The check doesn't apply to this scraper (e.g. a passwordless login
+    /// has no password to reject).
+    NotApplicable,
+}
+
+impl CheckResult {
+    fn label(&self) -> &'static str {
+        match self {
+            Self::Passed => "passed",
+            Self::Failed => "failed",
+            Self::NotTested => "not tested",
+            Self::NotApplicable => "not applicable",
+        }
+    }
 }
 
 fn default_follow_redirects() -> bool {
@@ -185,6 +267,7 @@ async fn main() -> Result<()> {
         Some(Command::Publish(args)) => publish(args).await,
         Some(Command::Check) => check(),
         Some(Command::List) => list(),
+        Some(Command::Status(args)) => status(args),
         None => {
             Cli::command().print_help()?;
             Ok(())
@@ -340,6 +423,48 @@ fn list() -> Result<()> {
             "{scraper_name:<width$}  {} - {}",
             manifest.name, manifest.short_description
         );
+    }
+
+    Ok(())
+}
+
+/// Prints the `manifest.json` `status` of every scraper named on the command
+/// line, or of every scraper under `scrapers/` when none are.
+fn status(args: StatusArgs) -> Result<()> {
+    let names = if args.scrapers.is_empty() {
+        list_scraper_names()?
+    } else {
+        args.scrapers
+    };
+
+    for (i, scraper_name) in names.iter().enumerate() {
+        let script_dir = PathBuf::from("scrapers").join(scraper_name);
+        let manifest = load_manifest(&script_dir, scraper_name)?;
+        let status = &manifest.status;
+
+        if i > 0 {
+            println!();
+        }
+        println!(
+            "{scraper_name} ({}): {}",
+            manifest.name,
+            status.state.label()
+        );
+        let checks = [
+            ("login page found", &status.login_page_found),
+            (
+                "invalid credentials detected",
+                &status.invalid_credentials_detected,
+            ),
+            ("login ok", &status.login_ok),
+            ("documents fetched", &status.documents_fetched),
+        ];
+        for (label, result) in checks {
+            println!("  {label:<30}{}", result.label());
+        }
+        if let Some(notes) = &status.notes {
+            println!("  notes: {notes}");
+        }
     }
 
     Ok(())

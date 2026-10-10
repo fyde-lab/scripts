@@ -105,8 +105,12 @@ OPAQUE-style/WebAuthn flow this host can't drive, that's a hard wall — stop an
 
 Create `scrapers/<name>/manifest.json` per this repo's `CLAUDE.md`: a `{"name", "description",
 "short_description", "homepage", "wreq_emulation", "debug_http_dump", "follow_redirects",
-"allowed_domains"}` object.
+"allowed_domains", "status"}` object.
 
+- `status` — `{"state": "wip", "login_page_found", "invalid_credentials_detected",
+  "login_ok", "documents_fetched"}`, each check `passed`/`failed`/`not_tested`/`not_applicable`
+  (plus an optional `notes` string; see `README.md`'s Status section). Start every check at
+  `not_tested` and update them, and `state`, as the steps below pass or fail.
 - `name`/`description`/`short_description`/`homepage` — marketplace metadata; write something
   accurate for the site now, even though nothing reads it until `publish`.
 - `wreq_emulation` — leave `true` (the default) unless the HAR or an early run's report shows

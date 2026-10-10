@@ -42,6 +42,7 @@ cargo run -- run didaxis                          # runs scrapers/didaxis/script
 cargo run -- run didaxis impots --documents-dir data/documents  # runs both, in order
 cargo run -- check                                # loads every script without running it
 cargo run -- list                                 # lists every scraper with its name/short description
+cargo run -- status ameli                         # prints a scraper's status (every scraper without a name)
 ```
 
 There is no Rust test suite here — the logic worth testing (the dev documents service, the
@@ -61,7 +62,7 @@ Every scraper also has a `scrapers/<name>/manifest.json`, next to its `script.lu
 `--secrets`, this holds settings specific to the script itself rather than credentials, so
 it's committed alongside the script. It's a `{"name": string, "description": string,
 "short_description": string, "homepage": string, "wreq_emulation": bool, "debug_http_dump":
-bool, "follow_redirects": bool, "allowed_domains": [string]}` object. `name`/`description`/`short_description` are
+bool, "follow_redirects": bool, "allowed_domains": [string], "status": {...}}` object. `name`/`description`/`short_description` are
 marketplace metadata — `cargo run -- publish` reads them (plus `logo.png`, next to
 `script.lua`) and sends them through to `ScriptsClient::create_script`/`update_script` when
 publishing that scraper as a public script, so a published script's display name, blurb, and
@@ -106,10 +107,11 @@ vendored, patched BoringSSL used by `wreq`, the scrapers domain's HTTP client).
 
 ### `src/main.rs`
 
-Four subcommands: `run`, `publish` (sends every scraper to a fyde server's scripts service as
+Five subcommands: `run`, `publish` (sends every scraper to a fyde server's scripts service as
 a public script), `check` (loads every script in the same restricted Lua stdlib as the sdk,
-without calling `run`) and `list` (prints every scraper's directory name with the `name`/
-`short_description` from its `manifest.json`). `run` takes a variadic list of scraper names (e.g. `didaxis impots`), each
+without calling `run`), `list` (prints every scraper's directory name with the `name`/
+`short_description` from its `manifest.json`) and `status` (prints the `manifest.json` `status`
+object of the named scrapers, or of every scraper). `run` takes a variadic list of scraper names (e.g. `didaxis impots`), each
 the name of a folder under `scrapers/`, and runs each in turn via `run_scraper`: reads
 `scrapers/<name>/script.lua`, loads that scraper's `parameters` from `--secrets` and its
 `wreq_emulation`/`debug_http_dump`/`follow_redirects`/`allowed_domains` settings from

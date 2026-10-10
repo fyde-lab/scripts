@@ -71,8 +71,8 @@ username/password reported as `INVALID_CREDENTIALS`" - are automated by `tests/l
 its results fill each manifest's `login_page_found`/`invalid_credentials_detected` (last run on 2026-10-09 against every scraper,
 fresh storage, made-up credentials).
 
-Each scraper's status lives in the `status` object of its `scrapers/<name>/manifest.json`.
-`state` is one of
+Each scraper's status lives in the `status` object of its `scrapers/<name>/manifest.json`; print
+it with `cargo run -- status <name>...` (every scraper when no name is given). `state` is one of
 `verified` (login and documents both passed a run against the real site with real credentials),
 `broken` (that run failed against the live site), `blocked` (a host limitation stops the
 documents, or the login, even if the site behaves as the konnector expected) or `wip`.
