@@ -11,7 +11,10 @@
 # storage directory (no restored session) and stdin closed (any OTP prompt gets no answer).
 #
 # Usage: tests/login_smoke.sh [scraper ...]   (default: every scraper under scrapers/)
-# Prints one markdown table row per scraper; full logs go to data/smoke/<name>.log.
+# Writes both results into each scraper's manifest.json `status` (`login_page_found` and
+# `invalid_credentials_detected`, as "passed"/"failed" - an `invalid_credentials_detected` of
+# "not_applicable", i.e. a passwordless login, is left alone), and prints one summary line per
+# scraper; full logs go to data/smoke/<name>.log.
 set -u
 cd "$(dirname "$0")/.."
 
@@ -25,8 +28,6 @@ fi
 
 cargo build -q || exit 1
 
-echo "| Scraper | Login page found | Invalid credentials detected | Result |"
-echo "|---|---|---|---|"
 for name in "$@"; do
   work="$(mktemp -d)"
   python3 - "$name" "$work/secrets.json" <<'PY'
@@ -51,13 +52,31 @@ PY
     --secrets "$work/secrets.json" --storage "$work/storage" --documents-dir "$work/documents" \
     </dev/null >"$log" 2>&1
   code=$?
-  page=$(grep -q "LOGIN_PAGE_FOUND" "$log" && echo "✅" || echo "❌")
-  creds=$(grep -q "INVALID_CREDENTIALS" "$log" && echo "✅" || echo "❌")
+  page=$(grep -q "LOGIN_PAGE_FOUND" "$log" && echo passed || echo failed)
+  creds=$(grep -q "INVALID_CREDENTIALS" "$log" && echo passed || echo failed)
   if [ $code -eq 124 ]; then
     result="timeout"
   else
     result=$(grep -m1 -oE "(Error|error)[^\"]{0,120}" "$log" | tr '|' '/' | head -c 120)
   fi
-  echo "| $name | $page | $creds | ${result:-exit $code} |"
+  # Edits only the two fields' values in place, leaving the rest of manifest.json's formatting
+  # (e.g. its one-line `allowed_domains` arrays) untouched.
+  python3 - "scrapers/$name/manifest.json" "$page" "$creds" <<'PY'
+import re, sys
+path, page, creds = sys.argv[1:]
+text = open(path).read()
+def put(text, field, value):
+    pattern = rf'("{field}":\s*)"(\w+)"'
+    current = re.search(pattern, text)
+    if not current:
+        sys.exit(f"{path}: no status.{field} to update")
+    if current.group(2) == "not_applicable":
+        return text
+    return re.sub(pattern, rf'\1"{value}"', text, count=1)
+text = put(text, "login_page_found", page)
+text = put(text, "invalid_credentials_detected", creds)
+open(path, "w").write(text)
+PY
+  echo "$name: login page found: $page, invalid credentials detected: $creds (${result:-exit $code})"
   rm -rf "$work"
 done

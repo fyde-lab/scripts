@@ -205,6 +205,8 @@ tests/login_smoke.sh edf free sncf  # some of them
 ```
 
 Each scraper is run once with made-up credentials (built from its `manifest.json` parameter
-placeholders), a fresh storage directory and stdin closed; the script prints one markdown table
-row per scraper (login page found / invalid credentials detected) and keeps the full logs under
-`data/smoke/`. Browser-driven scrapers need a display (or Xvfb).
+placeholders), a fresh storage directory and stdin closed; the script writes both results
+(`passed`/`failed`) into the `login_page_found`/`invalid_credentials_detected` fields of each
+scraper's `manifest.json` `status` (leaving a passwordless scraper's `not_applicable` alone),
+prints one summary line per scraper and keeps the full logs under `data/smoke/`. It doesn't touch
+`notes`: update its "Smoke:" reason by hand. Browser-driven scrapers need a display (or Xvfb).

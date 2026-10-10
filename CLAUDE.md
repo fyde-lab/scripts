@@ -227,4 +227,5 @@ which any new scraper should follow too:
 
 `tests/login_smoke.sh [scraper ...]` runs scrapers with made-up credentials and reports, per
 scraper, whether the login page was found and the bad credentials reported as
-`INVALID_CREDENTIALS` - the only checks possible without real accounts.
+`INVALID_CREDENTIALS` - the only checks possible without real accounts - writing both into
+that scraper's `manifest.json` `status` (`login_page_found`/`invalid_credentials_detected`).
