@@ -30,6 +30,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": "F5 BIG-IP ASM",
+    "antibot_status": "present",
     "notes": "Moved to adherent.viasante.fr; JSON login replaced by an IdentityServer form, rebuilt and checked with made-up credentials; documents API unchanged but unverified"
   }
 }

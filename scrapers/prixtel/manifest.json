@@ -33,6 +33,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": "AWS WAF, reCAPTCHA",
+    "antibot_status": "present",
     "notes": "reCAPTCHA on login; API token unreachable, download buttons clicked instead"
   }
 }

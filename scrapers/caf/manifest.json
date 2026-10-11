@@ -26,6 +26,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "passed",
     "documents_fetched": "passed",
+    "antibot_name": "Reblaze",
+    "antibot_status": "present",
     "notes": "Attestations (paiements, mns, qf, rms); remembered device, no one-time code asked"
   }
 }

@@ -32,6 +32,8 @@
     "invalid_credentials_detected": "failed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": "DataDome",
+    "antibot_status": "blocking",
     "notes": "Smoke: login form not found"
   }
 }

@@ -33,6 +33,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": null,
+    "antibot_status": "absent",
     "notes": "Firebase websocket replaced by the Firebase REST API (unconfirmed)"
   }
 }

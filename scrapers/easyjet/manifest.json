@@ -30,6 +30,8 @@
     "invalid_credentials_detected": "failed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": "Akamai Bot Manager",
+    "antibot_status": "blocking",
     "notes": "Site rebuilt since; text PDF per booking; Smoke: login answers HTTP 403"
   }
 }

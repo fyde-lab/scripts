@@ -28,6 +28,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": "F5 BIG-IP ASM",
+    "antibot_status": "present",
     "notes": "Now an Angular SPA logging in through login.urssaf.fr (same login as cesu); documents API (api.urssaf.fr bearer token) not ported, a successful login stops with an explicit error"
   }
 }

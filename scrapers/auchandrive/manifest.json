@@ -28,6 +28,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": "DataDome, reCAPTCHA v3",
+    "antibot_status": "present",
     "notes": "Now auchan.fr's Keycloak login (compte.auchan.fr); reCAPTCHA v3 field left empty - bad credentials are still detected, a good login unconfirmed; invoices looked for as PDF/\"facture\" links on /client/mes-commandes"
   }
 }

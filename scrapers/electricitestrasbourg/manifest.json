@@ -30,6 +30,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": null,
+    "antibot_status": "absent",
     "notes": "Portal moved to espaceclient.es.fr (Keycloak login): login rebuilt on it and checked with made-up credentials; bill pages not ported, a successful login stops with an explicit error"
   }
 }

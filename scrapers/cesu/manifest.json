@@ -31,6 +31,8 @@
     "invalid_credentials_detected": "failed",
     "login_ok": "passed",
     "documents_fetched": "failed",
+    "antibot_name": "F5 BIG-IP ASM",
+    "antibot_status": "present",
     "notes": "Session reused, but the \"Mes déclarations\" / \"Mon avantage fiscal\" menu links are no longer found: no documents; Smoke: reported `ALREADY_LOGGED_IN` on a fresh `--storage` because the session lives in the webview's localStorage, which the sdk keeps in one profile shared by every run and scraper (`~/.local/share/fyde-scripts`) instead of under `--storage`"
   }
 }

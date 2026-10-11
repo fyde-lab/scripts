@@ -30,6 +30,8 @@
     "invalid_credentials_detected": "failed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": null,
+    "antibot_status": "failed",
     "notes": "Company stopped in 2023; API likely gone; Smoke: host unreachable"
   }
 }

@@ -33,6 +33,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": "AWS WAF, Akamai Bot Manager, Arkose Labs captcha",
+    "antibot_status": "present",
     "notes": "Sign-in page opened directly (home page link unreliable in the webview); email field is now #ap_email_login; an unknown e-mail lands on a \"Cet e-mail est nouveau pour nous\" page, reported as INVALID_CREDENTIALS; captchas not solvable"
   }
 }

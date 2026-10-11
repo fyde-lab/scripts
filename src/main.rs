@@ -190,6 +190,12 @@ struct ScraperStatus {
     login_ok: CheckResult,
     /// Whether a run with real credentials saved the scraper's documents.
     documents_fetched: CheckResult,
+    /// The bot protection(s) the site runs (e.g. "DataDome", "Akamai Bot
+    /// Manager, reCAPTCHA"), `null` when none was found.
+    #[serde(default)]
+    antibot_name: Option<String>,
+    /// Whether that bot protection gets in this scraper's way.
+    antibot_status: AntibotStatus,
     /// Free-form details: what is and isn't confirmed, and why a smoke
     /// test failed (after "Smoke:").
     #[serde(default)]
@@ -239,6 +245,30 @@ impl CheckResult {
             Self::Failed => "failed",
             Self::NotTested => "not tested",
             Self::NotApplicable => "not applicable",
+        }
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum AntibotStatus {
+    /// No bot protection found on the pages this scraper talks to.
+    Absent,
+    /// A bot protection runs there, but doesn't stop this scraper.
+    Present,
+    /// A bot protection stops this scraper (403, unsolvable captcha...).
+    Blocking,
+    /// The check couldn't be made (site unreachable).
+    Failed,
+}
+
+impl AntibotStatus {
+    fn label(&self) -> &'static str {
+        match self {
+            Self::Absent => "absent",
+            Self::Present => "present",
+            Self::Blocking => "blocking",
+            Self::Failed => "failed",
         }
     }
 }
@@ -461,6 +491,14 @@ fn status(args: StatusArgs) -> Result<()> {
         ];
         for (label, result) in checks {
             println!("  {label:<30}{}", result.label());
+        }
+        match &status.antibot_name {
+            Some(name) => println!(
+                "  {:<30}{} ({name})",
+                "antibot",
+                status.antibot_status.label()
+            ),
+            None => println!("  {:<30}{}", "antibot", status.antibot_status.label()),
         }
         if let Some(notes) = &status.notes {
             println!("  notes: {notes}");

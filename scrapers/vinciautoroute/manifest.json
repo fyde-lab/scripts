@@ -28,6 +28,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": "Friendly Captcha",
+    "antibot_status": "present",
     "notes": "Now Ulys: login on connect.ulys.com in the webview (Friendly Captcha solved by clicking it); **Blocked** past it: account.ulys.com refuses WebKitGTK, so no invoices"
   }
 }

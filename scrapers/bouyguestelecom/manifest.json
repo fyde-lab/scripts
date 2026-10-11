@@ -28,6 +28,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "passed",
     "documents_fetched": "passed",
+    "antibot_name": "Akamai Bot Manager",
+    "antibot_status": "present",
     "notes": "Mobile and Bbox invoices; SMS confirmation code on login, session reused on the next run; one old (2021) invoice isn't a PDF and is skipped"
   }
 }

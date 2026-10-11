@@ -28,6 +28,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "passed",
     "documents_fetched": "passed",
+    "antibot_name": "in-house (__brs_mit cookie)",
+    "antibot_status": "present",
     "notes": "Statements, other banks' documents, IFU, RIBs"
   }
 }

@@ -34,6 +34,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": "Akamai Bot Manager, reCAPTCHA",
+    "antibot_status": "present",
     "notes": "reCAPTCHA on login; receipts are HTML pages -> text PDFs"
   }
 }

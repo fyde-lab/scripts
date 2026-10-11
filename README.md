@@ -82,6 +82,16 @@ otherwise); each is `passed`, `failed`, `not_tested` or `not_applicable` (a pass
 where a wrong login can only end in `MFA_FAILED`). When a scraper fails the smoke test, `notes`
 gives the reason after "Smoke:".
 
+`antibot_name` names the bot protection(s) found on the pages the scraper talks to (e.g.
+`"DataDome"`, `"Akamai Bot Manager, reCAPTCHA"`), `null` when none, and `antibot_status` says
+whether it gets in the way: `absent` (none found), `present` (there, but doesn't stop the
+scraper), `blocking` (stops it: a 403/captcha the scraper can't get past) or `failed` (couldn't
+be checked: site unreachable). Both were filled on 2026-10-11 from each script's own findings
+and a probe of every host it talks to for antibot fingerprints (DataDome/Akamai/Imperva/
+PerimeterX/Reblaze/AWS WAF cookies and headers, Cloudflare challenges, F5's `/TSPD/` bot
+defense, captcha widgets). A bare WAF cookie (F5's `TS01…`) doesn't count; a client-rendered
+login page may still hide a captcha the probe couldn't see.
+
 | Scraper | konnectors repo | Method |
 |---|---|---|
 | [`alan`](scrapers/alan/script.lua) | [alan](https://github.com/konnectors/alan) | browser |

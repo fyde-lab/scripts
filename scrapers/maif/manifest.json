@@ -30,6 +30,8 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
+    "antibot_name": null,
+    "antibot_status": "absent",
     "notes": "MAIF's open API (openapiweb.maif.fr) is gone: now logs in with username/password on connect.maif.fr (two-step form), checked with made-up credentials; documents pages not ported, a successful login stops with an explicit error"
   }
 }
