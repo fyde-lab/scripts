@@ -1,9 +1,12 @@
 -- Scraper for SAUR's customer area (saurclient.fr), a water utility: downloads the water bills.
 --
 -- Ported from github.com/konnectors/saur (src/index.js): `apib2c.azure.saurclient.fr/admin/auth`
--- takes a JSON password grant (username, password, client_id=frontjs-client, scope=api-scope) -
--- HTTP 401 = bad credentials, 504 = vendor down - and answers `token.access_token` plus the
--- `defaultContract` (customerAccountId, billingAgreementId). Bills:
+-- took a JSON password grant (username, password, client_id=frontjs-client, scope=api-scope)
+-- and answered `token.access_token` plus the `defaultContract` (customerAccountId,
+-- billingAgreementId). That endpoint now answers HTTP 500; the current app
+-- (mon-espace.saurclient.fr) posts the same grant, plus `isRecaptchaV3`/`captchaToken` flags, to
+-- `/admin/v2/auth` - which answers made-up credentials with HTTP 401 `ClientNotFound` without
+-- any captcha token (checked live); its success answer is unconfirmed. 504 = vendor down. Bills:
 -- `/inv/billing_agreements/<billing id>/product_invoices` (reference, amountIncludingTaxes,
 -- settlementDate/dueDate); each PDF comes base64-encoded in `gedDocuments[0].data` of
 -- `/inv/customer_accounts/<account id>/product_invoices/<reference>/download`. The token and ids
@@ -177,27 +180,40 @@ end
 
 local function login(params)
   fyde.progress.step("Logging in")
-  local resp = fyde.http.post_json(API .. "/admin/auth", {
+  local resp = fyde.http.post_json(API .. "/admin/v2/auth", {
     username = params.username,
     password = params.password,
     client_id = "frontjs-client",
     grant_type = "password",
     scope = "api-scope",
-  })
+    isRecaptchaV3 = true,
+    captchaToken = false,
+  }, { Origin = "https://mon-espace.saurclient.fr", Referer = "https://mon-espace.saurclient.fr/" })
   if resp.status == 504 or resp.status >= 500 then
     error("SAUR answered HTTP " .. resp.status .. " (vendor down)")
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  if resp.status == 401 then
-    fail(INVALID_CREDENTIALS)
-  end
   local body = json_or_nil(resp.body) or {}
-  if not (body.token and body.token.access_token and body.defaultContract) then
+  if resp.status == 401 then
+    fail(INVALID_CREDENTIALS, body.message)
+  end
+  -- The v2 answer's shape on success is unconfirmed: the old `token.access_token` or a plain
+  -- `token` string, with the default contract either inline or from `GET /admin/v2/auth`.
+  local token = type(body.token) == "table" and body.token.access_token or body.token
+  if type(token) ~= "string" or token == "" then
     error("unexpected SAUR login answer (HTTP " .. resp.status .. ")")
   end
-  fyde.session.saur_token = body.token.access_token
-  fyde.session.saur_account = body.defaultContract.customerAccountId
-  fyde.session.saur_billing = body.defaultContract.billingAgreementId
+  fyde.session.saur_token = token
+  local contract = body.defaultContract
+  if not contract then
+    local status, user = get("/admin/v2/auth")
+    contract = status == 200 and type(user) == "table" and user.defaultContract or nil
+  end
+  if not contract then
+    error("SAUR login accepted, but no default contract found in its answer")
+  end
+  fyde.session.saur_account = contract.customerAccountId
+  fyde.session.saur_billing = contract.billingAgreementId
 end
 
 function M.run(params)
