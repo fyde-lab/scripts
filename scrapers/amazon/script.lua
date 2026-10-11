@@ -2,9 +2,10 @@
 --
 -- Ported from github.com/konnectors/amazon (a cozy-clisk content script driving the real site),
 -- so it drives `fyde.browser` too. The home page shows `#nav-greeting-name` with a session, else
--- `#nav-link-accountList` leads to the sign-in: `#ap_email` -> `#continue` -> `#ap_password`
--- (with `[name="rememberMe"]`) -> `#signInSubmit`. Amazon's own outcomes are recognised: the
--- `#auth-error-message-box` alert (bad e-mail/password), an OTP step (`#auth-mfa-otpcode`, sent
+-- the sign-in (`/ap/signin`, opened directly): `#ap_email_login` (formerly `#ap_email`) ->
+-- `#continue` -> `#ap_password` (with `[name="rememberMe"]`) -> `#signInSubmit`. Amazon's own outcomes are recognised: the
+-- `#auth-error-message-box` alert (bad e-mail/password), the "Cet e-mail est nouveau pour nous"
+-- page an unknown e-mail now gets (checked live), an OTP step (`#auth-mfa-otpcode`, sent
 -- with `#auth-signin-button`; a code refused again = MFA_FAILED) and captchas (not solvable).
 -- Orders: "Vos commandes" (`/gp/css/order-history`), one period per `#time-filter` option,
 -- `.js-order-card` cards paginated by `.a-last > a`; each card's invoice popover
@@ -15,6 +16,13 @@ local M = {}
 
 local BASE = "https://www.amazon.fr"
 local ORDERS_URL = BASE .. "/gp/css/order-history"
+-- The home page's `#nav-link-accountList` no longer reliably leads to the sign-in from the
+-- webview, so the sign-in page is opened directly.
+local SIGNIN_URL = BASE .. "/ap/signin?openid.pape.max_auth_age=0&openid.return_to=https%3A%2F%2Fwww.amazon.fr%2F%3Fref_%3Dnav_signin"
+  .. "&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=frflex"
+  .. "&openid.mode=checkid_setup&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select"
+  .. "&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0"
+local EMAIL_FIELD = "#ap_email_login, #ap_email"
 local BAD_CREDENTIALS = { "mot de passe est incorrect", "Impossible de trouver un compte", "adresse e-mail ou num\195\169ro de t\195\169l\195\169phone", "password is incorrect", "cannot find an account" }
 
 -- luacheck: push ignore 211
@@ -173,18 +181,18 @@ local LOGGED_IN = { "logged_in", selector = "#nav-greeting-name, a[href*='/gp/fl
 
 local function login(params)
   fyde.progress.step("Logging in")
-  if present("#nav-link-accountList") then
-    fyde.browser:click("#nav-link-accountList")
-  end
-  if wait_state({ { "email", selector = "#ap_email" } }, 30000) ~= "email" then
+  if open_and_wait(SIGNIN_URL, { { "email", selector = EMAIL_FIELD } }, 30000) ~= "email" then
     error("Amazon sign-in form not found")
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fyde.browser:fill("#ap_email", params.username)
-  if present("#continue") then
-    fyde.browser:click("#continue")
-  end
-  local state = wait_state({ { "password", selector = "#ap_password" }, { "bad", selector = "#auth-error-message-box" } }, 30000)
+  fill_first({ "#ap_email_login", "#ap_email" }, params.username)
+  click_first({ "#continue input[type='submit']", "#ap_login_form input[type='submit']", "#continue" })
+  -- An unknown e-mail now lands on "Cet e-mail est nouveau pour nous", offering to register
+  -- (`#intent-confirmation-form`, posting to /ap/register) instead of an error box.
+  local state = wait_state({
+    { "password", selector = "#ap_password" },
+    { "bad", selector = "#auth-error-message-box, #intent-confirmation-form" },
+  }, 30000)
   if state == "bad" then
     fail(INVALID_CREDENTIALS, "unknown account")
   elseif state ~= "password" then
@@ -243,7 +251,7 @@ end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  if open_and_wait(BASE, { LOGGED_IN, { "login", selector = "#nav-link-accountList, #ap_email" } }, 30000) == "logged_in" then
+  if open_and_wait(BASE, { LOGGED_IN, { "login", selector = "#nav-link-accountList, " .. EMAIL_FIELD } }, 30000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
