@@ -43,6 +43,7 @@ cargo run -- run didaxis impots --documents-dir data/documents  # runs both, in 
 cargo run -- check                                # loads every script without running it
 cargo run -- list                                 # lists every scraper with its name/short description
 cargo run -- status ameli                         # prints a scraper's status (every scraper without a name)
+cargo run -- status-table                         # regenerates README.md's status table from the manifests
 ```
 
 There is no Rust test suite here — the logic worth testing (the dev documents service, the
@@ -107,11 +108,13 @@ vendored, patched BoringSSL used by `wreq`, the scrapers domain's HTTP client).
 
 ### `src/main.rs`
 
-Five subcommands: `run`, `publish` (sends every scraper to a fyde server's scripts service as
+Six subcommands: `run`, `publish` (sends every scraper to a fyde server's scripts service as
 a public script), `check` (loads every script in the same restricted Lua stdlib as the sdk,
 without calling `run`), `list` (prints every scraper's directory name with the `name`/
-`short_description` from its `manifest.json`) and `status` (prints the `manifest.json` `status`
-object of the named scrapers, or of every scraper). `run` takes a variadic list of scraper names (e.g. `didaxis impots`), each
+`short_description` from its `manifest.json`), `status` (prints the `manifest.json` `status`
+object of the named scrapers, or of every scraper) and `status-table` (rewrites the table between
+`README.md`'s `<!-- status-table:start -->`/`<!-- status-table:end -->` markers from every
+scraper's `status` - re-run it after any `status` change instead of editing the table by hand). `run` takes a variadic list of scraper names (e.g. `didaxis impots`), each
 the name of a folder under `scrapers/`, and runs each in turn via `run_scraper`: reads
 `scrapers/<name>/script.lua`, loads that scraper's `parameters` from `--secrets` and its
 `wreq_emulation`/`debug_http_dump`/`follow_redirects`/`allowed_domains` settings from

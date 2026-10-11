@@ -13,6 +13,7 @@ cargo run -- run didaxis             # runs scrapers/didaxis/script.lua
 cargo run -- run didaxis impots      # runs both, in order
 cargo run -- run --dev --visible cesu  # dump HTTP bodies in the report, show the browser window
 cargo run -- check                   # load every script without running it (no network)
+cargo run -- status-table            # regenerate the status table below from the manifests
 ```
 
 Downloaded documents are written under `--documents-dir` (default `data/documents/`,
@@ -208,6 +209,128 @@ login page may still hide a captcha the probe couldn't see.
 | [`wanimo`](scrapers/wanimo/script.lua) | [wanimo](https://github.com/konnectors/wanimo) | HTTP |
 | [`zalando`](scrapers/zalando/script.lua) | [zalando](https://github.com/konnectors/zalando) | browser |
 | [`zooplus`](scrapers/zooplus/script.lua) | [zooplus](https://github.com/konnectors/zooplus) | HTTP |
+
+### Status table
+
+Generated from every scraper's `manifest.json` `status` by `cargo run -- status-table`; re-run it
+after changing a status instead of editing the table by hand.
+
+<!-- status-table:start -->
+| Scraper | State | Login page found | Invalid credentials detected | Login ok | Documents fetched | Antibot | Last updated |
+|---|---|---|---|---|---|---|---|
+| [`alan`](scrapers/alan/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`amazon`](scrapers/amazon/manifest.json) | wip | passed | passed | not tested | not tested | present (AWS WAF, Akamai Bot Manager, Arkose Labs captcha) | 2026-10-11 |
+| [`ameli`](scrapers/ameli/manifest.json) | verified | passed | passed | passed | passed | present (F5 BIG-IP ASM) | 2026-10-11 |
+| [`aprr`](scrapers/aprr/manifest.json) | wip | passed | not applicable | not tested | not tested | absent | 2026-10-11 |
+| [`ascoresante`](scrapers/ascoresante/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`auchandrive`](scrapers/auchandrive/manifest.json) | wip | passed | passed | not tested | not tested | present (DataDome, reCAPTCHA v3) | 2026-10-11 |
+| [`autolib`](scrapers/autolib/manifest.json) | wip | failed | failed | not tested | not tested | failed | 2026-10-11 |
+| [`bipandgo`](scrapers/bipandgo/manifest.json) | wip | passed | passed | not tested | not tested | present (reCAPTCHA v2) | 2026-10-11 |
+| [`bitiba`](scrapers/bitiba/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`blablacar`](scrapers/blablacar/manifest.json) | wip | failed | failed | not tested | not tested | blocking (DataDome) | 2026-10-11 |
+| [`bookingdotcom`](scrapers/bookingdotcom/manifest.json) | wip | passed | not applicable | not tested | not tested | present (AWS WAF, PerimeterX) | 2026-10-11 |
+| [`boulanger`](scrapers/boulanger/manifest.json) | wip | passed | passed | not tested | not tested | present (Akamai Bot Manager) | 2026-10-11 |
+| [`boursobank`](scrapers/boursobank/manifest.json) | verified | passed | passed | passed | passed | present (in-house (__brs_mit cookie)) | 2026-10-11 |
+| [`bouyguesbox`](scrapers/bouyguesbox/manifest.json) | wip | passed | passed | not tested | not tested | present (Akamai Bot Manager) | 2026-10-11 |
+| [`bouyguestelecom`](scrapers/bouyguestelecom/manifest.json) | verified | passed | passed | passed | passed | present (Akamai Bot Manager) | 2026-10-11 |
+| [`caf`](scrapers/caf/manifest.json) | verified | passed | passed | passed | passed | present (Reblaze) | 2026-10-11 |
+| [`cdiscount`](scrapers/cdiscount/manifest.json) | wip | passed | passed | not tested | not tested | present (Cloudflare) | 2026-10-11 |
+| [`cesml`](scrapers/cesml/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`cesu`](scrapers/cesu/manifest.json) | broken | failed | failed | passed | failed | present (F5 BIG-IP ASM) | 2026-10-11 |
+| [`cic`](scrapers/cic/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`cultura`](scrapers/cultura/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`darty`](scrapers/darty/manifest.json) | wip | failed | failed | not tested | not tested | blocking (DataDome, Akamai Bot Manager) | 2026-10-11 |
+| [`deezer`](scrapers/deezer/manifest.json) | wip | passed | passed | not tested | not tested | present (Akamai Bot Manager, reCAPTCHA) | 2026-10-11 |
+| [`deliveroo`](scrapers/deliveroo/manifest.json) | wip | passed | passed | not tested | not tested | present (PerimeterX, Cloudflare) | 2026-10-11 |
+| [`didaxis`](scrapers/didaxis/manifest.json) | verified | passed | passed | passed | passed | absent | 2026-10-11 |
+| [`digiposte`](scrapers/digiposte/manifest.json) | blocked | passed | passed | not tested | not tested | present (hCaptcha) | 2026-10-11 |
+| [`directenergie`](scrapers/directenergie/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`doctolib`](scrapers/doctolib/manifest.json) | wip | passed | passed | not tested | not tested | present (Cloudflare) | 2026-10-11 |
+| [`easyjet`](scrapers/easyjet/manifest.json) | wip | passed | failed | not tested | not tested | blocking (Akamai Bot Manager) | 2026-10-11 |
+| [`eaudubassinrennais`](scrapers/eaudubassinrennais/manifest.json) | verified | passed | passed | passed | passed | absent | 2026-10-11 |
+| [`eaudugrandlyon`](scrapers/eaudugrandlyon/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`edf`](scrapers/edf/manifest.json) | wip | passed | passed | not tested | not tested | present (Akamai Bot Manager) | 2026-10-11 |
+| [`ekwateur`](scrapers/ekwateur/manifest.json) | wip | passed | passed | not tested | not tested | present (Cloudflare Turnstile) | 2026-10-11 |
+| [`electricitestrasbourg`](scrapers/electricitestrasbourg/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`enercoop`](scrapers/enercoop/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`engie`](scrapers/engie/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`eovimcdparticuliers`](scrapers/eovimcdparticuliers/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`eticket`](scrapers/eticket/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`facebook`](scrapers/facebook/manifest.json) | blocked | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`fnac`](scrapers/fnac/manifest.json) | wip | failed | failed | not tested | not tested | blocking (DataDome, Akamai Bot Manager) | 2026-10-11 |
+| [`fortuneo`](scrapers/fortuneo/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`francetravail`](scrapers/francetravail/manifest.json) | wip | passed | passed | failed | not tested | absent | 2026-10-11 |
+| [`free`](scrapers/free/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`freemobile`](scrapers/freemobile/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`gazdebordeaux`](scrapers/gazdebordeaux/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`geg`](scrapers/geg/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`generali`](scrapers/generali/manifest.json) | wip | passed | passed | not tested | not tested | present (Imperva) | 2026-10-11 |
+| [`github`](scrapers/github/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`glisshop`](scrapers/glisshop/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`harmonie`](scrapers/harmonie/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`humanis`](scrapers/humanis/manifest.json) | wip | passed | passed | not tested | not tested | present (Imperva) | 2026-10-11 |
+| [`impots`](scrapers/impots/manifest.json) | verified | passed | passed | passed | passed | present (Reblaze) | 2026-10-11 |
+| [`inulogic`](scrapers/inulogic/manifest.json) | wip | failed | failed | not tested | not tested | failed | 2026-10-11 |
+| [`justeat`](scrapers/justeat/manifest.json) | wip | passed | passed | not tested | not tested | present (Cloudflare) | 2026-10-11 |
+| [`lamutuellegenerale`](scrapers/lamutuellegenerale/manifest.json) | wip | failed | failed | not tested | not tested | present (Imperva) | 2026-10-11 |
+| [`ldlc`](scrapers/ldlc/manifest.json) | wip | passed | passed | not tested | not tested | present (reCAPTCHA) | 2026-10-11 |
+| [`leclercdrive`](scrapers/leclercdrive/manifest.json) | wip | passed | failed | not tested | not tested | blocking (DataDome) | 2026-10-11 |
+| [`lucca`](scrapers/lucca/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`luko`](scrapers/luko/manifest.json) | wip | failed | failed | not tested | not tested | failed | 2026-10-11 |
+| [`macif`](scrapers/macif/manifest.json) | wip | failed | failed | not tested | not tested | blocking (DataDome) | 2026-10-11 |
+| [`maif`](scrapers/maif/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`malakoffmederic`](scrapers/malakoffmederic/manifest.json) | wip | passed | passed | not tested | not tested | present (Imperva) | 2026-10-11 |
+| [`malentille`](scrapers/malentille/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`materielnet`](scrapers/materielnet/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`mediapart`](scrapers/mediapart/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`mercermasante`](scrapers/mercermasante/manifest.json) | verified | passed | passed | passed | passed | present (Cloudflare Turnstile) | 2026-10-11 |
+| [`mgen`](scrapers/mgen/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`mint-energie`](scrapers/mint-energie/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`misterauto`](scrapers/misterauto/manifest.json) | wip | passed | passed | not tested | not tested | present (DataDome) | 2026-10-11 |
+| [`mondediplo`](scrapers/mondediplo/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`monoprix`](scrapers/monoprix/manifest.json) | wip | failed | failed | not tested | not tested | present (Cloudflare) | 2026-10-11 |
+| [`msf`](scrapers/msf/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`n26`](scrapers/n26/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`nalo`](scrapers/nalo/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`nespresso`](scrapers/nespresso/manifest.json) | wip | passed | failed | not tested | not tested | blocking (Akamai Bot Manager) | 2026-10-11 |
+| [`net-entreprise-micro`](scrapers/net-entreprise-micro/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`netflix`](scrapers/netflix/manifest.json) | wip | passed | passed | not tested | not tested | present (reCAPTCHA) | 2026-10-11 |
+| [`numericable`](scrapers/numericable/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`o2`](scrapers/o2/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`opngo`](scrapers/opngo/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`orange`](scrapers/orange/manifest.json) | wip | passed | passed | not tested | not tested | present (in-house captcha) | 2026-10-11 |
+| [`ovh`](scrapers/ovh/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`pajemploi`](scrapers/pajemploi/manifest.json) | wip | passed | passed | not tested | not tested | present (F5 BIG-IP ASM) | 2026-10-11 |
+| [`payfit`](scrapers/payfit/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`planeteoui`](scrapers/planeteoui/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`prixtel`](scrapers/prixtel/manifest.json) | wip | passed | passed | not tested | not tested | present (AWS WAF, reCAPTCHA) | 2026-10-11 |
+| [`probikeshop`](scrapers/probikeshop/manifest.json) | wip | passed | not applicable | not tested | not tested | present (Cloudflare) | 2026-10-11 |
+| [`productboard`](scrapers/productboard/manifest.json) | wip | passed | passed | not tested | not tested | present (Cloudflare) | 2026-10-11 |
+| [`red`](scrapers/red/manifest.json) | wip | passed | passed | not tested | not tested | present (reCAPTCHA) | 2026-10-11 |
+| [`saur`](scrapers/saur/manifest.json) | wip | passed | passed | not tested | not tested | present (reCAPTCHA v3) | 2026-10-11 |
+| [`scaleway`](scrapers/scaleway/manifest.json) | wip | passed | passed | not tested | not tested | present (reCAPTCHA) | 2026-10-11 |
+| [`sfr`](scrapers/sfr/manifest.json) | wip | passed | passed | not tested | not tested | present (reCAPTCHA) | 2026-10-11 |
+| [`sfrbox`](scrapers/sfrbox/manifest.json) | wip | passed | passed | not tested | not tested | present (reCAPTCHA) | 2026-10-11 |
+| [`showroomprive`](scrapers/showroomprive/manifest.json) | wip | passed | passed | not tested | not tested | present (Cloudflare, reCAPTCHA) | 2026-10-11 |
+| [`silae`](scrapers/silae/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`sncf`](scrapers/sncf/manifest.json) | wip | failed | failed | not tested | not tested | blocking (DataDome) | 2026-10-11 |
+| [`sosh`](scrapers/sosh/manifest.json) | wip | passed | passed | not tested | not tested | present (in-house captcha) | 2026-10-11 |
+| [`spartoo`](scrapers/spartoo/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`stickersdiscount`](scrapers/stickersdiscount/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`tagandpass`](scrapers/tagandpass/manifest.json) | wip | passed | passed | not tested | not tested | failed | 2026-10-11 |
+| [`theoldreader`](scrapers/theoldreader/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`thomann`](scrapers/thomann/manifest.json) | wip | passed | passed | not tested | not tested | present (Cloudflare, Cloudflare Turnstile) | 2026-10-11 |
+| [`trainline`](scrapers/trainline/manifest.json) | wip | passed | failed | not tested | not tested | present (DataDome) | 2026-10-11 |
+| [`uber`](scrapers/uber/manifest.json) | wip | failed | failed | not tested | not tested | present (Cloudflare, reCAPTCHA) | 2026-10-11 |
+| [`unibet`](scrapers/unibet/manifest.json) | wip | failed | failed | not tested | not tested | present (DataDome) | 2026-10-11 |
+| [`venteprivee`](scrapers/venteprivee/manifest.json) | wip | passed | failed | not tested | not tested | present (Cloudflare) | 2026-10-11 |
+| [`veoliaeau`](scrapers/veoliaeau/manifest.json) | wip | failed | failed | not tested | not tested | present (Friendly Captcha) | 2026-10-11 |
+| [`viasante`](scrapers/viasante/manifest.json) | wip | passed | passed | not tested | not tested | present (F5 BIG-IP ASM) | 2026-10-11 |
+| [`vinciautoroute`](scrapers/vinciautoroute/manifest.json) | blocked | passed | passed | not tested | not tested | present (Friendly Captcha) | 2026-10-11 |
+| [`wanimo`](scrapers/wanimo/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+| [`zalando`](scrapers/zalando/manifest.json) | wip | passed | passed | not tested | not tested | present (Akamai Bot Manager) | 2026-10-11 |
+| [`zooplus`](scrapers/zooplus/manifest.json) | wip | passed | passed | not tested | not tested | absent | 2026-10-11 |
+<!-- status-table:end -->
 
 ### Running the login smoke test
 

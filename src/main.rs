@@ -52,6 +52,11 @@ enum Command {
     /// (every scraper under `scrapers/` when no name is given): its overall
     /// state, the result of each login/documents check, and its notes.
     Status(StatusArgs),
+
+    /// Regenerates the status table in `README.md` (between its
+    /// `<!-- status-table:start -->`/`<!-- status-table:end -->` markers)
+    /// from every scraper's `manifest.json` `status`, one row per scraper.
+    StatusTable,
 }
 
 #[derive(Parser)]
@@ -300,6 +305,7 @@ async fn main() -> Result<()> {
         Some(Command::Check) => check(),
         Some(Command::List) => list(),
         Some(Command::Status(args)) => status(args),
+        Some(Command::StatusTable) => status_table(),
         None => {
             Cli::command().print_help()?;
             Ok(())
@@ -508,6 +514,55 @@ fn status(args: StatusArgs) -> Result<()> {
         }
     }
 
+    Ok(())
+}
+
+const STATUS_TABLE_START: &str = "<!-- status-table:start -->";
+const STATUS_TABLE_END: &str = "<!-- status-table:end -->";
+
+/// Rewrites the part of `README.md` between `STATUS_TABLE_START` and
+/// `STATUS_TABLE_END` with a Markdown table of every scraper's
+/// `manifest.json` `status`, leaving the rest of the file untouched.
+fn status_table() -> Result<()> {
+    let mut table = String::from(
+        "| Scraper | State | Login page found | Invalid credentials detected | Login ok \
+         | Documents fetched | Antibot | Last updated |\n\
+         |---|---|---|---|---|---|---|---|\n",
+    );
+    for scraper_name in list_scraper_names()? {
+        let script_dir = PathBuf::from("scrapers").join(&scraper_name);
+        let manifest = load_manifest(&script_dir, &scraper_name)?;
+        let status = &manifest.status;
+        let antibot = match &status.antibot_name {
+            Some(name) => format!(
+                "{} ({})",
+                status.antibot_status.label(),
+                name.replace('|', "\\|")
+            ),
+            None => status.antibot_status.label().to_string(),
+        };
+        table.push_str(&format!(
+            "| [`{scraper_name}`](scrapers/{scraper_name}/manifest.json) | {} | {} | {} | {} | {} | {antibot} | {} |\n",
+            status.state.label(),
+            status.login_page_found.label(),
+            status.invalid_credentials_detected.label(),
+            status.login_ok.label(),
+            status.documents_fetched.label(),
+            status.last_updated,
+        ));
+    }
+
+    let readme = std::fs::read_to_string("README.md").context("reading README.md")?;
+    let (before, rest) = readme
+        .split_once(STATUS_TABLE_START)
+        .with_context(|| format!("README.md has no {STATUS_TABLE_START} marker"))?;
+    let (_, after) = rest
+        .split_once(STATUS_TABLE_END)
+        .with_context(|| format!("README.md has no {STATUS_TABLE_END} marker"))?;
+    let updated = format!("{before}{STATUS_TABLE_START}\n{table}{STATUS_TABLE_END}{after}");
+    std::fs::write("README.md", updated).context("writing README.md")?;
+
+    println!("updated README.md's status table");
     Ok(())
 }
 
