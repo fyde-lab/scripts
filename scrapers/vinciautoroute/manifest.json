@@ -24,6 +24,7 @@
   },
   "status": {
     "state": "blocked",
+    "last_updated": "2026-10-11",
     "login_page_found": "passed",
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",

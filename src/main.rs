@@ -181,6 +181,8 @@ struct ScraperManifest {
 #[derive(Deserialize)]
 struct ScraperStatus {
     state: ScraperState,
+    /// When this status was last changed, as `YYYY-MM-DD`.
+    last_updated: String,
     /// Whether `tests/login_smoke.sh` found the login page/endpoint.
     login_page_found: CheckResult,
     /// Whether `tests/login_smoke.sh`'s made-up credentials were reported
@@ -480,6 +482,7 @@ fn status(args: StatusArgs) -> Result<()> {
             manifest.name,
             status.state.label()
         );
+        println!("  {:<30}{}", "last updated", status.last_updated);
         let checks = [
             ("login page found", &status.login_page_found),
             (

@@ -26,6 +26,7 @@
   },
   "status": {
     "state": "wip",
+    "last_updated": "2026-10-11",
     "login_page_found": "passed",
     "invalid_credentials_detected": "not_applicable",
     "login_ok": "not_tested",

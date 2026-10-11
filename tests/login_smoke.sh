@@ -13,7 +13,8 @@
 # Usage: tests/login_smoke.sh [scraper ...]   (default: every scraper under scrapers/)
 # Writes both results into each scraper's manifest.json `status` (`login_page_found` and
 # `invalid_credentials_detected`, as "passed"/"failed" - an `invalid_credentials_detected` of
-# "not_applicable", i.e. a passwordless login, is left alone), and prints one summary line per
+# "not_applicable", i.e. a passwordless login, is left alone) and sets `last_updated` to today's
+# date when either value changed, and prints one summary line per
 # scraper; full logs go to data/smoke/<name>.log.
 set -u
 cd "$(dirname "$0")/.."
@@ -63,18 +64,22 @@ PY
   # (e.g. its one-line `allowed_domains` arrays) untouched.
   python3 - "scrapers/$name/manifest.json" "$page" "$creds" <<'PY'
 import re, sys
+from datetime import date
 path, page, creds = sys.argv[1:]
 text = open(path).read()
 def put(text, field, value):
-    pattern = rf'("{field}":\s*)"(\w+)"'
+    pattern = rf'("{field}":\s*)"([\w-]+)"'
     current = re.search(pattern, text)
     if not current:
         sys.exit(f"{path}: no status.{field} to update")
     if current.group(2) == "not_applicable":
         return text
     return re.sub(pattern, rf'\1"{value}"', text, count=1)
+before = text
 text = put(text, "login_page_found", page)
 text = put(text, "invalid_credentials_detected", creds)
+if text != before:
+    text = put(text, "last_updated", date.today().isoformat())
 open(path, "w").write(text)
 PY
   echo "$name: login page found: $page, invalid credentials detected: $creds (${result:-exit $code})"

@@ -76,6 +76,8 @@ it with `cargo run -- status <name>...` (every scraper when no name is given). `
 `verified` (login and documents both passed a run against the real site with real credentials),
 `broken` (that run failed against the live site), `blocked` (a host limitation stops the
 documents, or the login, even if the site behaves as the konnector expected) or `wip`.
+`last_updated` is the date (`YYYY-MM-DD`) any field of `status` last changed - update it with
+every manual edit to `status`; `tests/login_smoke.sh` bumps it whenever it changes a result.
 `login_page_found` and `invalid_credentials_detected` come from the smoke test above, `login_ok`
 and `documents_fetched` from runs with real credentials (on 2026-10-09 unless `notes` says
 otherwise); each is `passed`, `failed`, `not_tested` or `not_applicable` (a passwordless login,
