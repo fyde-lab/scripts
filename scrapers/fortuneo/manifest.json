@@ -12,7 +12,7 @@
   "parameters": {
     "username": {
       "label": "Identifiant",
-      "placeholder": "email@example.com",
+      "placeholder": "12345678",
       "type": "string",
       "required": true
     },
@@ -26,10 +26,10 @@
   },
   "status": {
     "state": "wip",
-    "login_page_found": "failed",
-    "invalid_credentials_detected": "failed",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "CSV-in-ZIP export not readable: operations table saved as text PDF; Smoke: login form not found"
+    "notes": "Login page is now a React app (/mon-espace): login driven in the webview (#LOGIN numeric identifier, #PASSWD), fake credentials rejected; account pages read from the webview, unconfirmed; operations saved as text PDF"
   }
 }

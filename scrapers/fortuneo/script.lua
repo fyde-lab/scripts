@@ -1,22 +1,27 @@
 -- Scraper for Fortuneo (mabanque.fortuneo.fr), the online bank: saves a statement of each
 -- account's recent operations.
 --
--- Ported from github.com/konnectors/fortuneo (src/lib.js): login posts
--- `form[name="acces_identification"]` (login/passwd, latin1) from `/fr/identification.jsp`;
--- success shows an `a[href="/logoff"]` link, "Sécurité renforcée tous les 90 jours" means a
--- user action is needed on the site, anything else bad credentials. Accounts: the
--- `#menu_mes_comptes ul div.compte` entries (number in `a > div`, label in the link title).
--- The konnector imported operations from a CSV inside a ZIP export (POST
--- `.../telechargement-especes.jsp`, then `/documents/HistoriqueOperations_<n>.zip`) into Cozy's
--- banking doctypes; this sandbox can't unzip, so this port saves each account page's
+-- Ported from github.com/konnectors/fortuneo (src/lib.js), whose form login
+-- (`form[name="acces_identification"]` on `/fr/identification.jsp`) is gone: that URL now
+-- redirects to `/mon-espace`, a client-rendered React page, so the login is driven through
+-- `fyde.browser`: `#LOGIN` (a numeric identifier) and `#PASSWD`, sent by the "Connexion"
+-- submit button; a wrong login shows "L'identifiant ou le mot de passe ne correspondent à aucun
+-- compte existant" (checked live, with made-up credentials). Success is taken to show an
+-- `a[href="/logoff"]` link as before (unconfirmed), and "Sécurité renforcée tous les 90 jours"
+-- to mean a user action is needed on the site. Accounts: the `#menu_mes_comptes ul div.compte`
+-- entries (number in `a > div`, label in the link title), read from the webview (unconfirmed
+-- since the redesign). The konnector imported operations from a CSV inside a ZIP export into
+-- Cozy's banking doctypes; this sandbox can't unzip, so this port saves each account page's
 -- operations table (`#tableauConsultationHisto`) as a text-only PDF instead. Unverified (see
 -- README.md).
 
 local M = {}
 
 local BASE = "https://mabanque.fortuneo.fr"
-local LOGIN_URL = BASE .. "/fr/identification.jsp"
+local LOGIN_URL = BASE .. "/mon-espace"
 local HOME_URL = BASE .. "/fr/prive/default.jsp"
+local LOGGED_IN = { "logged_in", selector = "a[href='/logoff'], #menu_mes_comptes" }
+local BAD_CREDENTIALS = { "ne correspondent à aucun compte", "identifiant ou le mot de passe" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -76,81 +81,96 @@ local function ask_code(question)
   return (code:gsub("%s", ""))
 end
 
-local function absolute(base, href)
-  if not href or href == "" then
-    return base
-  end
-  href = href:gsub("&amp;", "&")
-  if href:match("^https?://") then
-    return href
-  end
-  local origin = base:match("^(https?://[^/]+)")
-  if href:sub(1, 2) == "//" then
-    return base:match("^(https?:)") .. href
-  end
-  if href:sub(1, 1) == "/" then
-    return origin .. href
-  end
-  if href:sub(1, 1) == "?" then
-    return (base:gsub("%?.*$", "")) .. href
-  end
-  local dir = (base:gsub("[?#].*$", "")):match("^(https?://.*/)") or (origin .. "/")
-  return dir .. href
+-- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
+-- exists.
+local function sleep(ms)
+  pcall(function()
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
+  end)
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
--- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
--- named input's current value (unchecked checkboxes/radios left out, like a browser does).
-local function read_form(page, selector)
-  local form = fyde.html.select(page.body, selector)[1]
-  if not form then
-    return nil
-  end
-  local fields = {}
-  for _, input in ipairs(fyde.html.select(form.html, "input[name]")) do
-    local kind = (input.attrs.type or "text"):lower()
-    if (kind ~= "checkbox" and kind ~= "radio") or input.attrs.checked then
-      fields[input.attrs.name] = input.attrs.value or ""
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+local function present(selector)
+  return #fyde.html.select(page_html(), selector) > 0
+end
+
+local function page_text()
+  local body = fyde.html.select(page_html(), "body")[1]
+  return body and body.text or ""
+end
+
+-- Polls the current page until one of `states` matches and returns its name (or nil after
+-- `timeout_ms`). Each state is `{ name, selector = css }` or `{ name, text = { needles } }`.
+-- Polling in short chunks also survives `fyde.browser:open` not waiting for navigation (a
+-- `wait_for` issued against the previous page just times out and gets retried).
+local function wait_state(states, timeout_ms)
+  local waited = 0
+  repeat
+    local html = page_html()
+    local text
+    for _, state in ipairs(states) do
+      if state.selector and #fyde.html.select(html, state.selector) > 0 then
+        return state[1]
+      end
+      if state.text then
+        if not text then
+          local body = fyde.html.select(html, "body")[1]
+          text = body and body.text or ""
+        end
+        if contains_any(text, state.text) then
+          return state[1]
+        end
+      end
     end
-  end
-  return absolute(page.url, form.attrs.action), fields
-end
-
--- Fills `values` into the form matching `selector` on `page` and posts it.
-local function submit_form(page, selector, values, headers)
-  local action, fields = read_form(page, selector)
-  if not action then
-    error("no form matching '" .. selector .. "' on " .. tostring(page.url))
-  end
-  for name, value in pairs(values) do
-    fields[name] = value
-  end
-  return fyde.http.post_form(action, fields, headers)
-end
-
-local function has(page_or_html, selector)
-  local html = type(page_or_html) == "table" and page_or_html.body or page_or_html
-  return #fyde.html.select(html or "", selector) > 0
-end
-
-local function json_or_nil(body)
-  local ok, value = pcall(fyde.json.decode, body or "")
-  if ok then
-    return value
-  end
+    sleep(1000)
+    waited = waited + 1000
+  until waited >= (timeout_ms or 30000)
   return nil
 end
 
--- Downloads `url` and saves it as `filename` when it really is a PDF; returns true on success.
-local function save_pdf(url, filename, fields, headers)
-  local resp = fyde.http.download(url, headers)
-  local content_type = resp.content_type or ""
-  local is_pdf = content_type:find("pdf", 1, true) or (resp.body or ""):sub(1, 4) == "%PDF"
-  if resp.status == 200 and is_pdf then
-    fyde.save_document(sanitize(filename), resp.body, fields)
+local function open_and_wait(url, states, timeout_ms)
+  fyde.browser:open(url)
+  sleep(1500)
+  return wait_state(states, timeout_ms)
+end
+
+-- Fills the first present selector of each candidate list.
+local function fill_first(selectors, value)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:fill(selector, value)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+local function click_first(selectors)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:click(selector)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+-- Clicks `selector` (a download link/button) and saves what the browser downloads.
+local function browser_save(selector, filename, fields)
+  local ok, bytes = pcall(function()
+    return fyde.browser:download(selector, 60000)
+  end)
+  if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
+    fyde.save_document(sanitize(filename), bytes, fields)
     return true
   end
-  fyde.log.warn(string.format("skipping %s (status %d, content-type %s)", filename, resp.status, content_type))
+  fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
   return false
 end
 
@@ -219,39 +239,50 @@ end
 
 local function login(params)
   fyde.progress.step("Logging in")
-  local page = fyde.http.get(LOGIN_URL)
-  if not has(page, "form[name='acces_identification']") then
-    error("Fortuneo login form not found on " .. page.url)
+  if open_and_wait(LOGIN_URL, { LOGGED_IN, { "login", selector = "#PASSWD" } }, 45000) ~= "login" then
+    error("Fortuneo login form not found")
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = submit_form(page, "form[name='acces_identification']", { login = params.username, passwd = params.password })
-  if contains(resp.body, "curit\195\169 renforc\195\169e tous les 90 jours") or contains(resp.body, "curit\233 renforc\233e tous les 90 jours") then
-    error("Fortuneo requires a periodic security check on its website (user action needed)")
+  if present("#popin_tc_privacy_button_2") then
+    fyde.browser:click("#popin_tc_privacy_button_2")
   end
-  if not has(resp, "a[href='/logoff']") then
+  fyde.browser:fill("#LOGIN", params.username)
+  fyde.browser:fill("#PASSWD", params.password)
+  click_first({ "form button[type='submit'][class]", "#valider_login" })
+  local state = wait_state({ LOGGED_IN, { "bad", text = BAD_CREDENTIALS } }, 45000)
+  if state == "bad" then
     fail(INVALID_CREDENTIALS)
   end
-  return resp
+  if contains(page_text(), "curité renforcée tous les 90 jours") then
+    error("Fortuneo requires a periodic security check on its website (user action needed)")
+  end
+  if state ~= "logged_in" then
+    if present("#PASSWD") then
+      fail(INVALID_CREDENTIALS, "still on the login form")
+    end
+    error("Fortuneo login did not complete - page says: " .. page_text():sub(1, 300))
+  end
 end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local page = fyde.http.get(HOME_URL)
-  if has(page, "a[href='/logoff']") then
+  if open_and_wait(HOME_URL, { LOGGED_IN, { "login", selector = "#PASSWD" } }, 45000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
-    page = login(params)
+    login(params)
+    open_and_wait(HOME_URL, { LOGGED_IN }, 30000)
   end
 
   fyde.progress.step("Saving account statements")
-  for _, account in ipairs(fyde.html.select(page.body, "#menu_mes_comptes ul div.compte")) do
+  for _, account in ipairs(fyde.html.select(page_html(), "#menu_mes_comptes ul div.compte")) do
     local link = fyde.html.select(account.html, "a")[1]
     local number = fyde.html.select(account.html, "a > div")[1]
     number = number and (number.text:match("%s(%S+)") or trim(number.text)) or "compte"
-    if link and link.attrs.href then
-      local detail = fyde.http.get(absolute(BASE, link.attrs.href))
+    local href = link and link.attrs.href
+    if href then
+      open_and_wait(href:sub(1, 1) == "/" and (BASE .. href) or href, { { "table", selector = "#tableauConsultationHisto" } }, 30000)
       local lines = {}
-      for _, row in ipairs(fyde.html.select(detail.body, "#tableauConsultationHisto tr")) do
+      for _, row in ipairs(fyde.html.select(page_html(), "#tableauConsultationHisto tr")) do
         local cells = {}
         for _, cell in ipairs(fyde.html.select(row.html, "td, th")) do
           cells[#cells + 1] = trim(cell.text:gsub("%s+", " "))
