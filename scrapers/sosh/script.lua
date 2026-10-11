@@ -19,7 +19,7 @@ local LOGIN_URL = "https://login.orange.fr/"
 local HOME_URL = "https://espace-client.orange.fr/accueil?sosh="
 local CLIENT = "https://espace-client.orange.fr"
 local BRAND = "Sosh"
-local BAD_CREDENTIALS = { "mot de passe incorrect", "identifiant ou mot de passe", "identifiant incorrect", "n'est pas reconnu", "compte est bloqu" }
+local BAD_CREDENTIALS = { "non reconnu", "mot de passe incorrect", "identifiant ou mot de passe", "identifiant incorrect", "n'est pas reconnu", "compte est bloqu" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -175,13 +175,59 @@ end
 
 local LOGGED_IN = { "logged_in", selector = "ecm-section-bill, a[href*='/facture-paiement/']" }
 
+-- `#btnSubmit` is a web component wrapping the real button: clicking it doesn't submit.
 local function submit()
-  click_first({ "#btnSubmit", "button[type='submit']", "button[data-testid='submit-login']", "button[data-testid='submit-password']" })
+  click_first({ "button[data-testid='submit-login']", "button[data-testid='submit-password']", "button[type='submit']", "#btnSubmit" })
+end
+
+-- A refused identifier/password only shows in the page title (e.g. "Identifiant non reconnu -
+-- Identification Orange"), which `wait_state`'s text check (the body) doesn't see.
+local function wait_step(states, timeout_ms)
+  local waited = 0
+  repeat
+    local state = wait_state(states, 1000)
+    if state then
+      return state
+    end
+    local title = fyde.html.select(page_html(), "title")[1]
+    if title and contains_any(title.text, BAD_CREDENTIALS) then
+      return "bad"
+    end
+    waited = waited + 1000
+  until waited >= timeout_ms
+  return nil
+end
+
+-- login.orange.fr answers a fresh session with its visual anti-robot check ("Contrôle
+-- anti-robots visuel": pick the images of a category) before the login form. The script never
+-- touches it: it gives a human `CAPTCHA_TIMEOUT_MS` to solve it in a `--visible` window, then
+-- carries on with the login form, or fails with an explicit captcha error.
+local CAPTCHA = { "captcha", selector = "div[class*='captcha_responseContainer']" }
+local CAPTCHA_TIMEOUT_MS = 120000
+
+local function wait_past_captcha(states, timeout_ms)
+  local all = { CAPTCHA }
+  for _, state in ipairs(states) do
+    all[#all + 1] = state
+  end
+  local state = wait_state(all, timeout_ms)
+  if state ~= "captcha" then
+    return state
+  end
+  fyde.progress.step("Waiting for the " .. BRAND .. " anti-robot check to be solved in the browser window")
+  fyde.log.warn(BRAND .. " shows a visual captcha; it must be solved by hand in the browser window (--visible)")
+  state = wait_state(states, CAPTCHA_TIMEOUT_MS)
+  if not state then
+    error(BRAND .. " asks for a captcha - run with --visible and solve it in the browser window")
+  end
+  return state
 end
 
 local function login(params)
   fyde.progress.step("Logging in")
-  local state = open_and_wait(LOGIN_URL, {
+  fyde.browser:open(LOGIN_URL)
+  sleep(1500)
+  local state = wait_past_captcha({
     { "other", selector = "[data-testid='choose-other-account']" },
     { "login", selector = "#login" },
     { "password", selector = "#password" },
@@ -200,7 +246,7 @@ local function login(params)
   if state == "login" then
     fyde.browser:fill("#login", params.username)
     submit()
-    state = wait_state({
+    state = wait_step({
       { "password", selector = "#password" },
       { "mobile_connect", selector = "button[data-testid='submit-mc']" },
       { "bad", text = BAD_CREDENTIALS },
@@ -223,7 +269,7 @@ local function login(params)
   else
     error(BRAND .. " login did not show the password step")
   end
-  state = wait_state({
+  state = wait_step({
     { "keep", selector = "button[data-testid='button-keepconnected']" },
     { "bad", text = BAD_CREDENTIALS },
     { "captcha", selector = "div[class*='captcha_responseContainer']" },

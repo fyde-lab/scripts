@@ -28,9 +28,9 @@
   "status": {
     "state": "wip",
     "login_page_found": "passed",
-    "invalid_credentials_detected": "failed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "Smoke: password step not shown"
+    "notes": "Same login as orange: refusals detected in the page title; a fresh session may first get Orange's visual anti-robot check, which waits for a human to solve it in a --visible window"
   }
 }
