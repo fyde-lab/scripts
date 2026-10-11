@@ -1,17 +1,20 @@
--- Scraper for MAIF (maif.fr), the mutual insurer: saves the member's "Mes infos" summary
--- (contracts, homes, household, payment terms, claims).
+-- Scraper for MAIF (maif.fr), the mutual insurer: meant to save the member's documents.
 --
--- Ported from github.com/konnectors/cozy-konnector-maif (src/index.js). That konnector has no
--- login form: it called MAIF's open API (`openapiweb.maif.fr/prod/cozy/v1/mes_infos` with a
--- public apikey) with an OAuth bearer token obtained (and refreshed) by Cozy's OAuth flow, and
--- stored the JSON in MAIF-specific doctypes. Here the token is a parameter (`access_token`):
--- a rejected token (HTTP 401/403) is reported as INVALID_CREDENTIALS, and the data is saved as
--- a text-only PDF since there is no document to download. The konnector was last updated in
--- 2020 and the API may be gone. Unverified (see README.md).
+-- Originally ported from github.com/konnectors/cozy-konnector-maif, which had no login form: it
+-- called MAIF's open API (openapiweb.maif.fr/prod/cozy/v1/mes_infos) with an OAuth token
+-- obtained through Cozy's OAuth flow. That host no longer resolves, so this script now logs in
+-- the way a member does, on MAIF's own login (connect.maif.fr/connect/oic/login), in two steps
+-- on the same `form#loginForm`: the identifier first (`username` - an email or a member number),
+-- then, on the page that comes back, the `password`. A wrong login answers that second page
+-- again with "Identifiant ou mot de passe invalide" (checked live, with made-up credentials).
+-- Nothing past the login is known yet (no account to look at the personal space with), so a
+-- successful login stops with an explicit error rather than guessing at the documents pages.
 
 local M = {}
 
-local INFO_URL = "https://openapiweb.maif.fr/prod/cozy/v1/mes_infos?apikey=eeafd0bd-a921-420e-91ce-3b52ee5807e8"
+local LOGIN_URL = "https://connect.maif.fr/connect/oic/login"
+local LOGIN_FORM = "form#loginForm"
+local BAD_CREDENTIALS = { "mot de passe invalide" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -212,40 +215,29 @@ local function html_lines(html)
 end
 -- luacheck: pop
 
-local function flatten(value, prefix, lines)
-  if type(value) == "table" then
-    for key, child in pairs(value) do
-      flatten(child, prefix == "" and tostring(key) or (prefix .. "." .. tostring(key)), lines)
-    end
-  else
-    lines[#lines + 1] = prefix .. " : " .. tostring(value)
+local function login(params)
+  fyde.progress.step("Logging in")
+  local page = fyde.http.get(LOGIN_URL)
+  if not has(page, LOGIN_FORM .. " input[name='username']") then
+    error("MAIF login form not found on " .. page.url)
   end
-  return lines
+  fyde.log.info("LOGIN_PAGE_FOUND")
+  page = submit_form(page, LOGIN_FORM, { username = params.username })
+  if not has(page, LOGIN_FORM .. " input[name='password']") then
+    fail(INVALID_CREDENTIALS, "identifier not accepted (no password step)")
+  end
+  local resp = submit_form(page, LOGIN_FORM, { password = params.password })
+  if contains_any(resp.body, BAD_CREDENTIALS) or has(resp, LOGIN_FORM .. " input[name='password']") then
+    fail(INVALID_CREDENTIALS)
+  end
+  return resp
 end
 
 function M.run(params)
-  local token = params.access_token or params.password
-  if not token or token == "" then
-    fail(INVALID_CREDENTIALS, "no access token given")
-  end
-  fyde.progress.step("Fetching MAIF data")
-  local resp = fyde.http.get(INFO_URL, { Authorization = "Bearer " .. token })
-  if resp.status == 401 or resp.status == 403 then
-    fail(INVALID_CREDENTIALS, "MAIF API answered HTTP " .. resp.status)
-  end
-  local data = json_or_nil(resp.body)
-  if not (data and data.MesInfos) then
-    error("unexpected MAIF API answer (HTTP " .. resp.status .. ")")
-  end
-  local lines = flatten(data.MesInfos, "", {})
-  table.sort(lines)
-  fyde.save_document("maif_mes_infos.pdf", text_pdf("MAIF - Mes infos", lines), {
-    name = "MAIF - Mes infos",
-    type = "insurance_contract",
-    source_category = "insurance",
-    purpose = "contract",
-  })
-  fyde.progress.step("Done")
+  -- No session check: nothing past the login is ported, so there's no session to reuse yet.
+  local resp = login(params)
+  error("credentials accepted (landed on " .. resp.url .. "), but the MAIF personal space's documents "
+    .. "pages aren't ported yet - see this script's header comment", 0)
 end
 
 return M
