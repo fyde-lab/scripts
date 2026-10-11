@@ -7,7 +7,8 @@
   "debug_http_dump": false,
   "follow_redirects": true,
   "allowed_domains": [
-    "darty.com"
+    "darty.com",
+    "captcha-delivery.com"
   ],
   "parameters": {
     "username": {

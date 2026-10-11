@@ -1,9 +1,13 @@
 -- Scraper for La Mutuelle Générale's member area (adherent.lamutuellegenerale.fr): downloads
 -- the health documents (reimbursement statements, certificates).
 --
--- Drives `fyde.browser`: the member area shows either the login form
--- (`#username`, `#password`) or, logged in, an `a[analyticsbuttonlabel="Déconnexion"]` link
--- (`#older_browsers` is an unsupported-browser page). The original implementation read the documents from the
+-- The original implementation was a content script driving the real site, so this one
+-- drives `fyde.browser` too: the member area (an Auth0 Angular app) now
+-- redirects a logged-out visitor to CNP's Auth0 tenant (authentification.cnp-protectionsociale.fr,
+-- behind Imperva, which the webview passes on its own), whose React login form has id/name-less
+-- inputs (`form input[type='text']` for the e-mail/membership number, `form input[type='password']`)
+-- and a `form button[type='submit']` (checked live; it used to be `#username`/`#password`).
+-- Logged in, the member area shows an `a[analyticsbuttonlabel="Déconnexion"]` link. The original implementation read the documents from the
 -- site's intercepted API answers; this port clicks the download controls of the documents page
 -- (`/mes-documents`, URL unconfirmed). Unverified (see README.md).
 
@@ -169,7 +173,8 @@ end
 -- luacheck: pop
 
 local LOGGED_IN = { "logged_in", selector = "a[analyticsbuttonlabel='Déconnexion']" }
-local LOGIN_FORM = "#username"
+local LOGIN_FORM = "form input[type='password']"
+local USERNAME = "form input[type='text']"
 
 local function login(params)
   fyde.progress.step("Logging in")
@@ -180,10 +185,10 @@ local function login(params)
     error("La Mutuelle Générale login form not found")
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fill_first({ "#username" }, params.username)
+  fill_first({ USERNAME }, params.username)
   local state
-  fill_first({ "#password" }, params.password)
-  click_first({ "button[type='submit']", "input[type='submit']", "#kc-login" })
+  fill_first({ LOGIN_FORM }, params.password)
+  click_first({ "form button[type='submit']" })
   state = wait_state({ LOGGED_IN, { "bad", text = BAD_CREDENTIALS }, { "mfa", selector = MFA } }, 45000)
   if state == "bad" then
     fail(INVALID_CREDENTIALS)
@@ -202,8 +207,8 @@ local function login(params)
     return
   end
   if state ~= "logged_in" then
-    if present("#password") then
-      fail(INVALID_CREDENTIALS, "still on the login form")
+    if present(LOGIN_FORM) then
+      fail(INVALID_CREDENTIALS, "still on the login form - page says: " .. page_text():sub(1, 300))
     end
     error("La Mutuelle Générale login did not complete - page says: " .. page_text():sub(1, 300))
   end

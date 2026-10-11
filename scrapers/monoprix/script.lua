@@ -1,19 +1,31 @@
 -- Scraper for Monoprix (monoprix.fr), the retailer: saves the order history.
 --
--- An ATG login - the home page's
--- `_dynSessConf`, then `jsp/account/loginPage.jsp` takes the ProfileFormHandler login/password
--- fields (with their `_D:` companions and `_DARGS=/jsp/account/loginPage.jsp.loginForm`). The
--- original implementation judged the login by the orders page (`jsp/account/accountOrders.jsp`): a
--- `table.table.commandes-related` with 5 rows or fewer meant LOGIN_FAILED - and it never got to
--- saving any document (work in progress upstream). This port keeps that check and saves the
--- orders table as a text-only PDF. Monoprix's site has been rebuilt since, so this flow is
--- likely outdated. Unverified (see README.md).
+-- Originally an ATG login on
+-- www.monoprix.fr (`jsp/account/loginPage.jsp`) that never got to saving any document. The site
+-- has been rebuilt since: www.monoprix.fr is now Salesforce Commerce Cloud, whose `Login-Show`
+-- redirects through the Reach5 SSO (`sso.monoprix.fr/oauth/authorize`) to "Monoprix Connect",
+-- a client-rendered Next.js app on client.monoprix.fr behind Cloudflare, so it is driven through
+-- `fyde.browser`. Its login is two steps: `input[name='email']` + "Se connecter / S'inscrire",
+-- then a password field ("Email ou mot de passe invalide." when refused, per the app's bundle -
+-- unverified, no account) - or, for an e-mail with no account, "Etape 2/2 - Création de compte"
+-- (confirmed live; never submitted here: an unknown e-mail is reported as INVALID_CREDENTIALS). Orders, unverified (no account): `client.monoprix.fr/monoprix-shopping/
+-- commandes` renders them client-side from `/api/client/get-orders` (which needs the page's
+-- Reach5 id token as an `r5-token` header, hence no `fyde.http`), so the rendered page's text is
+-- saved as a text-only PDF. See README.md.
 
 local M = {}
 
-local BASE = "https://www.monoprix.fr/"
-local ORDERS_URL = BASE .. "jsp/account/accountOrders.jsp"
-local PFH = "/atg/userprofiling/ProfileFormHandler."
+local LOGIN_URL = "https://www.monoprix.fr/on/demandware.store/Sites-TML-FR-Site/fr_FR/Login-Show"
+local ORDERS_URL = "https://client.monoprix.fr/monoprix-shopping/commandes"
+local EMAIL_FIELD = "input[name='email']"
+local PASSWORD_FIELD = "input[type='password']"
+local SUBMIT = "form button[type='submit']"
+-- www.monoprix.fr's header carries `<span class="isLoggedIn" data-islogged="...">`.
+-- The second step for an e-mail with no account: "Etape 2/2 - Création de compte" (civility
+-- radios, first/last name, birth date, password).
+local SIGNUP_FORM = "button#civility-female, button#civility-male"
+local LOGGED_IN = ".isLoggedIn[data-islogged='true']"
+local BAD_CREDENTIALS = { "mot de passe invalide", "compte est bloqué", "compte a temporairement" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -214,51 +226,104 @@ local function html_lines(html)
 end
 -- luacheck: pop
 
-local function order_rows(page)
-  return fyde.html.select(page.body, "table.table.commandes-related tr")
+local function sleep(ms)
+  pcall(function()
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
+  end)
+end
+
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+-- The visible text of the page's `<main>` (the body also carries the consent banner's CSS).
+local function body_text(html)
+  local main = fyde.html.select(html, "main")[1] or fyde.html.select(html, "body")[1]
+  return main and main.text or ""
+end
+
+-- Polls the current page (up to `timeout_ms`, past the Cloudflare challenge) until `check`
+-- returns a value for its markup; returns that value, or nil and the last markup.
+local function poll(check, timeout_ms)
+  local html = ""
+  for _ = 1, math.ceil(timeout_ms / 1000) do
+    sleep(1000)
+    html = page_html()
+    local result = check(html)
+    if result then
+      return result, html
+    end
+  end
+  return nil, html
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
-  local home = fyde.http.get(BASE, { ["Accept-language"] = "fr" })
-  local conf = fyde.html.select(home.body, "input[name='_dynSessConf']")[1]
-  if not conf then
-    error("Monoprix login form (_dynSessConf) not found on " .. home.url)
-  end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fyde.http.post_form(BASE .. "jsp/account/loginPage.jsp", {
-    _dynSessConf = conf.attrs.value or "",
-    [PFH .. "value.login"] = params.username,
-    ["_D:" .. PFH .. "value.login"] = "",
-    [PFH .. "value.password"] = params.password,
-    ["_D:" .. PFH .. "value.password"] = "",
-    [PFH .. "login"] = "valider",
-    ["_D:" .. PFH .. "login"] = "",
-    _DARGS = "/jsp/account/loginPage.jsp.loginForm",
-  }, { ["Accept-language"] = "fr" })
+  fyde.progress.step("Logging in")
+  fyde.browser:fill(EMAIL_FIELD, params.username)
+  fyde.browser:click(SUBMIT)
+  local step = poll(function(page)
+    if has(page, SIGNUP_FORM) or contains(body_text(page), "création de compte") then
+      return "signup"
+    elseif has(page, PASSWORD_FIELD) then
+      return "password"
+    end
+  end, 30000)
+  if step == "signup" then
+    -- Never submitted: an e-mail with no Monoprix account is a rejected username.
+    fail(INVALID_CREDENTIALS, "no Monoprix account for this e-mail (sign-up form shown)")
+  elseif step ~= "password" then
+    error("Monoprix login: no password field after the e-mail step")
+  end
+
+  fyde.browser:fill(PASSWORD_FIELD, params.password)
+  fyde.browser:click(SUBMIT)
+  local outcome, last = poll(function(page)
+    if contains_any(body_text(page), BAD_CREDENTIALS) then
+      return "rejected"
+    elseif has(page, LOGGED_IN) or not has(page, PASSWORD_FIELD) and not has(page, EMAIL_FIELD) and has(page, "main") then
+      return "done"
+    end
+  end, 45000)
+  if outcome == "rejected" then
+    fail(INVALID_CREDENTIALS)
+  elseif outcome ~= "done" then
+    if has(last, PASSWORD_FIELD) then
+      fail(INVALID_CREDENTIALS, "still on the password form")
+    end
+    error("Monoprix login did not complete")
+  end
 end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local page = fyde.http.get(ORDERS_URL)
-  if #order_rows(page) > 5 then
+  fyde.browser:open(LOGIN_URL)
+  local state = poll(function(html)
+    if has(html, EMAIL_FIELD) then
+      return "login"
+    elseif has(html, LOGGED_IN) then
+      return "logged_in"
+    end
+  end, 45000)
+  if state == "login" then
+    login(params)
+  elseif state == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
-    login(params)
-    page = fyde.http.get(ORDERS_URL)
-    if #order_rows(page) <= 5 then
-      fail(INVALID_CREDENTIALS, "orders table not shown after login")
-    end
+    error("Monoprix login page not found (Cloudflare challenge not passed?)")
   end
 
   fyde.progress.step("Saving the order history")
-  local lines = {}
-  for _, row in ipairs(order_rows(page)) do
-    local text = trim(row.text:gsub("%s+", " "))
-    if text ~= "" then
-      lines[#lines + 1] = text
-    end
-  end
+  fyde.browser:open(ORDERS_URL)
+  local _, html = poll(function(page)
+    local text = body_text(page)
+    return contains_any(text, { "commande n", "aucune commande", "pas encore passé" }) or nil
+  end, 30000)
+  local main = fyde.html.select(html, "main")[1]
+  local lines = html_lines(main and main.html or html)
   fyde.save_document("monoprix_commandes.pdf", text_pdf("Monoprix - historique des commandes", lines), {
     name = "Historique des commandes Monoprix",
     type = "invoice",

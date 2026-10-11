@@ -253,10 +253,50 @@ local function logged_in_http()
   return page.status == 200 and page.url:find("GetOrders", 1, true) ~= nil and not has(page, "input[type='password']")
 end
 
+-- Fnac (like Darty) is behind DataDome, which answers the webview with its stub page (an inline
+-- `var dd={'rt':'i', ..., 'host':'geo.captcha-delivery.com'}` loading a "Device Check"
+-- interstitial from that host - hence it in manifest.json's `allowed_domains`) instead of the
+-- page. Seen live from the home page on, the interstitial never clears in this webview (still
+-- there after a minute), and once its iframe has loaded the page may stop answering `html()`
+-- (it then reads back as ""). The script never touches the challenge: when it can see it, it
+-- gives a human `CAPTCHA_TIMEOUT_MS` to get past it in a `--visible` window; otherwise it fails
+-- with an explicit DataDome error.
+local CAPTCHA_TIMEOUT_MS = 120000
+
+local function datadome_shown()
+  return page_html():find("captcha-delivery.com", 1, true) ~= nil
+end
+
+local function wait_past_datadome(states, timeout_ms)
+  local waited = 0
+  repeat
+    local state = wait_state(states, 1000)
+    if state then
+      return state
+    end
+    if datadome_shown() then
+      fyde.progress.step("Waiting for the Fnac captcha to be solved in the browser window")
+      fyde.log.warn("DataDome captcha shown; it must be solved by hand in the browser window (--visible)")
+      state = wait_state(states, CAPTCHA_TIMEOUT_MS)
+      if not state then
+        error("Fnac is blocked by a DataDome captcha - run with --visible and solve it in the browser window")
+      end
+      return state
+    end
+    waited = waited + 1000
+  until waited >= timeout_ms
+  return nil
+end
+
 local function login(params)
   fyde.progress.step("Logging in")
-  if open_and_wait(SIGNIN_URL, { { "login", selector = "input[type='password'], input[type='email']" } }, 30000) ~= "login" then
-    error("Fnac login form not found (Datadome?)")
+  fyde.browser:open(SIGNIN_URL)
+  sleep(1500)
+  if wait_past_datadome({ { "login", selector = "input[type='password'], input[type='email']" } }, 30000) ~= "login" then
+    if datadome_shown() or page_html() == "" then
+      error("Fnac's sign-in page never showed its form: blocked by DataDome's device check (geo.captcha-delivery.com)")
+    end
+    error("Fnac login form not found")
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
   fill_first({ "input[type='email']", "input[name='email']" }, params.username)

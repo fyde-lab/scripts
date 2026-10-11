@@ -175,52 +175,31 @@ local function table_page(n)
   return fyde.http.get(CONTROLLER .. "ec/products/table?filtre=0&pagination=" .. n, HEADERS)
 end
 
-function M.run(params)
-  fyde.progress.step("Checking for an existing session")
-  local check = fyde.http.get(CONTROLLER .. "ec/products", HEADERS)
-  if check.status == 200 and not check.url:find("/espace_client/connexion", 1, true) then
-    fyde.log.info("ALREADY_LOGGED_IN")
-  else
-    login(params)
-  end
 
-  fyde.progress.step("Downloading bills")
-  local first = table_page(1)
-  local pages = 1
-  for _, a in ipairs(fyde.html.select(first.body, "a[data-page]")) do
-    pages = math.max(pages, tonumber(a.attrs["data-page"]) or 1)
+local function sleep(ms)
+  pcall(function()
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
+  end)
+end
+
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+function M.run(params)
+  fyde.browser:open(ROOT .. "/")
+  for i = 1, 40 do
+    if i == 15 then fyde.browser:open(LOGIN_URL) end
+    sleep(1000)
+    local ok, html = pcall(function() return fyde.browser:html() end)
+    if not ok then fyde.log.warn("html err: " .. tostring(html)); html = "" end
+    local t = fyde.html.select(html, "title")[1]
+    fyde.log.info(i .. " len=" .. #html .. " title=" .. (t and t.text or "?") .. " pw=" .. tostring(has(html, "input[type='password']")) .. " dd=" .. tostring(html:find("captcha-delivery", 1, true) ~= nil))
   end
-  for n = 1, pages do
-    local page = n == 1 and first or table_page(n)
-    local generated = false
-    for _, product in ipairs(fyde.html.select(page.body, ".item_product")) do
-      local gen = fyde.html.select(product.html, "a[data-token]")[1]
-      if gen then
-        fyde.http.post_form(CONTROLLER .. "FactureMagasinGeneration?numCmd=" .. (gen.attrs["data-num"] or "")
-          .. "&placeOrderTime=" .. (gen.attrs["data-time"] or "") .. "&token=" .. (gen.attrs["data-token"] or ""), {})
-        generated = true
-      end
-    end
-    if generated then
-      page = table_page(n)
-    end
-    for _, product in ipairs(fyde.html.select(page.body, ".item_product")) do
-      local bill = fyde.html.select(product.html, "a[data-tracking='bill-product']")[1]
-      local href = bill and bill.attrs.href or ""
-      if href:find("^/webapp/wcs/stores/controller/") then
-        local date = (product.attrs["data-omniture-date"] or ""):match("(%d%d/%d%d/%d%d%d%d)") or ""
-        local d, m, y = date:match("(%d+)/(%d+)/(%d+)")
-        local label = fyde.html.select(product.html, "a[href^='/nav/codic/']")[1]
-        save_pdf(ROOT .. href, (y and (y .. "-" .. m .. "-" .. d) or "") .. "-" .. sanitize(label and label.text or (product.attrs["data-omniture-codic"] or "produit")) .. ".pdf", {
-          name = "Facture Darty " .. (label and trim(label.text) or ""),
-          type = "invoice",
-          source_category = "shopping",
-          purpose = "invoice",
-        })
-      end
-    end
-  end
-  fyde.progress.step("Done")
+  error("probe")
 end
 
 return M

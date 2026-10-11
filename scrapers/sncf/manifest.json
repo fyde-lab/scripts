@@ -9,7 +9,8 @@
   "allowed_domains": [
     "sncf-connect.com",
     "sncf.com",
-    "sncf.fr"
+    "sncf.fr",
+    "captcha-delivery.com"
   ],
   "parameters": {
     "username": {
@@ -35,6 +36,6 @@
     "documents_fetched": "not_tested",
     "antibot_name": "DataDome",
     "antibot_status": "blocking",
-    "notes": "Smoke: login form not found"
+    "notes": "Datadome captcha on load: run with --visible and solve it by hand; Smoke: login form not found"
   }
 }

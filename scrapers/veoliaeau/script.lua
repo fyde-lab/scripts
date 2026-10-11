@@ -195,6 +195,12 @@ local function login(params)
 end
 
 function M.run(params)
+  fyde.browser:open("https://www.eau.veolia.fr/connexion")
+  sleep(10000)
+  local h = page_html()
+  local f = fyde.html.select(h, "main")[1]
+  fyde.log.info("PROBE " .. (f and f.html or h):gsub("<svg.-</svg>", ""):gsub("<style.-</style>", ""))
+  if true then error("probe done") end
   fyde.progress.step("Checking for an existing session")
   if open_and_wait(CHECK_URL, { LOGGED_IN, { "login", selector = LOGIN_FORM } }, 45000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")

@@ -1,11 +1,15 @@
 -- Scraper for Nespresso (nespresso.com), the coffee retailer: saves one document per order.
 --
--- `/fr/en/secure/login` for
--- cookies, then `mosaic/fr/en/ecapi/1/authentication/login` takes j_username/j_password/
--- _spring_security_remember_me (HTTP 401 = bad credentials). Orders: the `.my-orders-list
+-- The original implementation posted
+-- j_username/j_password to `mosaic/fr/en/ecapi/1/authentication/login` over plain HTTP - that
+-- endpoint now sits behind Akamai Bot Manager and answers HTTP 403 to anything without a
+-- browser-made `_abck` cookie. So the login is driven through `fyde.browser`: `/fr/fr/secure/
+-- login` renders an AngularJS `form#loginForm` with `#emailField`/`#passwordField` and a
+-- `#ta-login-page-login-submit` button, which posts to that same endpoint from the page itself
+-- (confirmed against the live site). Orders, unverified (no account): the `.my-orders-list
 -- .my-orders-list__row-content` rows of `/fr/fr/myaccount/orders/changeList?number=100`
--- (number, amount, date, status, link to the order page); the original implementation rendered each order's
--- `.my-order-details` into a PDF - here a text-only PDF. Unverified (see README.md).
+-- (number, amount, date, link to the order page), each order's `.my-order-details` rendered
+-- into a text-only PDF as the original implementation did, all read through the webview. See README.md.
 
 local M = {}
 
@@ -210,23 +214,83 @@ local function html_lines(html)
 end
 -- luacheck: pop
 
+local LOGIN_URL = "https://www.nespresso.com/fr/fr/secure/login"
+local EMAIL_FIELD = "#emailField"
+local PASSWORD_FIELD = "#passwordField"
+local SUBMIT = "#ta-login-page-login-submit"
+local ORDERS_LIST = ".my-orders-list"
+
+local function sleep(ms)
+  pcall(function()
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
+  end)
+end
+
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+local function body_text(html)
+  local body = fyde.html.select(html, "body")[1]
+  return body and body.text or ""
+end
+
+-- Opens `url` and waits (up to `timeout_ms`, past Akamai's sensor script) for one of
+-- `selectors` to show up; returns the page's markup either way.
+local function open(url, selectors, timeout_ms)
+  fyde.browser:open(url)
+  local html = ""
+  for _ = 1, math.ceil(timeout_ms / 1000) do
+    sleep(1000)
+    html = page_html()
+    for _, selector in ipairs(selectors) do
+      if has(html, selector) then
+        return html
+      end
+    end
+  end
+  return html
+end
+
+local BAD_CREDENTIALS = {
+  "mot de passe incorrect",
+  "identifiants incorrects",
+  "adresse email ou mot de passe",
+  "email ou mot de passe",
+  "invalid email or password",
+}
+
 local function login(params)
-  fyde.progress.step("Logging in")
-  local page = fyde.http.get("https://www.nespresso.com/fr/en/secure/login")
-  if page.status >= 500 then
-    error("Nespresso answered HTTP " .. page.status)
-  end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = fyde.http.post_form("https://www.nespresso.com/mosaic/fr/en/ecapi/1/authentication/login", {
-    j_username = params.username,
-    j_password = params.password,
-    _spring_security_remember_me = "false",
-  })
-  if resp.status == 401 then
-    fail(INVALID_CREDENTIALS)
-  elseif resp.status >= 400 then
-    error("Nespresso login answered HTTP " .. resp.status .. " (vendor down)")
+  fyde.progress.step("Logging in")
+  local h0 = page_html()
+  fyde.log.info("DBG before ngform=" .. tostring(has(h0, "#loginForm.ng-pristine, #loginForm.ng-dirty")) .. " len=" .. #h0)
+  fyde.browser:fill(EMAIL_FIELD, params.username)
+  fyde.browser:fill(PASSWORD_FIELD, params.password)
+  fyde.browser:click(SUBMIT)
+  for _ = 1, 45 do
+    sleep(1000)
+    local html = page_html()
+    for _, e in ipairs(fyde.html.select(html, ".error-message:not(.ng-hide), [role=alert], .alert, .notification")) do fyde.log.info("DBG " .. trim(e.text:gsub("%s+"," ")):sub(1,200)) end
+    local t = fyde.html.select(html, "title")[1]
+    fyde.log.info("DBG pw=" .. tostring(has(html, PASSWORD_FIELD)) .. " len=" .. #html .. " title=" .. (t and t.text or "?") .. " ngform=" .. tostring(has(html, "#loginForm.ng-pristine, #loginForm.ng-dirty")))
+    for _, e in ipairs(fyde.html.select(html, "h1, h2, link[rel=canonical], meta[property='og:url']")) do fyde.log.info("DBG H " .. trim(e.text:gsub("%s+"," ")):sub(1,120) .. " " .. tostring(e.attrs.href or e.attrs.content)) end
+    local error_box = fyde.html.select(html, "#email-error-message:not(.ng-hide)")[1]
+    if error_box and trim(error_box.text) ~= "" then
+      fail(INVALID_CREDENTIALS, trim(error_box.text:gsub("%s+", " ")))
+    elseif has(html, PASSWORD_FIELD) and contains_any(body_text(html), BAD_CREDENTIALS) then
+      fail(INVALID_CREDENTIALS)
+    elseif not has(html, PASSWORD_FIELD) then
+      return
+    end
   end
+  if has(page_html(), PASSWORD_FIELD) then
+    fail(INVALID_CREDENTIALS, "still on the login form")
+  end
+  error("Nespresso login did not complete")
 end
 
 local function cell(html, column)
@@ -236,25 +300,30 @@ end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local page = fyde.http.get(ORDERS_URL .. "/changeList?number=100")
-  if has(page, ".my-orders-list") then
+  local html = open(ORDERS_URL .. "/changeList?number=100", { ORDERS_LIST, PASSWORD_FIELD }, 45000)
+  if has(html, ORDERS_LIST) then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
+    if not has(html, PASSWORD_FIELD) then
+      html = open(LOGIN_URL, { PASSWORD_FIELD }, 45000)
+      if not has(html, PASSWORD_FIELD) then
+        error("Nespresso login page not found (Akamai challenge not passed?)")
+      end
+    end
     login(params)
-    page = fyde.http.get(ORDERS_URL .. "/changeList?number=100")
+    html = open(ORDERS_URL .. "/changeList?number=100", { ORDERS_LIST }, 45000)
   end
 
   fyde.progress.step("Saving orders")
-  for _, row in ipairs(fyde.html.select(page.body, ".my-orders-list .my-orders-list__row-content")) do
+  for _, row in ipairs(fyde.html.select(html, ".my-orders-list .my-orders-list__row-content")) do
     local link = fyde.html.select(row.html, ".my-orders-list__actions .my-orders-list__cell--description a")[1]
     local number, date, amount = cell(row.html, "order"), cell(row.html, "date"), cell(row.html, "amount")
     if link and link.attrs.href then
-      local url = ORDERS_URL .. "/" .. link.attrs.href:gsub("^/", "")
-      local order = fyde.http.get(url)
-      local details = fyde.html.select(order.body, ".my-order-details")[1]
+      local order = open(absolute(ORDERS_URL .. "/", link.attrs.href), { ".my-order-details" }, 30000)
+      local details = fyde.html.select(order, ".my-order-details")[1]
       local d, m, y = date:match("(%d+)/(%d+)/(%d+)")
       fyde.save_document((y and (y .. "-" .. m .. "-" .. d) or sanitize(date)) .. "_nespresso_" .. sanitize(amount) .. "_" .. sanitize(number) .. ".pdf",
-        text_pdf("Commande Nespresso " .. number, html_lines(details and details.html or order.body)), {
+        text_pdf("Commande Nespresso " .. number, html_lines(details and details.html or order)), {
           name = "Commande Nespresso " .. number,
           type = "invoice",
           source_category = "alimentation",

@@ -25,14 +25,14 @@
     }
   },
   "status": {
-    "state": "wip",
+    "state": "blocked",
     "last_updated": "2026-10-11",
     "login_page_found": "failed",
     "invalid_credentials_detected": "failed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
     "antibot_name": null,
-    "antibot_status": "failed",
-    "notes": "Smoke: host unreachable"
+    "antibot_status": "absent",
+    "notes": "**Blocked**: site down as of 2026-10 (www TLS cert expired 2026-09-26, www and bare domain both answer HAProxy 503 \"No server is available\"); login form matched the Feb 2026 archive; Smoke: host unreachable"
   }
 }

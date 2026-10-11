@@ -12,9 +12,9 @@
 
 local M = {}
 
-local CHECK_URL = "https://www.macif.fr/assurance/particuliers/espace-client"
-local LOGIN_URL = "https://www.macif.fr/assurance/particuliers/espace-client"
-local DOCS_URL = "https://agence.macif.fr/assurance/particuliers/espace-client/mes-documents"
+local CHECK_URL = "https://www.macif.fr/assurance/particuliers/acceder-vos-espaces"
+local LOGIN_URL = "https://www.macif.fr/assurance/particuliers/acceder-vos-espaces"
+local DOCS_URL = "https://www.macif.fr/assurance/particuliers/vos-espaces-macif/espace-assurance/documents"
 local BAD_CREDENTIALS = { "identifiant ou mot de passe", "mot de passe est incorrect", "incorrect", "invalide" }
 local BAD_CODE = { "code incorrect", "code invalide", "code erron", "expir" }
 local MFA = ".auth-factor, #passcode"

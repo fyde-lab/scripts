@@ -9,6 +9,12 @@
 -- `li[data-test="trip"]`); the original implementation took each trip's proof URL from the intercepted trips
 -- API answer (`tripDetails...tripProofOperation.url`) - this port looks for those same JSON
 -- fields in the rendered page and downloads them. Unverified (see README.md).
+--
+-- The site is behind Datadome, which (at least for a fresh webview) answers `/app/account` with
+-- an interactive captcha stub (`'rt':'c'`, served from geo.captcha-delivery.com) instead of the
+-- app. The script never touches the captcha: `wait_past_datadome` gives a human a few minutes
+-- to solve it in a `--visible` window, then carries on (the `datadome` cookie should spare the
+-- following runs), or fails with an explicit "blocked by a Datadome captcha" error.
 
 local M = {}
 
@@ -16,6 +22,11 @@ local ACCOUNT_URL = "https://www.sncf-connect.com/app/account"
 local TRIPS_URL = "https://www.sncf-connect.com/app/trips"
 local LOGGED_IN = { "logged_in", selector = "button[data-test='account-disconnect-button']" }
 local BAD_CREDENTIALS = { "identifiant ou mot de passe", "mot de passe incorrect", "incorrect", "invalide" }
+-- Datadome answers some page loads with a stub whose inline script (`var dd={'rt':'c', ...,
+-- 'host':'geo.captcha-delivery.com', ...}`) loads an interactive captcha from that host
+-- (hence `captcha-delivery.com` in manifest.json's `allowed_domains`) instead of the app.
+local DATADOME = { "datadome", text = { "captcha-delivery.com" } }
+local DATADOME_TIMEOUT_MS = 180000
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -247,6 +258,61 @@ local function browser_save(selector, filename, fields)
 end
 -- luacheck: pop
 
+-- Summarises the current page (its controls and text) for an error message, so a failure on
+-- this client-rendered site says what was rendered instead of the expected element.
+local function describe_page()
+  local html = page_html()
+  local controls = {}
+  for _, el in ipairs(fyde.html.select(html, "button, a[href*='login'], a[href*='connect'], input, [data-test]")) do
+    local label = trim((el.text or ""):gsub("%s+", " ")):sub(1, 40)
+    local attrs = {}
+    for _, name in ipairs({ "id", "name", "type", "data-test", "href" }) do
+      if el.attrs[name] then
+        attrs[#attrs + 1] = name .. "=" .. el.attrs[name]
+      end
+    end
+    controls[#controls + 1] = "[" .. table.concat(attrs, " ") .. (label ~= "" and (" '" .. label .. "'") or "") .. "]"
+    if #controls >= 40 then
+      break
+    end
+  end
+  return string.format("%d bytes of HTML; controls: %s; page says: %s", #html, table.concat(controls, " "), page_text():sub(1, 400))
+end
+
+-- Waits on `states` like `wait_state`, but when Datadome's captcha shows up instead, gives a
+-- human (a `--visible` window) `DATADOME_TIMEOUT_MS` to solve it, then keeps waiting on
+-- `states` once the real page is back. The script never interacts with the captcha itself.
+local function wait_past_datadome(states, timeout_ms)
+  local all = { DATADOME }
+  for _, state in ipairs(states) do
+    all[#all + 1] = state
+  end
+  local state = wait_state(all, timeout_ms)
+  if state ~= "datadome" then
+    return state
+  end
+  fyde.progress.step("Waiting for the SNCF Connect captcha to be solved in the browser window")
+  fyde.log.warn("Datadome captcha shown; it must be solved by hand in the browser window (--visible)")
+  -- Polls with `wait_for` alone: `html()` can take its full 10s timeout on the captcha page, and
+  -- the sandbox has no clock, so each round must have a known upper bound (5s, +1s driver slack)
+  -- for DATADOME_TIMEOUT_MS to mean anything.
+  local selectors = {}
+  for _, s in ipairs(states) do
+    selectors[#selectors + 1] = s.selector
+  end
+  local target = table.concat(selectors, ", ")
+  for _ = 1, DATADOME_TIMEOUT_MS / 5000 do
+    if pcall(function()
+      fyde.browser:wait_for(target, 5000)
+    end) then
+      return wait_state(states, timeout_ms)
+    end
+  end
+  -- Not re-checked through `page_html()`: once the captcha's iframe has loaded the page stops
+  -- answering script evals, so it reads back as "" rather than as the captcha.
+  error("SNCF Connect is blocked by a Datadome captcha - run with --visible and solve it in the browser window")
+end
+
 local function login(params)
   fyde.progress.step("Logging in")
   for _, button in ipairs(fyde.html.select(page_html(), ".MuiCardContent-root > div > button")) do
@@ -254,14 +320,14 @@ local function login(params)
       fyde.browser:click(".MuiCardContent-root > div > button")
     end
   end
-  if wait_state({ { "form", selector = "#login" } }, 30000) ~= "form" then
-    error("SNCF Connect login form not found")
+  if wait_past_datadome({ { "form", selector = "#login" } }, 30000) ~= "form" then
+    error("SNCF Connect login form not found - " .. describe_page())
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
   fyde.browser:fill("#login", params.username)
   fyde.browser:fill("#pass1", params.password)
   fyde.browser:click("#validate")
-  local state = wait_state({ LOGGED_IN, { "otp", selector = "#otpCode" }, { "error", selector = ".error" } }, 45000)
+  local state = wait_past_datadome({ LOGGED_IN, { "otp", selector = "#otpCode" }, { "error", selector = ".error" } }, 45000)
   if state == "error" then
     local err = fyde.html.select(page_html(), ".error")[1]
     if contains_any(err and err.text, BAD_CREDENTIALS) or present("#pass1") then
@@ -289,7 +355,8 @@ end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local state = open_and_wait(ACCOUNT_URL, { LOGGED_IN, { "login", selector = ".MuiCardContent-root > div > button, #login" } }, 45000)
+  fyde.browser:open(ACCOUNT_URL)
+  local state = wait_past_datadome({ LOGGED_IN, { "login", selector = ".MuiCardContent-root > div > button, #login" } }, 45000)
   if state == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
@@ -297,7 +364,8 @@ function M.run(params)
   end
 
   fyde.progress.step("Downloading trip proofs")
-  open_and_wait(TRIPS_URL, { { "trips", selector = "#nav-tab-1" } }, 30000)
+  fyde.browser:open(TRIPS_URL)
+  wait_past_datadome({ { "trips", selector = "#nav-tab-1" } }, 30000)
   if present("#nav-tab-1") then
     fyde.browser:click("#nav-tab-1")
     wait_state({ { "trip", selector = "li[data-test='trip']" } }, 30000)

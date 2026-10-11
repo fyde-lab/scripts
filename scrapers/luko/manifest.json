@@ -7,7 +7,7 @@
   "debug_http_dump": false,
   "follow_redirects": true,
   "allowed_domains": [
-    "luko.eu"
+    "luko.eu", "allianzdirect.com", "allianzdirect.fr", "allianz.com", "azdev.direct"
   ],
   "parameters": {
     "username": {

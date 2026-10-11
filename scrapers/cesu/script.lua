@@ -48,11 +48,18 @@
 --      index.html?...&code=...` landing page), which itself exchanges the code for a token and
 --      calls `cesuwebdec/authenticationPanorama` to establish the real authenticated session -
 --      all before the dashboard renders.
---   6. Success is confirmed by `LOGGED_IN_MARKER`, `#deconnexion_link` (desktop logout link,
---      `structure_header.html`) - present only once the authenticated dashboard has rendered. A
---      failed login (wrong credentials) re-renders the same login form with its `#alert-panel`
---      error message visible instead of navigating away, so this script treats "still on the
---      login form" as a distinct, clearer error than a bare timeout.
+--   6. Success is confirmed by `LOGGED_IN_MARKER`, the employer menu's "Mes déclarations" link
+--      (`name="page_empl_mes_declarations"`), which the SPA only renders once the authenticated
+--      dashboard is up. **Not `#deconnexion_link`** (the desktop logout link, which this script
+--      used to wait for): confirmed live (2026-10-11), it sits in the static connected-mode
+--      header template of *every* cesu.urssaf.fr page, logged out included (hidden, empty
+--      `#modeConnecte_header_num_cesu` next to it, menu limited to `page_accueil`/
+--      `page_tous_les_liens`) - so a logged-out LOGIN_URL matched it before its OAuth redirect to
+--      the login form even fired, the run logged a false `ALREADY_LOGGED_IN`, and every document
+--      lookup then ran against the login form. A failed login (wrong credentials) re-renders the
+--      same login form with its `#alert-panel` error message visible instead of navigating away,
+--      so this script treats "still on the login form" as a distinct, clearer error than a bare
+--      timeout.
 --
 -- **`fyde.browser:wait_for` races the OAuth redirect chain - retry it in short bursts, not one
 -- long wait.** `wait_for` injects a one-shot JS poll into whatever page is *currently* loaded in
@@ -113,7 +120,8 @@ local PASSWORD_FIELD = "#password"
 local SUBMIT_CONTROL = "#btn-valider"
 local MFA_CODE_FIELD = "#code"
 local MFA_SUBMIT_CONTROL = "#verify"
-local LOGGED_IN_MARKER = "#deconnexion_link"
+-- The "Mes déclarations" menu link, not `#deconnexion_link`: see point 6 of the header comment.
+local LOGGED_IN_MARKER = '[name="page_empl_mes_declarations"]'
 
 -- The OAuth dance alone crosses three domains before the login form even renders - budget
 -- ~10 short attempts (see the header comment on why short-and-repeated beats one long wait).
@@ -171,6 +179,19 @@ local function log_page_for_diagnosis(context)
   end)
   if html_ok then
     fyde.log.info(context .. " - page length: " .. #html)
+    fyde.log.info(context .. " - title: " .. tostring(html:match("<title[^>]*>(.-)</title>")))
+    local names, seen = {}, {}
+    for name in html:gmatch('name="(page_[%w_]+)"') do
+      if not seen[name] then
+        seen[name] = true
+        table.insert(names, name)
+      end
+    end
+    fyde.log.info(context .. " - page_* names: " .. table.concat(names, ", "))
+    -- A small page is an intermediate/error page (e.g. an OAuth callback) - worth logging whole.
+    if #html < 8000 then
+      fyde.log.info(context .. " - page markup: " .. html)
+    end
   else
     fyde.log.info(context .. " - fetching page markup for diagnosis also failed: " .. tostring(html))
   end
@@ -181,6 +202,11 @@ end
 -- form submission (unlike the main login's JS-intercepted `submitFormLogin`).
 local function submit_mfa_code()
   local code = fyde.input.ask("Cesu emailed a one-time code - enter it:"):gsub("%s", "")
+  -- An unanswered prompt (e.g. an unattended run with no stdin) - don't submit an empty code and
+  -- sit through the whole post-submit wait for nothing.
+  if code == "" then
+    error("no one-time code entered")
+  end
   fyde.browser:fill(MFA_CODE_FIELD, code)
   -- Ticks "Mémoriser mon appareil pour 2 mois" - confirmed live to skip this step on later runs
   -- (see the header comment) - best effort, not load-bearing: if this checkbox ever goes away,
@@ -357,6 +383,7 @@ function M.run(params)
     })
   else
     fyde.log.warn('could not find the "Mes déclarations" menu link on the dashboard')
+    log_page_for_diagnosis("no Mes déclarations link")
   end
 
   fyde.progress.step("Listing avantage fiscal attestations")
@@ -373,6 +400,7 @@ function M.run(params)
     })
   else
     fyde.log.warn('could not find the "Mon avantage fiscal" menu link on the current page')
+    log_page_for_diagnosis("no Mon avantage fiscal link")
   end
 end
 

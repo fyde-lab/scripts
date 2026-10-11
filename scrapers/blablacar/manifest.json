@@ -7,7 +7,8 @@
   "debug_http_dump": false,
   "follow_redirects": true,
   "allowed_domains": [
-    "blablacar.fr"
+    "blablacar.fr",
+    "captcha-delivery.com"
   ],
   "parameters": {
     "username": {

@@ -26,14 +26,14 @@
     }
   },
   "status": {
-    "state": "broken",
+    "state": "wip",
     "last_updated": "2026-10-11",
     "login_page_found": "failed",
     "invalid_credentials_detected": "failed",
     "login_ok": "passed",
-    "documents_fetched": "failed",
+    "documents_fetched": "not_tested",
     "antibot_name": "F5 BIG-IP ASM",
     "antibot_status": "present",
-    "notes": "Session reused, but the \"Mes déclarations\" / \"Mon avantage fiscal\" menu links are no longer found: no documents; Smoke: reported `ALREADY_LOGGED_IN` on a fresh `--storage` because the session lives in the webview's localStorage, which the sdk keeps in one profile shared by every run and scraper (`~/.local/share/fyde-scripts`) instead of under `--storage`"
+    "notes": "Fixed a false `ALREADY_LOGGED_IN`: `#deconnexion_link` is in the static header of every cesu.urssaf.fr page, logged out included, so a stale session skipped the login and then found no \"Mes déclarations\" / \"Mon avantage fiscal\" links on what was really the login form; the logged-in marker is now the \"Mes déclarations\" menu link. Credentials are accepted, but the remembered device has lapsed and login now asks for the emailed one-time code again, so the document download (12 bulletins de salaire + 1 attestation fiscale, real PDFs, on 2026-10-09) is not re-confirmed since the fix; whether the session survives across runs is not re-confirmed either"
   }
 }
