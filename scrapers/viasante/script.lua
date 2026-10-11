@@ -1,8 +1,13 @@
--- Scraper for Viasanté Mutuelle's member area (adherent.mutuelle-viasante.fr): downloads the
--- mail documents (reimbursement statements, certificates...) of every contract.
+-- Scraper for Viasanté Mutuelle's member area (adherent.viasante.fr, formerly
+-- adherent.mutuelle-viasante.fr): downloads the mail documents (reimbursement statements,
+-- certificates...) of every contract.
 --
--- Ported from github.com/konnectors/viasante (src/index.js): `/api/identity/login` takes a JSON
--- {userName, password} (an HTTP error or no session afterwards = bad credentials); then
+-- Ported from github.com/konnectors/viasante (src/index.js), whose JSON login
+-- (`POST /api/identity/login` with {userName, password}) is gone: `GET /api/identity/login` now
+-- redirects to an IdentityServer page (`/identity/account/login`, `form#login-form` with
+-- `username`/`password`/`button=login`) that answers a wrong login with "Aucun compte n'est
+-- associé à cet identifiant ou le mot de passe entré est incorrect" (checked live, with made-up
+-- credentials), and a good one with a `form_post` to `/signin-oidc` (unconfirmed). Then
 -- `/api/adherent/contrats` lists the contracts (numContrat, souscripteur.numPers), and
 -- `/api/adherent/courriers/list?startDate=..&endDate=..` (headers X-NumContrat/X-NumPers) the
 -- documents (id, fileName, type, creationDate), each served by `/api/adherent/courriers/
@@ -12,7 +17,9 @@
 
 local M = {}
 
-local BASE = "https://adherent.mutuelle-viasante.fr"
+local BASE = "https://adherent.viasante.fr"
+local LOGIN_FORM = "form#login-form"
+local BAD_CREDENTIALS = { "Aucun compte n’est associé", "Aucun compte n'est associé", "mot de passe entré est incorrect" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -165,13 +172,19 @@ end
 
 local function login(params)
   fyde.progress.step("Logging in")
-  local resp = fyde.http.post_json(BASE .. "/api/identity/login", { userName = params.username, password = params.password })
-  if resp.status >= 500 then
-    error("Viasanté answered HTTP " .. resp.status)
+  local page = fyde.http.get(BASE .. "/api/identity/login")
+  if not has(page, LOGIN_FORM .. " input[name='password']") then
+    error("Viasanté login form not found on " .. page.url)
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  if resp.status >= 400 then
-    fail(INVALID_CREDENTIALS, "HTTP " .. resp.status)
+  local resp = submit_form(page, LOGIN_FORM, { username = params.username, password = params.password, button = "login" })
+  if contains_any(resp.body, BAD_CREDENTIALS) or has(resp, LOGIN_FORM .. " input[name='password']") then
+    fail(INVALID_CREDENTIALS)
+  end
+  -- response_mode=form_post: the identity server answers with a self-submitting form carrying
+  -- the authorization code to /signin-oidc, which a browser would post on its own.
+  if has(resp, "form[action*='signin-oidc']") then
+    submit_form(resp, "form[action*='signin-oidc']", {})
   end
 end
 

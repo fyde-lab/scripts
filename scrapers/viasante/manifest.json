@@ -7,7 +7,7 @@
   "debug_http_dump": false,
   "follow_redirects": true,
   "allowed_domains": [
-    "mutuelle-viasante.fr"
+    "viasante.fr"
   ],
   "parameters": {
     "username": {
@@ -26,10 +26,10 @@
   },
   "status": {
     "state": "wip",
-    "login_page_found": "failed",
-    "invalid_credentials_detected": "failed",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "Smoke: host unreachable"
+    "notes": "Moved to adherent.viasante.fr; JSON login replaced by an IdentityServer form, rebuilt and checked with made-up credentials; documents API unchanged but unverified"
   }
 }
