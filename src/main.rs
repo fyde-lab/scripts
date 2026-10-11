@@ -6,8 +6,8 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser, Subcommand};
 use fyde_sdk::{
-    Client, ClientConfig, ErrorCode, LogLevel, ProgressEvent, ScriptType, Storage,
-    init_dev_scrapers,
+    Client, ClientConfig, ErrorCode, LogLevel, ProgressEvent, ScriptParameter, ScriptParameterType,
+    ScriptType, Storage, init_dev_scrapers,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -177,9 +177,43 @@ struct ScraperManifest {
     /// to.
     #[serde(default)]
     allowed_domains: Vec<String>,
+    /// What the script needs from the user before it can run (e.g. a login
+    /// username/password), keyed by the name `run(parameters)` reads it
+    /// back under - published with the script, so a client can ask for
+    /// them when the script is installed. Defaults to none when omitted.
+    #[serde(default)]
+    parameters: HashMap<String, ManifestParameter>,
     /// How far this scraper has been confirmed to work - only read by the
     /// `status` command, never by a run.
     status: ScraperStatus,
+}
+
+/// One entry of a [`ScraperManifest`]'s `parameters`, in the manifest's own
+/// JSON shape (`"type"` rather than [`ScriptParameter`]'s `parameter_type`,
+/// optional `placeholder`/`required`/`secret`).
+#[derive(Deserialize)]
+struct ManifestParameter {
+    label: String,
+    #[serde(default)]
+    placeholder: String,
+    #[serde(rename = "type")]
+    parameter_type: ScriptParameterType,
+    #[serde(default)]
+    required: bool,
+    #[serde(default)]
+    secret: bool,
+}
+
+impl From<ManifestParameter> for ScriptParameter {
+    fn from(parameter: ManifestParameter) -> Self {
+        ScriptParameter {
+            label: parameter.label,
+            placeholder: parameter.placeholder,
+            parameter_type: parameter.parameter_type,
+            required: parameter.required,
+            secret: parameter.secret,
+        }
+    }
 }
 
 /// A scraper's `manifest.json` `status` object (see `README.md`'s Status
@@ -418,6 +452,12 @@ async fn publish(args: PublishArgs) -> Result<()> {
             Vec::new()
         };
 
+        let parameters: HashMap<String, ScriptParameter> = manifest
+            .parameters
+            .into_iter()
+            .map(|(key, parameter)| (key, parameter.into()))
+            .collect();
+
         // Update the first same-named script this account owns; the server
         // refuses `update_script` on someone else's, so move on to the next
         // candidate then, and only create a new script once none is ours.
@@ -435,7 +475,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
                     &manifest.short_description,
                     manifest.allowed_domains.clone(),
                     ScriptType::Scraper,
-                    HashMap::new(),
+                    parameters.clone(),
                 )
                 .await
             {
@@ -471,7 +511,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
                     &manifest.short_description,
                     manifest.allowed_domains.clone(),
                     ScriptType::Scraper,
-                    HashMap::new(),
+                    parameters,
                 )
                 .await
                 .with_context(|| format!("creating script {scraper_name}"))?;
