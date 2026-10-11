@@ -28,9 +28,9 @@
   "status": {
     "state": "wip",
     "login_page_found": "passed",
-    "invalid_credentials_detected": "failed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "Konnector never automated login (site checks isTrusted); documents page URL unconfirmed; Smoke: password field not found"
+    "notes": "Login is now two-step (e-mail, then password after \"Continuer\"); a wrong login shows \"Votre mot de passe ou votre email semble faux\" (checked live); documents page URL unconfirmed"
   }
 }

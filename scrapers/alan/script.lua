@@ -4,8 +4,9 @@
 -- Ported from github.com/konnectors/alan (a cozy-clisk content script driving the real site), so
 -- it drives `fyde.browser` too: `/app/dashboard` shows the care events
 -- (`.ListItem__Clickable`) with a session, else redirects to the login form
--- (`input[name="email"]`, `input[name="password"]`, `button[data-testid="submitButton"]`). The
--- konnector itself never automated the login ("website is checking isTrusted") and read the
+-- (`input[name="email"]`, then - once its `button[data-testid="submitButton"]` ("Continuer") is
+-- clicked - `input[name="password"]` and the same submit button; a wrong login shows "Votre mot
+-- de passe ou votre email semble faux"). The konnector itself never automated the login ("website is checking isTrusted") and read the
 -- documents from api.alan.com with the `token` cookie as a bearer
 -- (`/api/users/<id>/decomptes?year=..&month=..`, `/api/users/<tp card id>/tp-card`); neither the
 -- cookie value nor that header is reachable here, so this port fills the form itself (which may
@@ -17,7 +18,7 @@ local M = {}
 local CHECK_URL = "https://alan.com/app/dashboard"
 local LOGIN_URL = "https://alan.com/login"
 local DOCS_URL = "https://alan.com/app/documents"
-local BAD_CREDENTIALS = { "mot de passe incorrect", "Email ou mot de passe", "Incorrect email or password", "identifiants" }
+local BAD_CREDENTIALS = { "semble faux", "mot de passe incorrect", "Email ou mot de passe", "Incorrect email or password", "identifiants" }
 local BAD_CODE = { "code incorrect", "code invalide", "code erron", "expir" }
 local MFA = "input[autocomplete='one-time-code'], input[name='code']"
 
@@ -185,7 +186,12 @@ local function login(params)
     error("Alan login form not found")
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
+  -- Two steps: the email alone first ("Continuer"), then the password field shows up.
   fill_first({ "input[name='email']" }, params.username)
+  click_first({ "button[data-testid='submitButton']", "button[type='submit']" })
+  if wait_state({ { "password", selector = "input[name='password']" } }, 20000) ~= "password" then
+    error("Alan password field not shown after the email step - page says: " .. page_text():sub(1, 300))
+  end
   local state
   fill_first({ "input[name='password']" }, params.password)
   click_first({ "button[data-testid='submitButton']", "button[type='submit']" })
