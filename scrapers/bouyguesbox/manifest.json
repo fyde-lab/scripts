@@ -36,6 +36,6 @@
     "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "Site is now a Next.js app: login rebuilt on its JSON API (`/fr/api/auth/*`); SMS code step, order list and receipts unverified"
+    "notes": ""
   }
 }
