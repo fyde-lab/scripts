@@ -28,11 +28,11 @@
     "state": "wip",
     "last_updated": "2026-10-11",
     "login_page_found": "passed",
-    "invalid_credentials_detected": "failed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
     "antibot_name": "Cloudflare",
     "antibot_status": "present",
-    "notes": "Veepee login now JS + captcha; Smoke: made-up credentials accepted: run ends OK with no documents"
+    "notes": "Login driven through fyde.browser (client-rendered Next.js form on /gr/authentication, no captcha seen); made-up credentials rejected with \"Adresse email et/ou mot de passe incorrect\" (checked live). Orders (/gr/my-orders, invoice link per order details page) unverified, no account"
   }
 }
