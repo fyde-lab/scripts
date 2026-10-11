@@ -26,10 +26,10 @@
   },
   "status": {
     "state": "wip",
-    "login_page_found": "failed",
-    "invalid_credentials_detected": "failed",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "Attestations (api.mgen.fr) not ported; Smoke: login form not found"
+    "notes": "Login moved to a Keycloak form (connexion.mgen.fr: #username/#password/#kc-login); a wrong login shows \"Email de connexion ou mot de passe invalide\" (checked live)"
   }
 }

@@ -2,8 +2,10 @@
 -- reimbursement statements.
 --
 -- Ported from github.com/konnectors/cozy-konnector-mgen (a cozy-clisk content script driving
--- the real site), so it drives `fyde.browser` too: `/login-adherent/` has `#user`/`#pass` and
--- `#loginBtn`, errors show in `.alert-danger`; logged in shows `.deconnexion_auth_link` (or
+-- the real site), so it drives `fyde.browser` too: `/login-adherent/` now lands on a Keycloak
+-- login (connexion.mgen.fr, `#kc-form-login` with `#username`/`#password` and `#kc-login`); a
+-- wrong login shows "Email de connexion ou mot de passe invalide" (in `#input-error-password`,
+-- checked live) - it used to be `#user`/`#pass`/`#loginBtn` with `.alert-danger`; logged in shows `.deconnexion_auth_link` (or
 -- the `.btn-logout-group` link), and `/mon-espace-perso/` then lists the last reimbursements in
 -- `#tableDernierRemboursement` (`.ligne-remboursement` rows: treatment date, beneficiary, PDF
 -- link, payment date, amount), paginated by `#tableDernierRemboursement_next`. The konnector
@@ -17,6 +19,8 @@ local BASE = "https://www.mgen.fr"
 local LOGIN_URL = BASE .. "/login-adherent/"
 local ACCOUNT_URL = BASE .. "/mon-espace-perso/"
 local LOGGED_IN = { "logged_in", selector = ".deconnexion_auth_link, .btn-logout-group > a" }
+local LOGIN_FORM = "#kc-form-login"
+local BAD_CREDENTIALS = { "mot de passe invalide" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -172,18 +176,18 @@ end
 
 local function login(params)
   fyde.progress.step("Logging in")
-  if open_and_wait(LOGIN_URL, { LOGGED_IN, { "login", selector = "#user" } }, 30000) ~= "login" then
+  if open_and_wait(LOGIN_URL, { LOGGED_IN, { "login", selector = LOGIN_FORM .. " #password" } }, 30000) ~= "login" then
     error("MGEN login form not found")
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fyde.browser:fill("#user", params.username)
-  fyde.browser:fill("#pass", params.password)
-  fyde.browser:click("#loginBtn")
-  local state = wait_state({ LOGGED_IN, { "error", selector = ".alert-danger" } }, 45000)
+  fyde.browser:fill(LOGIN_FORM .. " #username", params.username)
+  fyde.browser:fill(LOGIN_FORM .. " #password", params.password)
+  fyde.browser:click("#kc-login")
+  local state = wait_state({ LOGGED_IN, { "error", text = BAD_CREDENTIALS } }, 45000)
   if state == "logged_in" then
     return
-  elseif state == "error" or present("#pass") then
-    local alert = fyde.html.select(page_html(), ".alert-danger")[1]
+  elseif state == "error" or present(LOGIN_FORM .. " #password") then
+    local alert = fyde.html.select(page_html(), "#input-error-password")[1]
     fail(INVALID_CREDENTIALS, alert and trim(alert.text) or "still on the login form")
   end
   error("MGEN login did not complete - page says: " .. page_text():sub(1, 300))
@@ -191,7 +195,7 @@ end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  if open_and_wait(ACCOUNT_URL, { LOGGED_IN, { "login", selector = "#user" } }, 30000) == "logged_in" then
+  if open_and_wait(ACCOUNT_URL, { LOGGED_IN, { "login", selector = LOGIN_FORM } }, 30000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
