@@ -232,6 +232,16 @@ impl ScraperState {
             Self::Wip => "wip",
         }
     }
+
+    /// The emoji `status-table` shows for this state in `README.md`.
+    fn icon(&self) -> &'static str {
+        match self {
+            Self::Verified => "✅",
+            Self::Broken => "❌",
+            Self::Blocked => "🚫",
+            Self::Wip => "🚧",
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -252,6 +262,16 @@ impl CheckResult {
             Self::Failed => "failed",
             Self::NotTested => "not tested",
             Self::NotApplicable => "not applicable",
+        }
+    }
+
+    /// The emoji `status-table` shows for this result in `README.md`.
+    fn icon(&self) -> &'static str {
+        match self {
+            Self::Passed => "✅",
+            Self::Failed => "❌",
+            Self::NotTested => "❔",
+            Self::NotApplicable => "➖",
         }
     }
 }
@@ -276,6 +296,16 @@ impl AntibotStatus {
             Self::Present => "present",
             Self::Blocking => "blocking",
             Self::Failed => "failed",
+        }
+    }
+
+    /// The emoji `status-table` shows for this status in `README.md`.
+    fn icon(&self) -> &'static str {
+        match self {
+            Self::Absent => "✅",
+            Self::Present => "⚠️",
+            Self::Blocking => "⛔",
+            Self::Failed => "❔",
         }
     }
 }
@@ -535,19 +565,20 @@ fn status_table() -> Result<()> {
         let status = &manifest.status;
         let antibot = match &status.antibot_name {
             Some(name) => format!(
-                "{} ({})",
-                status.antibot_status.label(),
+                "{} {}",
+                status.antibot_status.icon(),
                 name.replace('|', "\\|")
             ),
-            None => status.antibot_status.label().to_string(),
+            None => status.antibot_status.icon().to_string(),
         };
         table.push_str(&format!(
-            "| [`{scraper_name}`](scrapers/{scraper_name}/manifest.json) | {} | {} | {} | {} | {} | {antibot} | {} |\n",
+            "| [`{scraper_name}`](scrapers/{scraper_name}/manifest.json) | {} {} | {} | {} | {} | {} | {antibot} | {} |\n",
+            status.state.icon(),
             status.state.label(),
-            status.login_page_found.label(),
-            status.invalid_credentials_detected.label(),
-            status.login_ok.label(),
-            status.documents_fetched.label(),
+            status.login_page_found.icon(),
+            status.invalid_credentials_detected.icon(),
+            status.login_ok.icon(),
+            status.documents_fetched.icon(),
             status.last_updated,
         ));
     }
