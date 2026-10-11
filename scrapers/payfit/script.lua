@@ -1,9 +1,10 @@
 -- Scraper for PayFit (app.payfit.com), the payroll software: downloads the employee's payslips.
 --
 -- Ported from github.com/konnectors/payfit (a cozy-clisk content script driving the real site),
--- so it drives `fyde.browser` too: the login is two-step - `#username` then
--- `._button-login-id`, then `#password` and `._button-login-password` - possibly followed by a
--- `#code` verification step (a refused code is MFA_FAILED); logged in shows the
+-- so it drives `fyde.browser` too: the login is two-step - the e-mail (formerly `#username`, now
+-- an id-less `input[type=email]`) then the form's submit button ("Continuer"), then `#password`
+-- and the same button (a wrong login shows "E-mail ou mot de passe incorrect" - checked live) -
+-- possibly followed by a `#code` verification step (a refused code is MFA_FAILED); logged in shows the
 -- `button[data-testid="accountButton"]`. The konnector listed payslips from the intercepted
 -- `api.payfit.com/files` answer and downloaded each through
 -- `files/file/<id>/presigned-url` with the intercepted bearer token; neither is reachable here,
@@ -15,7 +16,7 @@ local M = {}
 local CHECK_URL = "https://app.payfit.com/"
 local LOGIN_URL = "https://app.payfit.com/login"
 local DOCS_URL = "https://app.payfit.com/payslips"
-local BAD_CREDENTIALS = { "Wrong email or password", "mot de passe incorrect", "E-mail ou mot de passe incorrect", "incorrect" }
+local BAD_CREDENTIALS = { "Wrong email or password", "mot de passe incorrect", "E-mail ou mot de passe incorrect" }
 local BAD_CODE = { "code incorrect", "code invalide", "code erron", "expir" }
 local MFA = "#code"
 
@@ -172,7 +173,8 @@ end
 -- luacheck: pop
 
 local LOGGED_IN = { "logged_in", selector = "button[data-testid='accountButton']" }
-local LOGIN_FORM = "#username"
+-- The e-mail field lost its `#username` id: it's now the form's only `input[type=email]`.
+local LOGIN_FORM = "#username, form input[type='email']"
 
 local function login(params)
   fyde.progress.step("Logging in")
@@ -183,17 +185,17 @@ local function login(params)
     error("PayFit login form not found")
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fill_first({ "#username" }, params.username)
+  fill_first({ "#username", "form input[type='email']" }, params.username)
   local state
   if not present("#password") then
-    click_first({ "._button-login-id", "button[type='submit']" })
+    click_first({ "._button-login-id", "form button[type='submit']", "button[type='submit']" })
     state = wait_state({ { "password", selector = "#password" }, { "bad", text = BAD_CREDENTIALS }, { "mfa", selector = MFA } }, 30000)
     if state == "bad" then
       fail(INVALID_CREDENTIALS, "unknown login")
     end
   end
   fill_first({ "#password" }, params.password)
-  click_first({ "._button-login-password", "button[type='submit']" })
+  click_first({ "._button-login-password", "form button[type='submit']", "button[type='submit']" })
   state = wait_state({ LOGGED_IN, { "bad", text = BAD_CREDENTIALS }, { "mfa", selector = MFA } }, 45000)
   if state == "bad" then
     fail(INVALID_CREDENTIALS)

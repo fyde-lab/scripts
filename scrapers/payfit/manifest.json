@@ -26,10 +26,10 @@
   },
   "status": {
     "state": "wip",
-    "login_page_found": "failed",
-    "invalid_credentials_detected": "failed",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "Payslips page URL unconfirmed; API token unreachable; Smoke: login form not found"
+    "notes": "E-mail field lost its #username id (now the form's input[type=email]); two-step login checked live with made-up credentials"
   }
 }
