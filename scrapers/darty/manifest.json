@@ -7,8 +7,7 @@
   "debug_http_dump": false,
   "follow_redirects": true,
   "allowed_domains": [
-    "darty.com",
-    "captcha-delivery.com"
+    "darty.com"
   ],
   "parameters": {
     "username": {
@@ -26,7 +25,7 @@
     }
   },
   "status": {
-    "state": "wip",
+    "state": "blocked",
     "last_updated": "2026-10-11",
     "login_page_found": "failed",
     "invalid_credentials_detected": "failed",
@@ -34,6 +33,6 @@
     "documents_fetched": "not_tested",
     "antibot_name": "DataDome, Akamai Bot Manager",
     "antibot_status": "blocking",
-    "notes": "Smoke: login form not found (HTTP 403)"
+    "notes": "**Blocked**: plain HTTP gets Akamai's 403 maintenance page; in the webview DataDome serves its interactive captcha (rt:'c') on every page, home page included, and it never clears (checked 2026-10-11) - only a human solving it in --visible could pass; Smoke: login form not found (HTTP 403)"
   }
 }

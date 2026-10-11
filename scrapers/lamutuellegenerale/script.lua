@@ -16,7 +16,7 @@ local M = {}
 local CHECK_URL = "https://adherent.lamutuellegenerale.fr/"
 local LOGIN_URL = "https://adherent.lamutuellegenerale.fr/"
 local DOCS_URL = "https://adherent.lamutuellegenerale.fr/mes-documents"
-local BAD_CREDENTIALS = { "identifiant ou mot de passe", "mot de passe incorrect", "Invalid username or password", "incorrect" }
+local BAD_CREDENTIALS = { "informations saisies ne sont pas valides", "identifiant ou mot de passe", "mot de passe incorrect", "Invalid username or password", "incorrect" }
 local BAD_CODE = { "code incorrect", "code invalide", "code erron", "expir" }
 local MFA = "#otp, input[name='otp']"
 

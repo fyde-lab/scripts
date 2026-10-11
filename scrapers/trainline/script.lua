@@ -149,127 +149,91 @@ local function save_pdf(url, filename, fields, headers)
   fyde.log.warn(string.format("skipping %s (status %d, content-type %s)", filename, resp.status, content_type))
   return false
 end
-
--- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
--- exists.
-local function sleep(ms)
-  pcall(function()
-    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
-  end)
-end
-
-local function page_html()
-  local ok, html = pcall(function()
-    return fyde.browser:html()
-  end)
-  return ok and html or ""
-end
-
-local function present(selector)
-  return #fyde.html.select(page_html(), selector) > 0
-end
-
-local function page_text()
-  local body = fyde.html.select(page_html(), "body")[1]
-  return body and body.text or ""
-end
-
--- Polls the current page until one of `states` matches and returns its name (or nil after
--- `timeout_ms`). Each state is `{ name, selector = css }` or `{ name, text = { needles } }`.
--- Polling in short chunks also survives `fyde.browser:open` not waiting for navigation (a
--- `wait_for` issued against the previous page just times out and gets retried).
-local function wait_state(states, timeout_ms)
-  local waited = 0
-  repeat
-    local html = page_html()
-    local text
-    for _, state in ipairs(states) do
-      if state.selector and #fyde.html.select(html, state.selector) > 0 then
-        return state[1]
-      end
-      if state.text then
-        if not text then
-          local body = fyde.html.select(html, "body")[1]
-          text = body and body.text or ""
-        end
-        if contains_any(text, state.text) then
-          return state[1]
-        end
-      end
-    end
-    sleep(1000)
-    waited = waited + 1000
-  until waited >= (timeout_ms or 30000)
-  return nil
-end
-
-local function open_and_wait(url, states, timeout_ms)
-  fyde.browser:open(url)
-  sleep(1500)
-  return wait_state(states, timeout_ms)
-end
-
--- Fills the first present selector of each candidate list.
-local function fill_first(selectors, value)
-  for _, selector in ipairs(selectors) do
-    if present(selector) then
-      fyde.browser:fill(selector, value)
-      return selector
-    end
-  end
-  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
-end
-
-local function click_first(selectors)
-  for _, selector in ipairs(selectors) do
-    if present(selector) then
-      fyde.browser:click(selector)
-      return selector
-    end
-  end
-  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
-end
-
--- Clicks `selector` (a download link/button) and saves what the browser downloads.
-local function browser_save(selector, filename, fields)
-  local ok, bytes = pcall(function()
-    return fyde.browser:download(selector, 60000)
-  end)
-  if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
-    fyde.save_document(sanitize(filename), bytes, fields)
-    return true
-  end
-  fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
-  return false
-end
 -- luacheck: pop
 
-local LOGIN_URL = BASE .. "my-account/login?redirectTo=%2Fmy-account%2Fbookings"
+local function api(path, token)
+  local resp = fyde.http.get(BASE .. path, { Authorization = 'Token token="' .. token .. '"', Accept = "application/json" })
+  return resp.status, json_or_nil(resp.body)
+end
 
-function M.run(params)
-  fyde.browser:open(LOGIN_URL)
-  local state = wait_state({ { "pw", selector = "input[type='password']" }, { "email", selector = "input[type='email'], input[name='email']" } }, 40000)
-  fyde.log.info("state " .. tostring(state))
-  local html = page_html()
-  fyde.log.info("len " .. #html)
-  local F = "[data-testid='sign-in-form'] form[data-testid='signIn-email-form'] "
-  fyde.browser:fill(F .. "input[name='email']", params.username)
-  fyde.browser:fill(F .. "input[name='password']", params.password)
-  fyde.browser:click(F .. "button[data-testid='signIn-submission']")
-  for i = 1, 12 do
-    sleep(2000)
-    local h = page_html()
-    local sec = fyde.html.select(h, "[data-testid='sign-in-form']")[1]
-    fyde.log.info(i .. " signin-form=" .. tostring(sec ~= nil) .. " pw=" .. #fyde.html.select(h, "input[type='password']"))
-    for _, n in ipairs(fyde.html.select(h, "[role='alert'], [aria-live], #login-page-alert, [data-testid*='rror'], [data-testid*='essage'], [id*='rror']")) do
-      if trim(n.text) ~= "" then fyde.log.info("  alert | " .. n.html:sub(1, 120) .. " | " .. trim(n.text):sub(1, 200)) end
-    end
-    if i == 4 then
-      local t = sec and trim(sec.text:gsub("%s+", " ")) or trim(page_text():gsub("%s+", " "))
-      fyde.log.info("  text | " .. t:sub(1, 600))
+local function login(params)
+  fyde.progress.step("Logging in")
+  local page = fyde.http.get(BASE)
+  if page.status >= 500 then
+    error("Trainline answered HTTP " .. page.status)
+  end
+  fyde.log.info("LOGIN_PAGE_FOUND")
+  local resp = fyde.http.post_form(BASE .. "api/v5_1/account/signin", { email = params.username, password = params.password }, { Accept = "application/json" })
+  if resp.status == 422 or resp.status == 401 then
+    fail(INVALID_CREDENTIALS)
+  end
+  local body = json_or_nil(resp.body)
+  local token = body and body.meta and body.meta.token
+  if not token then
+    error("Trainline sign-in answered HTTP " .. resp.status .. " without a token")
+  end
+  fyde.session.trainline_token = token
+  return token
+end
+
+local function previous_month(pnrs)
+  local oldest
+  for _, pnr in ipairs(pnrs or {}) do
+    local d = tostring(pnr.sort_date or ""):sub(1, 10)
+    if d ~= "" and (not oldest or d < oldest) then
+      oldest = d
     end
   end
-  error("probe end")
+  if not oldest then
+    return nil
+  end
+  local y, m = tonumber(oldest:sub(1, 4)), tonumber(oldest:sub(6, 7))
+  m = m - 1
+  if m == 0 then
+    y, m = y - 1, 12
+  end
+  return string.format("%04d-%02d-01", y, m)
+end
+
+function M.run(params)
+  fyde.progress.step("Checking for an existing session")
+  local token = fyde.session.trainline_token
+  local status, page
+  if token then
+    status, page = api("api/v5_1/pnrs", token)
+  end
+  if status == 200 and page then
+    fyde.log.info("ALREADY_LOGGED_IN")
+  else
+    token = login(params)
+    page = select(2, api("api/v5_1/pnrs", token))
+  end
+
+  fyde.progress.step("Downloading proofs")
+  local seen = {}
+  for _ = 1, 200 do
+    if not (page and page.proofs and #page.proofs > 0) then
+      break
+    end
+    for _, proof in ipairs(page.proofs) do
+      if proof.url and not seen[proof.id or proof.url] then
+        seen[proof.id or proof.url] = true
+        local date = tostring(proof.created_at or ""):sub(1, 10)
+        save_pdf(proof.url, date .. "_trainline_" .. tostring(proof.id) .. ".pdf", {
+          name = (proof.type == "purchase" and "Achat" or "Remboursement") .. " Trainline " .. date,
+          type = "transport_invoice",
+          source_category = "transport",
+          purpose = "invoice",
+        })
+      end
+    end
+    local next_date = previous_month(page.pnrs)
+    if not next_date then
+      break
+    end
+    page = select(2, api("api/v5_1/pnrs?date=" .. next_date, token))
+  end
+  fyde.progress.step("Done")
 end
 
 return M

@@ -1,39 +1,21 @@
 -- Scraper for E.Leclerc Drive (leclercdrive.fr): downloads the order forms ("bons de
 -- commande") of past orders.
 --
--- The original implementation logged in through a JSONP
--- call to `secure.leclercdrive.fr/drive/connecter.ashz` and solved the Datadome captcha that
--- answered it through a paid service. Every leclercdrive.fr host now answers plain HTTP with a
--- Datadome captcha page (HTTP 403), while a real webview passes its passive check, so the whole
--- flow runs in `fyde.browser` (captcha-delivery.com allowed for Datadome's own scripts). The
--- portal's header popin (confirmed against the live site): "Se connecter"
--- (`a.aWPAD346_NonConnecte`) reveals `input.txtWCLD312_Login`, "Continuer"
--- (`button.btnWCLD312_Continuer`) then reveals `input.txtWCLD312_Mdp` and "Me connecter"
--- (`button.btnWCLD312_Valider`); bad credentials un-hide `div.divWCLD312_IdIncorrects` ("Votre
--- login et/ou votre mot de passe est incorrect"), and a logged-in page un-hides
--- `div.divWPAD346_Connecte` (and its dataLayer says `"Client_EstConnecte":"oui"`). The popin
--- also holds an hCaptcha (`div.divWCCD042_Captcha`) the site only un-hides after repeated
--- failures - not solvable here. Orders, unverified (no account): "Accéder à Mon compte"
--- (`aiguillage.aspx?iPage=2`) leads to the store's account pages, whose first
--- `a[href*='mes-commandes']` link lists orders per year (`select[id*='ddlFiltreAnnees']`, an
--- auto-postback select); each `div[class*='ResumeCommande']` has the order number, date and an
--- `a[href*='bon-de-commande.aspx']` PDF, downloaded through the webview. See README.md.
+-- A session is valid when the
+-- home page redirects to a URL carrying the user's store (`?mag=<id>`). Login is a JSONP call:
+-- `secure.leclercdrive.fr/drive/connecter.ashz?callbackJsonp=...&d={"sLogin":..,
+-- "sMotDePasse":..,"fResterConnecte":true}`, whose `objDonneesReponse.iTypeConnexion` is -1 for
+-- bad credentials and whose `sNoPL` is the store; a Datadome captcha may answer instead (the
+-- original implementation solved it through a paid service - not possible here). The store's site URL comes
+-- from `api-pointsretrait.leclercdrive.fr/.../PointsRetraitParNoPointLivraison/na/drive/<mag>`
+-- (`sUrlSiteCourses`), whose first `a[href*='mes-commandes']` link lists orders per year (the
+-- page's form re-posted with each `select[id*='ddlFiltreAnnees']` option); each
+-- `div[class*='ResumeCommande']` has the order number, date, amount and an
+-- `a[href*='bon-de-commande.aspx']` PDF. Unverified (see README.md).
 
 local M = {}
 
 local BASE = "https://www.leclercdrive.fr"
-local ACCOUNT_URL = BASE .. "/aiguillage.aspx?iPage=2"
-local OPEN_POPIN = "a.aWPAD346_NonConnecte"
-local LOGIN_FIELD = "input.txtWCLD312_Login"
-local CONTINUE = "button.btnWCLD312_Continuer"
-local PASSWORD_FIELD = "input.txtWCLD312_Mdp"
-local SUBMIT = "button.btnWCLD312_Valider"
-local BAD_CREDENTIALS = "div.divWCLD312_IdIncorrects:not(.masquer), div.divWCLD312_MaxTentatives:not(.masquer)"
-local CAPTCHA = "div.divWCCD042_Captcha:not(.masquer)"
-local LOGGED_IN = "div.divWPAD346_Connecte:not(.masquer)"
-local LOGGED_OUT = "div.divWPAD346_NonConnecte:not(.masquer)"
-local YEAR_SELECT = "select[id*='ddlFiltreAnnees']"
-local ORDER = "div[id*='_upHistoriqueCommandes'] div[class*='ResumeCommande']"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -172,138 +154,70 @@ local function save_pdf(url, filename, fields, headers)
 end
 -- luacheck: pop
 
-local function sleep(ms)
-  pcall(function()
-    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
-  end)
-end
-
-local function page_html()
-  local ok, html = pcall(function()
-    return fyde.browser:html()
-  end)
-  return ok and html or ""
-end
-
-local function logged_in(html)
-  return has(html, LOGGED_IN) or contains(html, '"Client_EstConnecte":"oui"')
-end
-
--- Opens `url` and waits (up to `timeout_ms`, past Datadome's check) for one of `selectors` to
--- show up; returns the page's markup either way.
-local function open(url, selectors, timeout_ms)
-  fyde.browser:open(url)
-  local html = ""
-  for _ = 1, math.ceil(timeout_ms / 1000) do
-    sleep(1000)
-    html = page_html()
-    for _, selector in ipairs(selectors) do
-      if has(html, selector) then
-        return html
-      end
-    end
-  end
-  return html
-end
-
--- Waits (up to `timeout_ms`) for `selector` to be shown, i.e. present without the site's
--- `masquer` class.
-local function wait_shown(selector, timeout_ms)
-  for _ = 1, math.ceil(timeout_ms / 500) do
-    local html = page_html()
-    for _, el in ipairs(fyde.html.select(html, selector)) do
-      if not (" " .. (el.attrs.class or "") .. " "):find(" masquer ", 1, true) then
-        return true
-      end
-    end
-    sleep(500)
-  end
-  return false
+local function url_encode(s)
+  return (tostring(s):gsub("[^%w%-_%.~]", function(c)
+    return string.format("%%%02X", c:byte())
+  end))
 end
 
 local function login(params)
-  fyde.log.info("LOGIN_PAGE_FOUND")
   fyde.progress.step("Logging in")
-  fyde.browser:click(OPEN_POPIN)
-  sleep(1000)
-  fyde.browser:fill(LOGIN_FIELD, params.username)
-  fyde.browser:click(CONTINUE)
-  if not wait_shown(PASSWORD_FIELD, 20000) then
-    local html = page_html()
-    if has(html, BAD_CREDENTIALS) then
-      fail(INVALID_CREDENTIALS, "e-mail address rejected")
-    end
-    error("Leclerc Drive login: no password field after entering the e-mail address")
+  fyde.http.get(BASE)
+  fyde.log.info("LOGIN_PAGE_FOUND")
+  local payload = fyde.json.encode({ sLogin = params.username, sMotDePasse = params.password, fResterConnecte = true })
+  local resp = fyde.http.get("https://secure.leclercdrive.fr/drive/connecter.ashz?callbackJsonp=jQuery18303470315301443705_1&d=" .. url_encode(payload))
+  if contains(resp.body, "captcha") or contains(resp.body, "datado") then
+    error("Leclerc Drive answered with a Datadome captcha")
   end
-  fyde.browser:fill(PASSWORD_FIELD, params.password)
-  fyde.browser:click(SUBMIT)
-  for _ = 1, 30 do
-    sleep(1000)
-    local html = page_html()
-    if has(html, BAD_CREDENTIALS) then
-      fail(INVALID_CREDENTIALS)
-    elseif has(html, CAPTCHA) then
-      fyde.save_document("after.html", html, {name="x", type="invoice", source_category="alimentation", purpose="invoice"}) -- DEBUG
-      error("Leclerc Drive asks for an hCaptcha before logging in (too many attempts?)")
-    elseif logged_in(html) and not has(html, PASSWORD_FIELD .. ":not(.masquer)") then
-      return
-    end
+  local data = json_or_nil(resp.body:match("%((.*)%)") or "")
+  local details = data and data.objDonneesReponse
+  if not details then
+    error("unexpected Leclerc Drive login answer (HTTP " .. resp.status .. ")")
   end
-  fyde.save_document("after.html", page_html(), {name="x", type="invoice", source_category="alimentation", purpose="invoice"}) -- DEBUG
-  error("Leclerc Drive login did not complete (no account header after submitting)")
+  if details.iTypeConnexion == -1 then
+    fail(INVALID_CREDENTIALS)
+  end
+  return tostring(details.sNoPL)
 end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local html = open(BASE, { LOGGED_IN, LOGGED_OUT }, 45000)
-  if logged_in(html) then
+  local home = fyde.http.get(BASE)
+  local mag = home.url:match("[?&]mag=([^&]+)")
+  if mag then
     fyde.log.info("ALREADY_LOGGED_IN")
-  elseif has(html, LOGIN_FIELD) then
-    login(params)
   else
-    error("Leclerc Drive login form not found (Datadome check not passed?)")
+    mag = login(params)
   end
 
   fyde.progress.step("Downloading order forms")
-  local account = open(ACCOUNT_URL, { "a[href*='mes-commandes']" }, 30000)
-  local orders_link = fyde.html.select(account, "a[href*='mes-commandes']")[1]
+  local details = json_or_nil(fyde.http.get("https://api-pointsretrait.leclercdrive.fr/API_PointsRetrait/ApiPointsRetrait/PointsRetraitParNoPointLivraison/na/drive/" .. mag).body) or {}
+  local store = details.sReponse and details.sReponse[1] and details.sReponse[1].sUrlSiteCourses
+  if not store then
+    error("could not find the Leclerc Drive store site")
+  end
+  local store_page = fyde.http.get(store)
+  local orders_link = fyde.html.select(store_page.body, "a[href*='mes-commandes']")[1]
   if not orders_link then
-    error("no 'mes commandes' link on the Leclerc Drive account page")
+    error("no 'mes commandes' link on the store site")
   end
-  local orders_url = absolute(BASE, orders_link.attrs.href)
-  local orders = open(orders_url, { ORDER, YEAR_SELECT }, 30000)
-  local years = {}
-  for _, option in ipairs(fyde.html.select(orders, YEAR_SELECT .. " option")) do
-    years[#years + 1] = option.attrs.value
-  end
-  if #years == 0 then
-    years = { false }
-  end
-  for _, year in ipairs(years) do
-    if year then
-      fyde.browser:fill(YEAR_SELECT, year)
-      sleep(5000)
-    end
-    for _, order in ipairs(fyde.html.select(page_html(), ORDER)) do
+  local orders_url = absolute(store_page.url, orders_link.attrs.href)
+  local orders = fyde.http.get(orders_url)
+  local year_select = fyde.html.select(orders.body, "select[id*='ddlFiltreAnnees']")[1]
+  for _, option in ipairs(fyde.html.select(orders.body, "select[id*='ddlFiltreAnnees'] option")) do
+    local year_page = submit_form(orders, "form", { [year_select.attrs.name] = option.attrs.value })
+    for _, order in ipairs(fyde.html.select(year_page.body, "div[id*='_upHistoriqueCommandes'] div[class*='ResumeCommande']")) do
+      local pdf = fyde.html.select(order.html, "a[href*='bon-de-commande.aspx']")[1]
       local number = fyde.html.select(order.html, "a[id*='NumeroCommande']")[1]
       local info = fyde.html.select(order.html, "span[id*='_lblCommandeInfo']")[1]
-      local pdf = fyde.html.select(order.html, "a[href*='bon-de-commande.aspx']")[1]
-      local ref = sanitize(number and number.text or "")
       if pdf and pdf.attrs.href then
         local d, m, y = (info and info.text or ""):match("(%d%d)/(%d%d)/(%d%d%d%d)")
-        local ok, bytes = pcall(function()
-          return fyde.browser:download("a[href='" .. pdf.attrs.href:gsub("'", "\\'") .. "']", 60000)
-        end)
-        if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
-          fyde.save_document((y and (y .. "-" .. m .. "-" .. d) or "commande") .. "_" .. ref .. "_leclercdrive.pdf", bytes, {
-            name = "Commande Leclerc Drive " .. (y and (d .. "/" .. m .. "/" .. y) or ref),
-            type = "invoice",
-            source_category = "alimentation",
-            purpose = "invoice",
-          })
-        else
-          fyde.log.warn("no order form PDF for order " .. ref .. ": " .. tostring(ok and "not a PDF" or bytes))
-        end
+        save_pdf(absolute(orders_url, pdf.attrs.href), (y and (y .. "-" .. m .. "-" .. d) or "commande") .. "_" .. sanitize(number and number.text or "") .. "_leclercdrive.pdf", {
+          name = "Commande Leclerc Drive " .. (y and (d .. "/" .. m .. "/" .. y) or ""),
+          type = "invoice",
+          source_category = "alimentation",
+          purpose = "invoice",
+        })
       end
     end
   end

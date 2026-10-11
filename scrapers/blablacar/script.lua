@@ -1,9 +1,28 @@
+-- Scraper for BlaBlaCar (blablacar.fr), the car-pooling platform: saves one document per paid
+-- (or refunded) ride.
+--
+-- `/login/email` is loaded for its
+-- cookies, then `/secure-token` takes a JSON `{login, password, rememberMe, grant_type:
+-- "password"}` body - HTTP 401 means bad credentials, 403 a captcha. Rides are the `tbody tr`
+-- rows of `/dashboard/account/payments-done` (then `/2`, `/3`... until a 404); each links to a
+-- ride page whose `window.INIT_STORE=` JSON has the itinerary. BlaBlaCar has no receipts, so
+-- the original implementation generated a PDF per ride with pdfjs - this port writes a text-only PDF with the
+-- same fields. Unverified (see README.md); the site has since become a SPA, so the
+-- payments page may no longer be server-rendered.
+
 local M = {}
 
 local BASE = "https://www.blablacar.fr"
-local LOGIN_URL = BASE .. "/login/email"
 local PAYMENTS_URL = BASE .. "/dashboard/account/payments-done"
-local DATADOME = "iframe[src*='captcha-delivery.com']"
+local HEADERS = {
+  ["x-locale"] = "fr_FR",
+  ["x-client"] = "SPA",
+  ["x-currency"] = "EUR",
+  origin = BASE,
+  ["accept-language"] = "fr_FR",
+  referer = BASE .. "/login/email",
+  accept = "application/json",
+}
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -63,96 +82,81 @@ local function ask_code(question)
   return (code:gsub("%s", ""))
 end
 
--- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
--- exists.
-local function sleep(ms)
-  pcall(function()
-    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
-  end)
+local function absolute(base, href)
+  if not href or href == "" then
+    return base
+  end
+  href = href:gsub("&amp;", "&")
+  if href:match("^https?://") then
+    return href
+  end
+  local origin = base:match("^(https?://[^/]+)")
+  if href:sub(1, 2) == "//" then
+    return base:match("^(https?:)") .. href
+  end
+  if href:sub(1, 1) == "/" then
+    return origin .. href
+  end
+  if href:sub(1, 1) == "?" then
+    return (base:gsub("%?.*$", "")) .. href
+  end
+  local dir = (base:gsub("[?#].*$", "")):match("^(https?://.*/)") or (origin .. "/")
+  return dir .. href
 end
 
-local function page_html()
-  local ok, html = pcall(function()
-    return fyde.browser:html()
-  end)
-  return ok and html or ""
-end
-
-local function present(selector)
-  return #fyde.html.select(page_html(), selector) > 0
-end
-
-local function page_text()
-  local body = fyde.html.select(page_html(), "body")[1]
-  return body and body.text or ""
-end
-
--- Polls the current page until one of `states` matches and returns its name (or nil after
--- `timeout_ms`). Each state is `{ name, selector = css }` or `{ name, text = { needles } }`.
--- Polling in short chunks also survives `fyde.browser:open` not waiting for navigation (a
--- `wait_for` issued against the previous page just times out and gets retried).
-local function wait_state(states, timeout_ms)
-  local waited = 0
-  repeat
-    local html = page_html()
-    local text
-    for _, state in ipairs(states) do
-      if state.selector and #fyde.html.select(html, state.selector) > 0 then
-        return state[1]
-      end
-      if state.text then
-        if not text then
-          local body = fyde.html.select(html, "body")[1]
-          text = body and body.text or ""
-        end
-        if contains_any(text, state.text) then
-          return state[1]
-        end
-      end
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
+-- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
+-- named input's current value (unchecked checkboxes/radios left out, like a browser does).
+local function read_form(page, selector)
+  local form = fyde.html.select(page.body, selector)[1]
+  if not form then
+    return nil
+  end
+  local fields = {}
+  for _, input in ipairs(fyde.html.select(form.html, "input[name]")) do
+    local kind = (input.attrs.type or "text"):lower()
+    if (kind ~= "checkbox" and kind ~= "radio") or input.attrs.checked then
+      fields[input.attrs.name] = input.attrs.value or ""
     end
-    sleep(1000)
-    waited = waited + 1000
-  until waited >= (timeout_ms or 30000)
+  end
+  return absolute(page.url, form.attrs.action), fields
+end
+
+-- Fills `values` into the form matching `selector` on `page` and posts it.
+local function submit_form(page, selector, values, headers)
+  local action, fields = read_form(page, selector)
+  if not action then
+    error("no form matching '" .. selector .. "' on " .. tostring(page.url))
+  end
+  for name, value in pairs(values) do
+    fields[name] = value
+  end
+  return fyde.http.post_form(action, fields, headers)
+end
+
+local function has(page_or_html, selector)
+  local html = type(page_or_html) == "table" and page_or_html.body or page_or_html
+  return #fyde.html.select(html or "", selector) > 0
+end
+
+local function json_or_nil(body)
+  local ok, value = pcall(fyde.json.decode, body or "")
+  if ok then
+    return value
+  end
   return nil
 end
 
-local function open_and_wait(url, states, timeout_ms)
-  fyde.browser:open(url)
-  sleep(1500)
-  return wait_state(states, timeout_ms)
-end
-
--- Fills the first present selector of each candidate list.
-local function fill_first(selectors, value)
-  for _, selector in ipairs(selectors) do
-    if present(selector) then
-      fyde.browser:fill(selector, value)
-      return selector
-    end
-  end
-  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
-end
-
-local function click_first(selectors)
-  for _, selector in ipairs(selectors) do
-    if present(selector) then
-      fyde.browser:click(selector)
-      return selector
-    end
-  end
-  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
-end
-
--- Clicks `selector` (a download link/button) and saves what the browser downloads.
-local function browser_save(selector, filename, fields)
-  local ok, bytes = pcall(function()
-    return fyde.browser:download(selector, 60000)
-  end)
-  if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
-    fyde.save_document(sanitize(filename), bytes, fields)
+-- Downloads `url` and saves it as `filename` when it really is a PDF; returns true on success.
+local function save_pdf(url, filename, fields, headers)
+  local resp = fyde.http.download(url, headers)
+  local content_type = resp.content_type or ""
+  local is_pdf = content_type:find("pdf", 1, true) or (resp.body or ""):sub(1, 4) == "%PDF"
+  if resp.status == 200 and is_pdf then
+    fyde.save_document(sanitize(filename), resp.body, fields)
     return true
   end
-  fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
+  fyde.log.warn(string.format("skipping %s (status %d, content-type %s)", filename, resp.status, content_type))
   return false
 end
 
@@ -219,47 +223,91 @@ local function html_lines(html)
 end
 -- luacheck: pop
 
+local function is_logged_in(page)
+  return page.status == 200 and has(page, "tbody tr a")
+end
+
 local function login(params)
   fyde.progress.step("Logging in")
-  local state = open_and_wait(LOGIN_URL, {
-    { "email", selector = "input[type='email'], input[name='login'], input[name='email']" },
-    { "password", selector = "input[type='password']" },
-    { "datadome", selector = DATADOME },
-  }, 45000)
-  fyde.log.info("probe state: " .. tostring(state))
-  local h = page_html()
-  for _, el in ipairs(fyde.html.select(h, "main form, main input, main button, main label, main h1, main a")) do
-    local a = {}
-    for k, v in pairs(el.attrs) do if k ~= "class" then a[#a + 1] = k .. "=" .. v end end
-    fyde.log.info("probe el: " .. table.concat(a, " ") .. " | " .. trim(el.text):sub(1, 80))
+  local page = fyde.http.get(BASE .. "/login/email")
+  if page.status >= 400 then
+    error("BlaBlaCar login page answered HTTP " .. page.status)
   end
-  fyde.browser:fill("main form input[name='login']", params.username)
-  fyde.browser:fill("main form input[name='password']", params.password)
-  sleep(500)
-  local btn = fyde.html.select(page_html(), "main form button[type='submit']")[1]
-  fyde.log.info("probe btn disabled: " .. tostring(btn and btn.attrs.disabled))
-  fyde.browser:click("main form button[type='submit']")
-  for i = 1, 6 do
-    sleep(2500)
-    h = page_html()
-    for _, el in ipairs(fyde.html.select(h, "[role='alert'], [role='status'], [role='dialog'], [aria-live], [aria-invalid='true'], iframe[src*='captcha'], [data-testid*='error'], [data-testid*='snack'], [data-testid*='toast']")) do
-      local a = {}
-      for k, v in pairs(el.attrs) do if k ~= "class" then a[#a + 1] = k .. "=" .. v:sub(1, 120) end end
-      fyde.log.info("probe " .. i .. ": " .. table.concat(a, " ") .. " | " .. trim(el.text):sub(1, 160))
-    end
-    local clean = h:gsub("<script.-</script>", ""):gsub("<style.-</style>", ""):gsub("<svg.-</svg>", "")
-    local body = fyde.html.select(clean, "body")[1]
-    fyde.log.info("probe txt " .. i .. " url-ish: " .. (body and trim(body.text:gsub("%s+", " ")):sub(1, 1500) or ""))
-    if i == 2 then
-      local f = fyde.html.select(clean, "main form")[1]
-      fyde.log.info("probe form: " .. (f and f.html:gsub('class="[^"]*"', ""):sub(1, 4000) or "none"))
+  fyde.log.info("LOGIN_PAGE_FOUND")
+  local resp = fyde.http.post_json(BASE .. "/secure-token", {
+    login = params.username,
+    password = params.password,
+    rememberMe = true,
+    grant_type = "password",
+  }, HEADERS)
+  if resp.status == 401 then
+    fail(INVALID_CREDENTIALS)
+  elseif resp.status == 403 then
+    error("BlaBlaCar asked for a captcha")
+  elseif resp.status >= 400 then
+    error("BlaBlaCar login answered HTTP " .. resp.status)
+  end
+end
+
+local function ride_lines(link)
+  local page = fyde.http.get(BASE .. link)
+  local json = page.body:match("window%.INIT_STORE=(.-);%s*</script>")
+  local store = json and json_or_nil(json)
+  local lines = {}
+  if store and store.entities and store.entities.ridePlans then
+    for _, info in pairs(store.entities.ridePlans) do
+      local points = info.rideItinerary and info.rideItinerary.waypoints or {}
+      if #points > 0 then
+        lines[#lines + 1] = "Trajet : " .. points[1].place.city .. " - " .. points[#points].place.city
+      end
+      lines[#lines + 1] = "Départ : " .. tostring(info.rideItinerary and info.rideItinerary.departureDate)
+      lines[#lines + 1] = "Prix : " .. tostring(info.displayedPrice and info.displayedPrice.price.formatted_price)
+      lines[#lines + 1] = "Passagers : " .. tostring(info.seatsCount)
+      lines[#lines + 1] = "Conducteur : " .. tostring(info.driver and info.driver.name)
     end
   end
-  error("probe")
+  lines[#lines + 1] = "Données originales : " .. BASE .. link
+  return lines
 end
 
 function M.run(params)
-  login(params)
+  fyde.progress.step("Checking for an existing session")
+  local page = fyde.http.get(PAYMENTS_URL)
+  if is_logged_in(page) then
+    fyde.log.info("ALREADY_LOGGED_IN")
+  else
+    login(params)
+    page = fyde.http.get(PAYMENTS_URL)
+  end
+
+  fyde.progress.step("Saving rides")
+  local n = 1
+  local rows = fyde.html.select(page.body, "tbody tr")
+  while page.status == 200 and #rows > 0 do
+    for _, row in ipairs(rows) do
+      local cells = fyde.html.select(row.html, "td")
+      local link = fyde.html.select(row.html, "a")[1]
+      if link and #cells >= 4 then
+        local date = trim(cells[1].text)
+        local refund = contains(cells[3].text, "Remboursement")
+        local amount = trim(cells[4].text):gsub("%s+", ""):gsub("[()]", "")
+        local lines = ride_lines(link.attrs.href)
+        table.insert(lines, 1, "Date : " .. date)
+        lines[#lines + 1] = (refund and "Remboursement : " or "Montant : ") .. amount
+        local title = refund and "Informations de remboursement de voyage Blablacar.fr" or "Informations de voyage Blablacar.fr"
+        fyde.save_document(sanitize(date) .. (refund and "_Remboursement_" or "_") .. amount .. ".pdf", text_pdf(title, lines), {
+          name = "BlaBlaCar " .. date,
+          type = "transport_invoice",
+          source_category = "transport",
+          purpose = "invoice",
+        })
+      end
+    end
+    n = n + 1
+    page = fyde.http.get(PAYMENTS_URL .. "/" .. n)
+    rows = fyde.html.select(page.body, "tbody tr")
+  end
+  fyde.progress.step("Done")
 end
 
 return M
