@@ -3,7 +3,9 @@
 --
 -- Ported from github.com/konnectors/engie (a cozy-clisk content script driving the real site),
 -- so it drives `fyde.browser` too: `/login-page/authentification.html` has `input[type=email]`
--- and `input[type=password]` (possibly on two steps); logged in shows `#header-deconnexion` (or
+-- and `input[type=password]` (possibly on two steps) in `form.k-oktaConnexion__form`, sent by
+-- its "Me connecter" `button.k-cta` (a `type=button`; a wrong login shows "L'adresse e-mail
+-- et/ou le mot de passe sont incorrects" - checked live); logged in shows `#header-deconnexion` (or
 -- a "Se déconnecter" button). Bills: `/espace-client/prive/mes-factures.html`; the konnector
 -- read them from the private API (`cel-ws/api/private/...`, `/SAE/facture.pdf` documents) and
 -- the proof of residence from `cel-ws/api/private/pdf/attestationTitulaireContrat`. The bills
@@ -265,7 +267,8 @@ local function login(params)
     wait_state({ { "password", selector = "input[type=password]" } }, 20000)
   end
   fyde.browser:fill("input[type=password]", params.password)
-  click_first({ "button[type='submit']", "input[type='submit']" })
+  -- "Me connecter" is a plain `type=button` in the Okta-backed `form.k-oktaConnexion__form`.
+  click_first({ "form.k-oktaConnexion__form button.k-cta[class*='rootTypePrimary']", "button[type='submit']", "input[type='submit']" })
   local state = wait_state({ LOGGED_IN, { "bad", text = BAD_CREDENTIALS } }, 45000)
   if state == "bad" or (state == nil and present("input[type=password]")) then
     fail(INVALID_CREDENTIALS)

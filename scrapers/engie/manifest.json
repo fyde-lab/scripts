@@ -27,9 +27,9 @@
   "status": {
     "state": "wip",
     "login_page_found": "passed",
-    "invalid_credentials_detected": "failed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "Smoke: submit button not found"
+    "notes": "Login button is now a type=button in the Okta-backed form, clicked by class; fake credentials rejected"
   }
 }
