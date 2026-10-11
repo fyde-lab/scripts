@@ -1,24 +1,20 @@
--- Scraper for Électricité de Strasbourg's online customer area
--- (www.interactive.electricite-strasbourg.net, "ES Energies"): downloads the bills of the
--- first contract.
+-- Scraper for Électricité de Strasbourg's online customer area (ÉS, espaceclient.es.fr): meant
+-- to download the bills.
 --
--- Ported from github.com/konnectors/electricitestrasbourg (src/index.js): login posts
--- `#formAppli` (_codeaction=accueil, AuthProvider=AccesPro, Forward, Login, Motdepasse) on
--- `/aelfr/accescybercompte/AuthCybercompteProcess`; success answers a page with a
--- `meta[http-equiv="Refresh"]`. Then the stateful "connect" app: `/connect/habilitation`
--- (first `a[id^=consulterContrat_]` = contract, `form[name="theForm"]` action), POST
--- act=consulterContrat, POST `contrat.ZoomerContratOGeneralites.go` act=afficherOnglet
--- (_ongIdx=302001) to list `#tbl_mesFacturesExtrait` rows, each with a `validerConnexion(...)`
--- onclick carrying the request counter `_rqId_` and the bill id; a bill is selected with
--- `contrat.ZoomerContratOFactures.go?act=consulterFactureDuplicata&...` and fetched with
--- act=afficherDocument. The konnector POSTed that last call; fyde.http can only download with
--- GET, so the same fields are sent as query parameters (unconfirmed). Unverified (see
--- README.md).
+-- Originally ported from github.com/konnectors/electricitestrasbourg, whose portal
+-- (www.interactive.electricite-strasbourg.net) no longer resolves: es.fr's "Espace client" now
+-- leads to espaceclient.es.fr, which redirects to a Keycloak login
+-- (`/auth/realms/espace-client-sso/...`, `form#kc-form-login` with `username`/`password`)
+-- before landing on `/alice-ael/sso/login`. A wrong login answers the Keycloak page again with
+-- "Veuillez vérifier votre identifiant et votre mot de passe" in `.kc-feedback-text` (checked
+-- live, with made-up credentials). Nothing past the login is known yet (no account to look at
+-- the new portal with), so a successful login stops with an explicit error rather than
+-- guessing at the old portal's bill endpoints.
 
 local M = {}
 
-local BASE = "https://www.interactive.electricite-strasbourg.net"
-local LOGIN_URL = BASE .. "/aelfr/accescybercompte/AuthCybercompteProcess"
+local LOGIN_URL = "https://espaceclient.es.fr/"
+local LOGIN_FORM = "form#kc-form-login"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -160,67 +156,23 @@ end
 local function login(params)
   fyde.progress.step("Logging in")
   local page = fyde.http.get(LOGIN_URL)
-  if not has(page, "#formAppli") then
-    error("ES login form not found on " .. page.url)
+  if not has(page, LOGIN_FORM .. " input[name='password']") then
+    error("ÉS login form not found on " .. page.url)
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = submit_form(page, "#formAppli", {
-    _codeaction = "accueil",
-    AuthProvider = "AccesPro",
-    Forward = "/aelfr/accescybercompte/AuthCybercompteProcess",
-    Login = params.username,
-    Motdepasse = params.password,
-  })
-  if not has(resp, "meta[http-equiv='Refresh'], meta[http-equiv='refresh']") then
-    fail(INVALID_CREDENTIALS, "no refresh redirect after login")
+  local resp = submit_form(page, LOGIN_FORM, { username = params.username, password = params.password })
+  if has(resp, ".kc-feedback-text") or has(resp, LOGIN_FORM) then
+    local feedback = fyde.html.select(resp.body, ".kc-feedback-text")[1]
+    fail(INVALID_CREDENTIALS, feedback and trim(feedback.text) or "still on the login form")
   end
+  return resp
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
-  local contracts = fyde.http.get(BASE .. "/connect/habilitation")
-  if has(contracts, "a[id^='consulterContrat_']") then
-    fyde.log.info("ALREADY_LOGGED_IN")
-  else
-    login(params)
-    contracts = fyde.http.get(BASE .. "/connect/habilitation")
-  end
-
-  fyde.progress.step("Downloading bills")
-  local first = fyde.html.select(contracts.body, "a[id^='consulterContrat_']")[1]
-  local form = fyde.html.select(contracts.body, "form[name='theForm']")[1]
-  if not (first and form) then
-    error("no contract found on the habilitation page")
-  end
-  local rq = 0
-  fyde.http.post_form(BASE .. "/connect/" .. form.attrs.action, {
-    act = "consulterContrat", _rqId_ = tostring(rq), _mnLck_ = "true", selIdcontrats = first.text:gsub("%D", ""),
-  })
-  rq = rq + 1
-  local bills = fyde.http.post_form(BASE .. "/connect/contrat.ZoomerContratOGeneralites.go", {
-    act = "afficherOnglet", _rqId_ = tostring(rq), _ongIdx = "302001", _mnLck_ = "false", etat = "actif",
-  })
-  for _, row in ipairs(fyde.html.select(bills.body, "#tbl_mesFacturesExtrait tr")) do
-    local links = fyde.html.select(row.html, "a[onclick^='validerConnexion']")
-    local onclick = links[#links] and links[#links].attrs.onclick or ""
-    local id = onclick:match("(%d+)'%)$")
-    local cells = fyde.html.select(row.html, "td")
-    if id and cells[2] then
-      rq = tonumber(onclick:match("_rqId_=(%d+)")) or rq
-      local ref, date = trim(cells[1].text), trim(cells[2].text)
-      fyde.http.get(BASE .. "/connect/contrat.ZoomerContratOFactures.go?act=consulterFactureDuplicata&selIdmesFacturesExtrait=" .. id .. "&_rqId_=" .. rq)
-      rq = rq + 1
-      local d, m, y = date:match("(%d+)/(%d+)/(%d+)")
-      save_pdf(BASE .. "/connect/contrat.ZoomerContratOFactures.go?act=afficherDocument&_rqId_=" .. rq .. "&_mnLck_=false",
-        (y and (y .. "-" .. m .. "-" .. d) or sanitize(date)) .. "_" .. ref .. ".pdf", {
-          name = "Facture ES " .. date,
-          type = "energy_invoice",
-          source_category = "energy",
-          purpose = "invoice",
-        })
-    end
-  end
-  fyde.progress.step("Done")
+  -- No session check: nothing past the login is ported, so there's no session to reuse yet.
+  local resp = login(params)
+  error("credentials accepted (landed on " .. resp.url .. "), but the ÉS customer area's bill pages "
+    .. "aren't ported yet - see this script's header comment", 0)
 end
 
 return M

@@ -1,13 +1,13 @@
 {
   "name": "Électricité de Strasbourg",
   "short_description": "Factures ES Énergies Strasbourg",
-  "description": "Se connecte à l'espace client interactif d'Électricité de Strasbourg pour récupérer les factures d'électricité.",
+  "description": "Se connecte à l'espace client d'Électricité de Strasbourg (espaceclient.es.fr) pour récupérer les factures d'électricité.",
   "homepage": "https://www.es.fr",
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
   "allowed_domains": [
-    "electricite-strasbourg.net"
+    "es.fr"
   ],
   "parameters": {
     "username": {
@@ -26,10 +26,10 @@
   },
   "status": {
     "state": "wip",
-    "login_page_found": "failed",
-    "invalid_credentials_detected": "failed",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "PDF fetched with GET instead of the konnector's POST (unconfirmed); Smoke: host unreachable"
+    "notes": "Portal moved to espaceclient.es.fr (Keycloak login): login rebuilt on it and checked with made-up credentials; bill pages not ported, a successful login stops with an explicit error"
   }
 }
