@@ -7,7 +7,8 @@
   "debug_http_dump": false,
   "follow_redirects": true,
   "allowed_domains": [
-    "cdiscount.com"
+    "cdiscount.com",
+    "challenges.cloudflare.com"
   ],
   "parameters": {
     "username": {
@@ -26,10 +27,10 @@
   },
   "status": {
     "state": "wip",
-    "login_page_found": "failed",
-    "invalid_credentials_detected": "failed",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "Order selection relies on the select change event; Smoke: login form not found"
+    "notes": "Login now reached from the home page (order.cdiscount.com opened directly hangs on Cloudflare) and two-step: e-mail (#EmailForm, unknown e-mail detected) then password (unconfirmed); challenges.cloudflare.com allowed"
   }
 }

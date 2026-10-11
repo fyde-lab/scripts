@@ -3,8 +3,9 @@
 --
 -- Ported from github.com/konnectors/cdiscount (a cozy-clisk content script, i.e. it drove the
 -- real site in a webview), so this drives `fyde.browser` the same way: the light login page
--- (`order.cdiscount.com/Phone/Account/LoginLight.html`) with
--- `#CustomerLogin_CustomerLoginFormData_Email`/`..._Password` and `input[type=submit]`; logged
+-- (now `order.cdiscount.com/Account/LoginLight.html`, reached from the home page's account
+-- link), formerly one form (`#CustomerLogin_CustomerLoginFormData_Email`/`..._Password`), now
+-- an e-mail step (`#EmailForm`, checked live) then a password step (unconfirmed); logged
 -- in when `.leftmenu__logout` is shown; a rejected login re-renders the form with `.c-alert`
 -- messages. Orders: `clients.cdiscount.com/order/orderstracking.html` shows one order at a
 -- time, chosen with the `#OrderTrackingFormData_SaleFolderId` select; each `#servGuaranteeDiv`
@@ -13,7 +14,16 @@
 
 local M = {}
 
-local LOGIN_URL = "https://order.cdiscount.com/Phone/Account/LoginLight.html?referrer="
+-- Opened directly, order.cdiscount.com's login hangs on Cloudflare's interstitial; reached from
+-- the home page's account link (once www.cdiscount.com has cleared the check) it loads.
+local HOME_URL = "https://www.cdiscount.com/"
+local ACCOUNT_LINK = "a[data-e2e='myAccount-icon']"
+-- The login is now two-step: `#EmailForm` takes the e-mail alone (an unknown one gets "Aucun
+-- compte n'est rattaché à cet email"), then a password field shows up. The same page also
+-- holds an account creation form (`#loginCreationForm`) with its own password field.
+local EMAIL_STEP = "#EmailForm input[type='email']"
+local PASSWORD_STEP = "form:not(#loginCreationForm) input[type='password']"
+local UNKNOWN_EMAIL = { "Aucun compte n'est rattaché", "Aucun compte n’est rattaché" }
 local ORDERS_URL = "https://clients.cdiscount.com/order/orderstracking.html"
 local EMAIL = "#CustomerLogin_CustomerLoginFormData_Email"
 local PASSWORD = "#CustomerLogin_CustomerLoginFormData_Password"
@@ -175,16 +185,26 @@ end
 
 local function login(params)
   fyde.progress.step("Logging in")
-  if not present(EMAIL) then
-    open_and_wait(LOGIN_URL, { { "login", selector = EMAIL } }, 30000)
-  end
-  if not present(EMAIL) then
+  if not present(EMAIL_STEP) and not present(EMAIL) then
     error("Cdiscount login form not found")
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fyde.browser:fill(EMAIL, params.username)
-  fyde.browser:fill(PASSWORD, params.password)
-  fyde.browser:click("#LoginForm input[type='submit'], input[type='submit']")
+  if present(EMAIL_STEP) then
+    fyde.browser:fill(EMAIL_STEP, params.username)
+    fyde.browser:click("#EmailForm input[type='submit']")
+    local step = wait_state({ { "password", selector = PASSWORD_STEP }, { "unknown", text = UNKNOWN_EMAIL } }, 30000)
+    if step == "unknown" then
+      fail(INVALID_CREDENTIALS, "no account for this e-mail")
+    elseif step ~= "password" then
+      error("Cdiscount did not show the password step - page says: " .. page_text():sub(1, 300))
+    end
+    fyde.browser:fill(PASSWORD_STEP, params.password)
+    click_first({ "#LoginForm input[type='submit']", "form:not(#loginCreationForm):not(#EmailForm) input[type='submit']" })
+  else
+    fyde.browser:fill(EMAIL, params.username)
+    fyde.browser:fill(PASSWORD, params.password)
+    fyde.browser:click("#LoginForm input[type='submit'], input[type='submit']")
+  end
   local state = wait_state({
     { "logged_in", selector = LOGGED_IN },
     { "error", selector = ".c-alert" },
@@ -223,7 +243,9 @@ end
 
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local state = open_and_wait(LOGIN_URL, { { "logged_in", selector = LOGGED_IN }, { "login", selector = EMAIL } }, 30000)
+  open_and_wait(HOME_URL, { { "home", selector = ACCOUNT_LINK } }, 30000)
+  fyde.browser:click(ACCOUNT_LINK)
+  local state = wait_state({ { "logged_in", selector = LOGGED_IN }, { "login", selector = EMAIL_STEP .. ", " .. EMAIL } }, 60000)
   if state == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
