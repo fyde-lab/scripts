@@ -3,14 +3,21 @@
 --
 -- Ported from github.com/konnectors/productboard (src/index.js), which was hardwired to Cozy's
 -- own workspace (cozycloud.productboard.com) - here the workspace is a parameter (`workspace`,
--- default "cozycloud"). The workspace home gives the `csrf-token` meta, then `/users/sign_in`
--- takes user[email]/user[password]/user[remember_me] with `X-CSRF-Token`; `/api/all.json`
--- then lists `subscription_invoices` (created_at, total, invoice_url). The konnector never
--- checked the login; here the API not answering JSON afterwards (or the sign-in form coming
--- back with an error) means bad credentials. Productboard has since moved to SSO-style login,
--- so this flow may be outdated. Unverified (see README.md).
+-- default "cozycloud"). The konnector's form post (`/users/sign_in` with the workspace home's
+-- `csrf-token`) is gone: workspaces now sign in on app.productboard.com, a client-rendered form
+-- (`[data-testid=LoginForm-EmailField]`/`-PasswordField`/`-Login-Button`) driven through
+-- `fyde.browser`; a wrong login shows "Whoops, invalid email and/or password" (checked live,
+-- with made-up credentials). `<workspace>/api/all.json` then lists `subscription_invoices`
+-- (created_at, total, invoice_url) - read through the webview here, since `fyde.http` only gets
+-- the webview's cookies from the next run on (unconfirmed since the move). Unverified (see
+-- README.md).
 
 local M = {}
+
+local LOGIN_URL = "https://app.productboard.com/"
+local EMAIL = "[data-testid='LoginForm-EmailField']"
+local PASSWORD = "[data-testid='LoginForm-PasswordField']"
+local BAD_CREDENTIALS = { "invalid email and/or password" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -147,29 +154,129 @@ local function save_pdf(url, filename, fields, headers)
   fyde.log.warn(string.format("skipping %s (status %d, content-type %s)", filename, resp.status, content_type))
   return false
 end
--- luacheck: pop
 
-local function invoices(base)
-  local resp = fyde.http.get(base .. "/api/all.json", { Accept = "application/json" })
-  local data = resp.status == 200 and json_or_nil(resp.body)
-  return data and data.subscription_invoices
+-- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
+-- exists.
+local function sleep(ms)
+  pcall(function()
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
+  end)
 end
 
-local function login(params, base)
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+local function present(selector)
+  return #fyde.html.select(page_html(), selector) > 0
+end
+
+local function page_text()
+  local body = fyde.html.select(page_html(), "body")[1]
+  return body and body.text or ""
+end
+
+-- Polls the current page until one of `states` matches and returns its name (or nil after
+-- `timeout_ms`). Each state is `{ name, selector = css }` or `{ name, text = { needles } }`.
+-- Polling in short chunks also survives `fyde.browser:open` not waiting for navigation (a
+-- `wait_for` issued against the previous page just times out and gets retried).
+local function wait_state(states, timeout_ms)
+  local waited = 0
+  repeat
+    local html = page_html()
+    local text
+    for _, state in ipairs(states) do
+      if state.selector and #fyde.html.select(html, state.selector) > 0 then
+        return state[1]
+      end
+      if state.text then
+        if not text then
+          local body = fyde.html.select(html, "body")[1]
+          text = body and body.text or ""
+        end
+        if contains_any(text, state.text) then
+          return state[1]
+        end
+      end
+    end
+    sleep(1000)
+    waited = waited + 1000
+  until waited >= (timeout_ms or 30000)
+  return nil
+end
+
+local function open_and_wait(url, states, timeout_ms)
+  fyde.browser:open(url)
+  sleep(1500)
+  return wait_state(states, timeout_ms)
+end
+
+-- Fills the first present selector of each candidate list.
+local function fill_first(selectors, value)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:fill(selector, value)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+local function click_first(selectors)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:click(selector)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+-- Clicks `selector` (a download link/button) and saves what the browser downloads.
+local function browser_save(selector, filename, fields)
+  local ok, bytes = pcall(function()
+    return fyde.browser:download(selector, 60000)
+  end)
+  if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
+    fyde.save_document(sanitize(filename), bytes, fields)
+    return true
+  end
+  fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
+  return false
+end
+-- luacheck: pop
+
+-- Reads `<base>/api/all.json` through the webview (rendered as text) and returns its invoices.
+local function invoices(base)
+  fyde.browser:open(base .. "/api/all.json")
+  sleep(2000)
+  local data = json_or_nil(trim(page_text()))
+  return type(data) == "table" and data.subscription_invoices or nil
+end
+
+local function login(params)
   fyde.progress.step("Logging in")
-  local page = fyde.http.get(base .. "/")
-  local csrf = fyde.html.select(page.body, "[name='csrf-token']")[1]
-  if not csrf then
-    error("Productboard login page (csrf-token) not found on " .. page.url)
+  if open_and_wait(LOGIN_URL, { { "login", selector = PASSWORD } }, 30000) ~= "login" then
+    error("Productboard login form not found")
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = fyde.http.post_form(base .. "/users/sign_in", {
-    ["user[email]"] = params.username,
-    ["user[password]"] = params.password,
-    ["user[remember_me]"] = "false",
-  }, { ["X-CSRF-Token"] = csrf.attrs.content or "" })
-  if resp.status == 401 or contains_any(resp.body, { "Invalid email or password", "Invalid Email or password" }) then
-    fail(INVALID_CREDENTIALS)
+  fyde.browser:fill(EMAIL, params.username)
+  fyde.browser:fill(PASSWORD, params.password)
+  fyde.browser:click("[data-testid='LoginForm-Login-Button']")
+  -- A successful login leaves the login form.
+  local waited = 0
+  repeat
+    sleep(1000)
+    waited = waited + 1000
+    if contains_any(page_text(), BAD_CREDENTIALS) then
+      fail(INVALID_CREDENTIALS)
+    end
+  until not present(PASSWORD) or waited >= 30000
+  if present(PASSWORD) then
+    fail(INVALID_CREDENTIALS, "still on the login form")
   end
 end
 
@@ -180,10 +287,10 @@ function M.run(params)
   if list then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
-    login(params, base)
+    login(params)
     list = invoices(base)
     if not list then
-      fail(INVALID_CREDENTIALS, "API not reachable after login")
+      error("Productboard login accepted, but " .. base .. "/api/all.json didn't list any invoices")
     end
   end
 
