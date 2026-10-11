@@ -1,17 +1,12 @@
 {
   "name": "Silae",
   "short_description": "Bulletins de paie Silae",
-  "description": "Se connecte à l'espace salarié Silae pour récupérer les bulletins de paie.",
-  "homepage": "https://www.silaexpert.fr",
+  "description": "Se connecte à mySilae (my.silae.fr), l'espace Silae, pour récupérer les bulletins de paie.",
+  "homepage": "https://my.silae.fr",
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
   "allowed_domains": [
-    "silaexpert01.fr",
-    "silaexpert02.fr",
-    "silaexpert03.fr",
-    "silaexpert04.fr",
-    "silaexpert.fr",
     "silae.fr"
   ],
   "parameters": {
@@ -31,10 +26,10 @@
   },
   "status": {
     "state": "wip",
-    "login_page_found": "failed",
-    "invalid_credentials_detected": "failed",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "SOAP replaced by the ASMX HTTP-POST binding (unconfirmed); Smoke: host unreachable"
+    "notes": "silaexpert01.fr is gone: login rebuilt on mySilae (my.silae.fr, Vue app driven in the webview, assumed to be the employee space's successor) and checked with made-up credentials; payslip pages not ported, a successful login stops with an explicit error"
   }
 }
