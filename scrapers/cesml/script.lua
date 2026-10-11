@@ -1,20 +1,22 @@
--- Scraper for CESML (moncompte.cesml.com), an electricity distributor/supplier around
--- Montpellier: downloads the bills.
+-- Scraper for CESML (cesml.com), an electricity distributor/supplier around Montpellier:
+-- meant to download the bills.
 --
--- Ported from github.com/konnectors/cesml (src/index.js): login posts the page's `form`
--- (Login/MotDePasse) from `/Portail/fr-FR/Connexion/Login`; logged in when the
--- `/Portail/fr-FR/Usager/Home/Logout` link is rendered. Bills come from the DataTables
--- endpoint `Usager/Abonnement/AjaxFactureSynchros?EstAcompte=false` (10 per page,
--- `iDisplayStart`), `aaData` rows of [reference, date, ?, ?, amount, ...]. A bill's PDF is
--- served by `TelechargerFacture` for the bill id last stored with `StoreFactureId` (`{"id":
--- row[15]}`, sent when the row's second-to-last cell is true). Unverified (see README.md).
+-- Originally ported from github.com/konnectors/cesml, whose portal (moncompte.cesml.com) no
+-- longer resolves: cesml.com's "Mon compte" now links to an eFluid customer portal at
+-- moncompte-cesml.multield.net. Its login page
+-- (`/application/jsp/arc/habilitation/login.jsp`) holds `form[name='theForm']` (`lg`/`psw`,
+-- posted to `habilitation.ActorIdentificationAel.go` with `act=valider`, as the page's
+-- `soumission('theForm', 'valider')` does); a wrong login answers that same page with
+-- "Problème d'identification" (checked live, with made-up credentials). Nothing past the login
+-- is known yet (no account to look at the portal's bill pages with), so a successful login
+-- stops with an explicit error rather than guessing at the old portal's bill endpoints.
 
 local M = {}
 
-local BASE = "https://moncompte.cesml.com/Portail/fr-FR"
-local LOGIN_URL = BASE .. "/Connexion/Login"
-local HOME_URL = BASE .. "/Usager/Home"
-local LOGGED_IN = "a[href='/Portail/fr-FR/Usager/Home/Logout']"
+local BASE = "https://moncompte-cesml.multield.net/application/jsp/arc/habilitation"
+local LOGIN_URL = BASE .. "/login.jsp"
+local LOGIN_FORM = "form[name='theForm']"
+local BAD_CREDENTIALS = { "Problème d'identification" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -156,58 +158,25 @@ end
 local function login(params)
   fyde.progress.step("Logging in")
   local page = fyde.http.get(LOGIN_URL)
-  if not has(page, "input[name='MotDePasse']") then
+  if not has(page, LOGIN_FORM .. " input[name='psw']") then
     error("CESML login form not found on " .. page.url)
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = submit_form(page, "form", { Login = params.username, MotDePasse = params.password })
-  if not has(resp, LOGGED_IN) then
-    fail(INVALID_CREDENTIALS, "no logout link after login")
+  local resp = submit_form(page, LOGIN_FORM, { act = "valider", lg = params.username, psw = params.password })
+  if contains_any(resp.body, BAD_CREDENTIALS) then
+    fail(INVALID_CREDENTIALS)
   end
-end
-
-local function bills_page(start)
-  local form = {
-    sEcho = "1", iColumns = "11", sColumns = ",,,,,,,,,,", iDisplayStart = tostring(start), iDisplayLength = "10",
-    iSortCol_0 = "1", sSortDir_0 = "desc", iSortCol_1 = "8", sSortDir_1 = "desc", iSortingCols = "2",
-  }
-  for i = 0, 10 do
-    form["mDataProp_" .. i] = tostring(i)
-    form["bSortable_" .. i] = i < 9 and "true" or "false"
+  if has(resp, LOGIN_FORM .. " input[name='psw']") then
+    fail(INVALID_CREDENTIALS, "still on the login form")
   end
-  local resp = fyde.http.post_form(BASE .. "/Usager/Abonnement/AjaxFactureSynchros?EstAcompte=false", form)
-  local data = json_or_nil(resp.body)
-  return data and data.aaData or {}
+  return resp
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
-  if has(fyde.http.get(HOME_URL), LOGGED_IN) then
-    fyde.log.info("ALREADY_LOGGED_IN")
-  else
-    login(params)
-  end
-
-  fyde.progress.step("Downloading bills")
-  local start = 0
-  repeat
-    local rows = bills_page(start)
-    for _, row in ipairs(rows) do
-      local reference, date, amount = tostring(row[1]), tostring(row[2]), tostring(row[5])
-      if row[#row - 1] == true and row[15] then
-        fyde.http.post_json(BASE .. "/Usager/Abonnement/StoreFactureId", { id = row[15] })
-      end
-      local d, m, y = date:match("(%d+)/(%d+)/(%d+)")
-      save_pdf(BASE .. "/Usager/Abonnement/TelechargerFacture", (y and (y .. "-" .. m .. "-" .. d) or sanitize(date)) .. "_CESML_" .. trim(amount) .. "EUR_" .. reference .. ".pdf", {
-        name = "Facture CESML " .. date,
-        type = "energy_invoice",
-        source_category = "energy",
-        purpose = "invoice",
-      })
-    end
-    start = start + 10
-  until #rows < 10
-  fyde.progress.step("Done")
+  -- No session check: nothing past the login is ported, so there's no session to reuse yet.
+  local resp = login(params)
+  error("credentials accepted (landed on " .. resp.url .. "), but the CESML eFluid portal's bill pages "
+    .. "aren't ported yet - see this script's header comment", 0)
 end
 
 return M
