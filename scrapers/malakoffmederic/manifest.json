@@ -26,10 +26,10 @@
   },
   "status": {
     "state": "wip",
-    "login_page_found": "failed",
-    "invalid_credentials_detected": "failed",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "DWR login driven through the browser; Smoke: login form not found"
+    "notes": "The extranet (DWR login) only answers a maintenance page for hours on end: login moved to the Malakoff Humanis CIAM JSON API shared with humanis, fake credentials rejected (checked live); documents not ported, a successful login stops with an explicit error"
   }
 }
