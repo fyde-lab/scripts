@@ -555,8 +555,7 @@ const STATUS_TABLE_END: &str = "<!-- status-table:end -->";
 /// `manifest.json` `status`, leaving the rest of the file untouched.
 fn status_table() -> Result<()> {
     let mut table = String::from(
-        "| Scraper | State | Login page found | Invalid credentials detected | Login ok \
-         | Documents fetched | Antibot | Last updated |\n\
+        "| Scraper | State | Login page found | Login KO detected | Login OK | Fetching OK | Antibot | Last updated |\n\
          |---|---|---|---|---|---|---|---|\n",
     );
     for scraper_name in list_scraper_names()? {

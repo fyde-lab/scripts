@@ -97,7 +97,7 @@ Legend: state ✅ verified, ❌ broken, 🚫 blocked, 🚧 wip; checks ✅ passe
 tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, ❔ couldn't be checked.
 
 <!-- status-table:start -->
-| Scraper | State | Login page found | Invalid credentials detected | Login ok | Documents fetched | Antibot | Last updated |
+| Scraper | State | Login page found | Login KO detected | Login OK | Fetching OK | Antibot | Last updated |
 |---|---|---|---|---|---|---|---|
 | [`alan`](scrapers/alan/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`amazon`](scrapers/amazon/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ AWS WAF, Akamai Bot Manager, Arkose Labs captcha | 2026-10-11 |
