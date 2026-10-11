@@ -165,7 +165,7 @@ cookies into its jar once the run ends. See the file's header comment.
 ### `scripts/scrapers/boursobank/script.lua`
 
 BoursoBank (clients.boursobank.com, ex-Boursorama Banque), verified end to end against a real
-account (no HAR): plain `fyde.http`, login ported from `../../konnectors/boursorama` and aligned
+account (no HAR): plain `fyde.http`, login aligned
 with woob's `boursorama` module (virtual keypad of base64 SVG digits -> `data-matrix-key`s). Two
 cookies are planted with `fyde.http.set_cookie` first: `__brs_mit` (read from the JS stub every
 page returns without it) and `brsDomainMigration=migrated` (without it the login POST gets a
@@ -177,9 +177,8 @@ fiscal year) and RIBs from `/documents/compte-bancaire`. See the file's header c
 
 ### The remaining scripts, ported from `../doc-downloaders`
 
-**Superseded in part:** `edf`, `pajemploi` and `scaleway` have since been rewritten as ports of
-the konnectors (see "The scrapers ported from `github.com/konnectors`" below), and `boursorama`
-is covered by `boursobank`; what follows describes the earlier doc-downloaders ports.
+**Superseded in part:** `edf`, `pajemploi` and `scaleway` have since been rewritten (see "The
+shared scraper contract" below), and `boursorama` is covered by `boursobank`; what follows describes the earlier doc-downloaders ports.
 
 `../doc-downloaders` is a sibling repo of browser-automation (Playwright) scrapers for the same
 sites, run against a real, human-authenticated Chromium (see its own `CLAUDE.md`). Its scripts
@@ -212,13 +211,12 @@ best-guess as if it were verified.
   different, non-scraping way to get invoices if this is ever worth pursuing, but that's a
   separate design, not a variant of this file.
 
-### The scrapers ported from `github.com/konnectors`
+### The shared scraper contract
 
-Most scrapers under `scrapers/` are ports of Cozy Cloud's konnectors (one per repository of the
-`konnectors` GitHub organization - see `README.md`'s table for the list and the upstream repo of
-each, and each scraper's `manifest.json` `status` for what is and isn't confirmed). Each script's header comment says which upstream files
-it was ported from and which parts couldn't be carried over. They all follow the same contract,
-which any new scraper should follow too:
+See `README.md`'s table for the list of scrapers, and each scraper's `manifest.json` `status`
+for what is and isn't confirmed. Each script's header comment says which parts couldn't be
+carried over to this host. They all follow the same contract, which any new scraper should
+follow too:
 
 - check the restored session first and skip the login when it's still valid (log
   `ALREADY_LOGGED_IN`); log `LOGIN_PAGE_FOUND` once the login form/endpoint is recognised;

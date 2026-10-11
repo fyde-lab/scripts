@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Login smoke test for the scrapers ported from github.com/konnectors (see README.md).
+# Login smoke test for the scrapers (see README.md).
 #
 # Without real credentials or HAR captures, the only things that can be checked against the
 # live sites are:
