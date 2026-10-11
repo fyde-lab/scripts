@@ -1,10 +1,10 @@
 -- Scraper for Unibet (unibet.fr), the online betting site: saves one receipt per deposit.
 --
--- Ported from github.com/konnectors/unibet (src/index.js): `/zones/loginbox/processLogin.json`
+-- `/zones/loginbox/processLogin.json`
 -- takes username/password/dateOfBirth (dd/mm/yyyy; the `dob` parameter is yyyy-mm-dd like the
--- konnector's field) - an `errorMessage` or no `accountNumber` in the answer = bad credentials,
+-- original implementation's field) - an `errorMessage` or no `accountNumber` in the answer = bad credentials,
 -- a non-200 status = vendor down. Deposits: `/zones/myaccount/transactions-history-result.json`
--- (statusFilter=deposit, 100 per page while `phHasNext`); the konnector generated a small PDF
+-- (statusFilter=deposit, 100 per page while `phHasNext`); the original implementation generated a small PDF
 -- per deposit (description, amount, date) - here a text-only PDF. Its bets import is data, not
 -- documents, so it's not ported. Unverified (see README.md).
 
@@ -14,7 +14,7 @@ local BASE = "https://www.unibet.fr"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -92,7 +92,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -148,7 +148,7 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

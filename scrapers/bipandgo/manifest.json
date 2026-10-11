@@ -36,6 +36,6 @@
     "documents_fetched": "not_tested",
     "antibot_name": "reCAPTCHA v2",
     "antibot_status": "present",
-    "notes": "reCAPTCHA on login (konnector used a paid solver) - may block the webview"
+    "notes": "reCAPTCHA on login (the original implementation used a paid solver) - may block the webview"
   }
 }

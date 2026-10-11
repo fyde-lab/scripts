@@ -1,6 +1,6 @@
 -- Scraper for Probikeshop (probikeshop.fr), the cycling retailer: downloads order invoices.
 --
--- Originally ported from github.com/konnectors/probikeshop, whose `/mon-compte/` login form is
+-- The original `/mon-compte/` login form is
 -- gone: probikeshop.fr is now a Shopify store using Shopify's customer accounts
 -- (account.probikeshop.fr, through shop.app's OAuth bounce), a JS-only, passwordless login. So it
 -- is driven through `fyde.browser`: `probikeshop.fr/account` renders an email form
@@ -24,7 +24,7 @@ local INVOICE_LINKS = "a[href$='.pdf'], a[href*='invoice'], a[href*='facture']"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -102,7 +102,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

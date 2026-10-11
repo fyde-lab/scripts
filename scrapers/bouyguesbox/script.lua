@@ -1,7 +1,7 @@
--- Scraper for Bouygues Telecom's customer area (bouyguestelecom.fr), legacy "box" konnector:
+-- Scraper for Bouygues Telecom's customer area (bouyguestelecom.fr), legacy "box" area:
 -- downloads the bills of every billing account through api.bouyguestelecom.fr.
 --
--- Ported from github.com/konnectors/cozy-konnector-bouyguesbox (src/index.js): login posts the
+-- Login posts the
 -- CAS form of `www.mon-compte.bouyguestelecom.fr/cas/login` (username/password/lastname) -
 -- "Votre identifiant ou votre mot de passe est incorrect" means bad credentials. Then the OAuth2
 -- implicit flow `oauth2.bouyguestelecom.fr/authorize?client_id=a360.bouyguestelecom.fr&
@@ -23,7 +23,7 @@ local AUTHORIZE_URL = "https://oauth2.bouyguestelecom.fr/authorize?client_id=a36
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -101,7 +101,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

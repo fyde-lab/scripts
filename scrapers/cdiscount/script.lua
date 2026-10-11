@@ -1,8 +1,7 @@
 -- Scraper for Cdiscount (cdiscount.com), the online retailer: downloads order invoices (or
 -- proofs of purchase when an order has no invoice).
 --
--- Ported from github.com/konnectors/cdiscount (a cozy-clisk content script, i.e. it drove the
--- real site in a webview), so this drives `fyde.browser` the same way: the light login page
+-- Drives `fyde.browser`: the light login page
 -- (now `order.cdiscount.com/Account/LoginLight.html`, reached from the home page's account
 -- link), formerly one form (`#CustomerLogin_CustomerLoginFormData_Email`/`..._Password`), now
 -- an e-mail step (`#EmailForm`, checked live) then a password step (unconfirmed); logged
@@ -33,7 +32,7 @@ local BAD_CREDENTIALS = { "identifiants", "mot de passe", "incorrect", "invalide
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -258,7 +257,7 @@ function M.run(params)
   for i, option in ipairs(options) do
     fyde.progress.update(i, #options, option.text)
     if i > 1 then
-      -- The page submits its own form when the select changes (the konnector called
+      -- The page submits its own form when the select changes (the original implementation called
       -- form.submit() itself; `fill` dispatches the same change event).
       fyde.browser:fill(ORDER_SELECT, option.attrs.value)
       sleep(3000)

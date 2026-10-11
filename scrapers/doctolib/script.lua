@@ -1,12 +1,12 @@
 -- Scraper for Doctolib (doctolib.fr), the medical appointment platform: downloads the
 -- documents shared with the patient (prescriptions, reports...).
 --
--- Ported from github.com/konnectors/doctolib (src/index.js): `/sessions/new` gives the
+-- `/sessions/new` gives the
 -- `meta[name=csrf-token]`, then `/login.json` takes a JSON body (remember, kind=patient,
 -- username, password) with that `x-csrf-token` - HTTP 401 means bad credentials. Documents
 -- come from `/account/documents.json?page=1` (`documents[]` with `url`, `name`, `shared_at`,
 -- `created_by`). Doctolib now adds a second factor (e-mail/SMS code) for new devices, which
--- the konnector predates: if the login answer asks for one, the code is asked and submitted to
+-- the original implementation predates: if the login answer asks for one, the code is asked and submitted to
 -- the same endpoint (field names unconfirmed). Unverified (see README.md).
 
 local M = {}
@@ -15,7 +15,7 @@ local BASE = "https://www.doctolib.fr"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -93,7 +93,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

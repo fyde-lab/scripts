@@ -1,7 +1,7 @@
 -- Scraper for Prixtel (prixtel.com), the mobile operator: downloads the bills and contract
 -- documents.
 --
--- Ported from github.com/konnectors/prixtel (src/index.js). The konnector solved the login's
+-- The original implementation solved the login's
 -- reCAPTCHA (key 6LdS0MkjAAAAADsjdsGhlqMCLCLtI7qVOa6O5fo8) through a paid service and posted
 -- {captchaKey, captchaToken, email, password, group: "ec"} to `espaceclient.prixtel.com/api/
 -- login` - HTTP 403 = bad credentials, 200 = a bearer `token`. Without a captcha solver, the
@@ -20,7 +20,7 @@ local BAD_CREDENTIALS = { "identifiants incorrects", "mot de passe incorrect", "
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

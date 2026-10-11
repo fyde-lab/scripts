@@ -1,9 +1,9 @@
 -- Scraper for ekWateur's customer area (mon-espace.ekwateur.fr), a green energy supplier:
 -- downloads the bills and the proof of residence ("justificatif de domicile").
 --
--- Ported from github.com/konnectors/ekwateur (src/index.js): a Symfony login - `/se_connecter`
+-- A Symfony login - `/se_connecter`
 -- gives `_csrf_token`, then `/login_check` takes _username/_password/_mode=cXI4cE93PT0 (the
--- konnector's own comment: "Why ? I don't know") and _csrf_token; the konnector treated an HTTP
+-- original implementation's own comment: "Why ? I don't know") and _csrf_token; the original implementation treated an HTTP
 -- 500 as bad credentials (the login form being shown again is checked too). Bills: the rows
 -- of `/mes_factures_et_acomptes` (date in the first cell, `td.table__body__price`, PDF in
 -- `td.table__body__file > a`). The proof of residence is `/client/justificatif_de_domicile`.
@@ -17,7 +17,7 @@ local BILLS_URL = BASE .. "/mes_factures_et_acomptes"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -95,7 +95,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

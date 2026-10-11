@@ -1,7 +1,7 @@
 -- Scraper for Netflix (netflix.com): saves one document per bill of the billing activity.
 --
--- Ported from github.com/konnectors/netflix (src/index.js). A session is valid when
--- `/ProfilesGate` shows `.profile-link`s. The konnector solved the login page's reCAPTCHA
+-- A session is valid when
+-- `/ProfilesGate` shows `.profile-link`s. The original implementation solved the login page's reCAPTCHA
 -- through a paid service and posted `form.login-form` (userLoginId, password, rememberMe,
 -- recaptchaResponseToken): "Incorrect password." meant bad credentials, the profiles list
 -- (`.list-profiles`) success. Without a captcha solver, the login goes through `fyde.browser`
@@ -9,7 +9,7 @@
 -- profile named by the optional `profileName` parameter (else the first) is then selected.
 -- Bills: the `.billingSectionSpace .retableRow` rows of `/BillingActivity` (`.billDate a` link
 -- to the invoice page, `.billTotal`); each invoice page's `.invoiceContainer` was rendered into
--- a PDF by the konnector - here a text-only PDF. Pages are read through the browser so the
+-- a PDF by the original implementation - here a text-only PDF. Pages are read through the browser so the
 -- first run (logged in by the browser) already has the session. Unverified (see README.md).
 
 local M = {}
@@ -27,7 +27,7 @@ local BAD_CREDENTIALS = {
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -176,7 +176,7 @@ local function browser_save(selector, filename, fields)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

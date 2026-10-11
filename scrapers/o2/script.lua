@@ -1,7 +1,7 @@
 -- Scraper for O2 (o2.fr), the home-services company (cleaning, child care): downloads the
 -- monthly invoices.
 --
--- Ported from github.com/konnectors/o2 (src/index.js): login is the WordPress AJAX action
+-- Login is the WordPress AJAX action
 -- `ask_login` (login/pwd) on `client.o2.fr/wp-admin/admin-ajax.php`, answering JSON whose
 -- `state` is "success" (anything else = bad credentials). Invoices: `/factures/` gives the
 -- `#agence_id` and the years (`.year_invoice option`); the AJAX action `invoiceByYear`
@@ -15,7 +15,7 @@ local AJAX = BASE .. "/wp-admin/admin-ajax.php"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -93,7 +93,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

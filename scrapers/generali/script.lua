@@ -1,10 +1,9 @@
 -- Scraper for Generali's customer area (generali.fr/espace-client): downloads the health
 -- reimbursement statements.
 --
--- Ported from github.com/konnectors/cozy-konnector-generali (src/login.js,
--- src/reimbursements.js, src/digipad.js): the password is typed on a virtual keypad - each
+-- the password is typed on a virtual keypad - each
 -- `#generali-connexion-form button.c-field__keyboard__btn` shows its digit as a base64 PNG in
--- its `style` and posts its `data-value`; the konnector recognised the 10 images, here by an
+-- its `style` and posts its `data-value`; the original implementation recognised the 10 images, here by an
 -- 8-character fingerprint of each (DIGIT_FINGERPRINTS, taken from digipad.js). The form is
 -- posted with identifiant, `keyboard` ("<value>|<value>|...|"), op=Connexion,
 -- form_id=generali_connexion_form and form_build_id. "Vos codes d'accès ne sont pas reconnus"
@@ -27,7 +26,7 @@ local DIGIT_FINGERPRINTS = {
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -105,7 +104,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

@@ -1,11 +1,10 @@
 -- Scraper for Harmonie Mutuelle's member space (harmonie-et-moi.fr): downloads the health
 -- documents and contract documents.
 --
--- Ported from github.com/konnectors/cozy-konnector-harmonie (a cozy-clisk content script
--- driving the real site), so it drives `fyde.browser` too: `/identification` shows either the
+-- Drives `fyde.browser`: `/identification` shows either the
 -- logged-in home (`.home-page-title`) or a `.already-an-account-button` leading to the
 -- `#username`/`#password` form. Documents are under "Mes documents" (`a[href*="/mes-documents"]`
--- -> `.list-documents-flex-container`); the konnector read their list from intercepted API
+-- -> `.list-documents-flex-container`); the original implementation read their list from intercepted API
 -- answers and downloaded them from `hapiour.harmonie-mutuelle.fr/adherent-api/v1/document/<id>`
 -- with the `_cap_token` from localStorage - neither is reachable from this sandbox, so this port
 -- clicks each document's download control in the list instead. Unverified (see README.md).
@@ -19,7 +18,7 @@ local BAD_CREDENTIALS = { "identifiant ou mot de passe", "incorrect", "invalide"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

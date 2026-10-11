@@ -1,9 +1,8 @@
 -- Scraper for Productboard (productboard.com), the product-management SaaS: downloads the
 -- workspace's subscription invoices.
 --
--- Ported from github.com/konnectors/productboard (src/index.js), which was hardwired to Cozy's
--- own workspace (cozycloud.productboard.com) - here the workspace is a parameter (`workspace`,
--- default "cozycloud"). The konnector's form post (`/users/sign_in` with the workspace home's
+-- The workspace is a required parameter (`workspace`, the `<workspace>.productboard.com`
+-- subdomain). The original implementation's form post (`/users/sign_in` with the workspace home's
 -- `csrf-token`) is gone: workspaces now sign in on app.productboard.com, a client-rendered form
 -- (`[data-testid=LoginForm-EmailField]`/`-PasswordField`/`-Login-Button`) driven through
 -- `fyde.browser`; a wrong login shows "Whoops, invalid email and/or password" (checked live,
@@ -21,7 +20,7 @@ local BAD_CREDENTIALS = { "invalid email and/or password" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -99,7 +98,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -281,7 +280,10 @@ local function login(params)
 end
 
 function M.run(params)
-  local base = "https://" .. (params.workspace and params.workspace ~= "" and params.workspace or "cozycloud") .. ".productboard.com"
+  if not params.workspace or params.workspace == "" then
+    error("Productboard needs the `workspace` parameter (the <workspace>.productboard.com subdomain)")
+  end
+  local base = "https://" .. params.workspace .. ".productboard.com"
   fyde.progress.step("Checking for an existing session")
   local list = invoices(base)
   if list then

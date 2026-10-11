@@ -1,7 +1,7 @@
 -- Scraper for Trainline (thetrainline.com): downloads the purchase/refund proofs of every
 -- booking.
 --
--- Ported from github.com/konnectors/cozy-konnector-trainline (src/index.js): the JSON API
+-- The JSON API
 -- `api/v5_1/account/signin` takes the email/password form (HTTP 422 = bad credentials) and
 -- answers `meta.token`, sent afterwards as `Authorization: Token token="<token>"`. Bookings:
 -- `api/v5_1/pnrs` then `api/v5_1/pnrs?date=<first day of the month before the oldest
@@ -16,7 +16,7 @@ local BASE = "https://www.thetrainline.com/"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -94,7 +94,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

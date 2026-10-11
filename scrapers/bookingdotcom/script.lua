@@ -1,6 +1,6 @@
 -- Scraper for Booking.com (secure.booking.com): saves one document per reservation.
 --
--- Ported from github.com/konnectors/bookingdotcom (src/index.js), whose form login on
+-- The original form login on
 -- `myreservations.html` is gone: that page now redirects to account.booking.com, a
 -- client-rendered sign-in, so the login is driven through `fyde.browser`. `form.nw-signin` asks
 -- for the e-mail (`input[name=username]`, then its submit button - an `#hidden-password` field
@@ -10,7 +10,7 @@
 -- `MFA_FAILED`; the password step and its error message are unconfirmed. Reservations are the
 -- `.js-booking_block` (current) and `.mb-container` (past) blocks of `myreservations.html`,
 -- read from the webview (layout unconfirmed since the move). Booking.com has no invoices, so
--- the konnector generated a PDF per reservation (name, number, price, dates) - this port writes
+-- the original implementation generated a PDF per reservation (name, number, price, dates) - this port writes
 -- the same as a text-only PDF. Unverified (see README.md).
 
 local M = {}
@@ -26,7 +26,7 @@ local RESERVATIONS = ".js-booking_block, .mb-container, .mb-block"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -175,7 +175,7 @@ local function browser_save(selector, filename, fields)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

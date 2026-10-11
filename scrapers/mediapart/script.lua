@@ -1,7 +1,7 @@
 -- Scraper for Mediapart (mediapart.fr), the online newspaper: downloads the subscription
 -- invoices.
 --
--- Ported from github.com/konnectors/mediapart (src/index.js): login posts `#logFormEl`
+-- Login posts `#logFormEl`
 -- (name/password) from `www.mediapart.fr/login`; logged in shows an `a[href='/logout']` link.
 -- Invoices: the `.billing__list__item` entries of `moncompte.mediapart.fr` with a
 -- `/facture/<id>/telecharger` link, a "Du dd/mm/yyyy au dd/mm/yyyy" period and an amount.
@@ -13,7 +13,7 @@ local ACCOUNT_URL = "https://moncompte.mediapart.fr/"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -91,7 +91,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

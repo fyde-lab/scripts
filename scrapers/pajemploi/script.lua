@@ -1,7 +1,7 @@
 -- Scraper for Pajemploi (pajemploi.urssaf.fr), Urssaf's service for parents employing a
 -- child-minder: login only for now, documents not ported yet.
 --
--- Originally ported from github.com/konnectors/cozy-konnector-pajemploi, whose
+-- The original
 -- www.pajemploi.urssaf.fr/pajeweb JSP pages (logindec.htm, connect.htm, ajaxlistebs.jsp...) now
 -- all redirect to urssaf.fr's "se connecter" hub. Pajemploi is now an Angular SPA
 -- (pajemploi.urssaf.fr, `assets/configuration/env.js`) that logs in through Urssaf's OIDC
@@ -29,7 +29,7 @@ local BAD_CREDENTIALS = { "identifiant ou mot de passe", "incorrect", "invalide"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -107,7 +107,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

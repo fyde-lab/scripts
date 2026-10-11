@@ -1,7 +1,7 @@
 -- Scraper for APRR's toll-badge customer area, now Fulli (www.fulli.com, which replaced APRR's
 -- espaceclient.aprr.fr and Mango Mobilités in 2023): downloads the toll-badge invoices.
 --
--- Originally ported from github.com/konnectors/aprr, whose ASP.NET espaceclient.aprr.fr now just
+-- The original ASP.NET espaceclient.aprr.fr now just
 -- redirects to a dead mango-mobilitesbyaprr.com host (its TLS certificate doesn't match). Rebuilt
 -- against the live site: `www.fulli.com/customer/login` hands over to a Keycloak SSO
 -- (sso.aprr.fr, realm `Clients`) whose login is passwordless - `form#kc-form-identifier` takes
@@ -24,7 +24,7 @@ local BAD_CODE = { "code est invalide", "a expiré" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -102,7 +102,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

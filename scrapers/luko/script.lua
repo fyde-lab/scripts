@@ -1,9 +1,9 @@
 -- Scraper for Luko (luko.eu), the home insurer: downloads the invoices and contract documents.
 --
--- Ported from github.com/konnectors/luko (src/index.js): everything goes through the GraphQL
+-- Everything goes through the GraphQL
 -- endpoint `cerbere.luko.eu/v1?lang=fr` - the `Login` mutation (credentials {email, password})
 -- answers `login.ok` and a user whose `connection.jwtToken` authenticates the session (the
--- konnector relied on the cookie it sets; the token is also sent as a bearer here), then
+-- original implementation relied on the cookie it sets; the token is also sent as a bearer here), then
 -- `GetPreviousInvoices` (`user.informationsInvoices.invoices[]`: date, amount in cents,
 -- downloadUrl) and `GetContractDocuments` (`contracts[0].documents[]` and each user's
 -- `insuranceDocuments[]`: title, url). Luko stopped its activity in 2023 (portfolio taken over
@@ -15,7 +15,7 @@ local API = "https://cerbere.luko.eu/v1?lang=fr"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -93,7 +93,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

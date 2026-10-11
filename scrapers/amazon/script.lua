@@ -1,7 +1,6 @@
 -- Scraper for Amazon.fr: downloads the invoices of the orders.
 --
--- Ported from github.com/konnectors/amazon (a cozy-clisk content script driving the real site),
--- so it drives `fyde.browser` too. The home page shows `#nav-greeting-name` with a session, else
+-- Drives `fyde.browser`. The home page shows `#nav-greeting-name` with a session, else
 -- the sign-in (`/ap/signin`, opened directly): `#ap_email_login` (formerly `#ap_email`) ->
 -- `#continue` -> `#ap_password` (with `[name="rememberMe"]`) -> `#signInSubmit`. Amazon's own outcomes are recognised: the
 -- `#auth-error-message-box` alert (bad e-mail/password), the "Cet e-mail est nouveau pour nous"
@@ -27,7 +26,7 @@ local BAD_CREDENTIALS = { "mot de passe est incorrect", "Impossible de trouver u
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

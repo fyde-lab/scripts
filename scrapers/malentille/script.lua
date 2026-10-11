@@ -1,9 +1,9 @@
 -- Scraper for Malentille (malentille.com, Digital Eyewear), an online contact-lens shop:
 -- downloads order invoices.
 --
--- Ported from github.com/konnectors/malentille (src/index.js): a PrestaShop login - GET
+-- A PrestaShop login - GET
 -- `/authentification?back=my-account`, then POST `/authentification` (back=history, email,
--- passwd, SubmitLogin). The konnector never checked the outcome; here PrestaShop's own signals
+-- passwd, SubmitLogin). The original implementation never checked the outcome; here PrestaShop's own signals
 -- are used: an "Authentication failed"/"Échec d'authentification" error or the login form
 -- still shown means bad credentials, the order history (`#block-history`) a valid session.
 -- Invoices: `#block-history tbody tr` rows of `/historique-des-commandes` (`.history_date`,
@@ -16,7 +16,7 @@ local HISTORY_URL = BASE .. "historique-des-commandes"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -94,7 +94,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

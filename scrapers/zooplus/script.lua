@@ -1,7 +1,7 @@
 -- Scraper for zooplus (zooplus.fr), the online pet-supplies shop: downloads the
 -- invoices of shipped orders.
 --
--- Ported from github.com/konnectors/zooplus (src/index.js, the same code as the bitiba konnector): `/account` then `/web/sso/login`
+-- `/account` then `/web/sso/login`
 -- (a Keycloak page) whose inline JSON carries the form's `"actionUrl": "..."`; posting
 -- username/password there answers a page containing `LOGIN_SUCCESS` on success, or an error
 -- message `keycloak.login.error.invalid_credentials` / `...unknown_user` for bad credentials
@@ -17,7 +17,7 @@ local ORDERS_URL = BASE .. "/account/orders/overview"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -95,7 +95,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

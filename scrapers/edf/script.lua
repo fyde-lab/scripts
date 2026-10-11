@@ -1,13 +1,12 @@
 -- Scraper for EDF's customer area (particulier.edf.fr): downloads the electricity bills.
 --
--- Ported from github.com/konnectors/edf (a cozy-clisk content script driving the real site),
--- so it drives `fyde.browser` too. The EDF login (`.auth` pages) is two-step: `#email` then
+-- Drives `fyde.browser`. The EDF login (`.auth` pages) is two-step: `#email` then
 -- `#username-next-button`, then `#password2-password-field` and `#password2-next-button`; a
 -- `.field-container--error` after the password means bad credentials, and `.auth #title-hotp3`
--- an e-mail/SMS one-time code (the konnector stopped with OTP_NEEDED; here the code is asked and
+-- an e-mail/SMS one-time code (the original implementation stopped with OTP_NEEDED; here the code is asked and
 -- typed in, a refused code being MFA_FAILED). Logged in, the customer area links to
 -- `factures-et-paiements.html`, whose `#facture`/`#factureSelection` view lists the bills; the
--- konnector read them from intercepted API answers, this port clicks their download controls.
+-- original implementation read them from intercepted API answers, this port clicks their download controls.
 -- EDF also runs bot protection, which may block the embedded webview (unconfirmed).
 -- Unverified (see README.md).
 
@@ -19,7 +18,7 @@ local BILLS_URL = BASE .. "/fr/accueil/espace-client/factures-et-paiements.html"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

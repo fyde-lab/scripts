@@ -1,9 +1,9 @@
 -- Scraper for N26 (n26.com), the mobile bank: downloads the monthly account statements.
 --
--- Ported from github.com/konnectors/n26 (src/lib.js), which used the `n26` npm client against
+-- The original implementation used the `n26` npm client against
 -- N26's private API (api.tech26.de): an OAuth2 password grant (`/oauth2/token`,
 -- grant_type=password, client "android:secret" as basic auth) - a 4xx below 500 meant
--- LOGIN_FAILED - then `/api/accounts` and `/api/smrt/transactions`, imported into Cozy's
+-- LOGIN_FAILED - then `/api/accounts` and `/api/smrt/transactions`, imported into
 -- banking doctypes. Since 2019 N26 answers the password grant with `mfa_required` and an
 -- `mfaToken`: the second factor is requested with `/api/mfa/challenge` (challengeType "oob",
 -- an approval in the N26 app), then the token is obtained with grant_type=mfa_oob - the user is
@@ -20,7 +20,7 @@ local BASIC = "Basic YW5kcm9pZDpzZWNyZXQ="
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -98,7 +98,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

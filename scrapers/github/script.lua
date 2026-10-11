@@ -1,8 +1,8 @@
 -- Scraper for GitHub (github.com): downloads the billing receipts of the account (or of an
 -- organization).
 --
--- Ported from github.com/konnectors/github (src/index.js): a session is valid when `/pulls`
--- answers (CookieKonnector's testSession). Login posts the page's `form` (login/password) from
+-- A session is valid when `/pulls`
+-- answers. Login posts the page's `form` (login/password) from
 -- `/login`; landing on `/sessions/two-factor` means a 2FA code is required (posted as
 -- `app_otp` from that page's form - landing back on `https://github.com/` means success, so
 -- anything else is MFA_FAILED), landing on `https://github.com/` means logged in, anything
@@ -20,7 +20,7 @@ local BASE = "https://github.com"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -98,7 +98,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

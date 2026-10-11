@@ -1,9 +1,9 @@
 -- Scraper for Facebook (graph.facebook.com): checks the account's access token and lists its
 -- photo albums.
 --
--- Ported from github.com/konnectors/cozy-konnector-facebook (src/index.js). That konnector has
--- no login form at all: it used an OAuth access token obtained by Cozy's OAuth flow (and
--- refreshed with Cozy's client id/secret) to walk `/me/albums` and each album's
+-- The original implementation has
+-- no login form at all: it used an OAuth access token obtained through an OAuth flow (and
+-- refreshed with an app client id/secret) to walk `/me/albums` and each album's
 -- `/<id>/photos?fields=id,images,...` (paginated by `paging.next`), saving every photo's
 -- largest image. Here the token is a parameter (`access_token`) instead: an invalid/expired
 -- token (Graph API error code 190) is reported as INVALID_CREDENTIALS, the closest thing to a
@@ -16,7 +16,7 @@ local GRAPH = "https://graph.facebook.com/v2.12"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -94,7 +94,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

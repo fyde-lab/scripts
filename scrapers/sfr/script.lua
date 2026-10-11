@@ -1,7 +1,6 @@
 -- Scraper for SFR's customer area (espace-client.sfr.fr): downloads the mobile and box bills.
 --
--- Ported from github.com/konnectors/sfr (a cozy-clisk content script driving the real site), so
--- it drives `fyde.browser` too: `www.sfr.fr/mon-espace-client/` shows the SFR login (`#username`,
+-- Drives `fyde.browser`: `www.sfr.fr/mon-espace-client/` shows the SFR login (`#username`,
 -- `#password`) without a session; logged in shows a logout link
 -- (`a[href*="openid-connect/logout"]`). Bills: `/facture-mobile/consultation` (or
 -- `/facture-fixe/consultation`), `#lastFacture` and the `#historique`, more loaded with
@@ -19,7 +18,7 @@ local MFA = "input[name='otp'], #otp"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

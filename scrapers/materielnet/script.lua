@@ -1,11 +1,11 @@
 -- Scraper for Materiel.net (materiel.net), the computer-hardware retailer: downloads the
 -- invoices of completed orders.
 --
--- Ported from github.com/konnectors/cozy-konnector-materielnet (src/index.js): the home page,
+-- The home page,
 -- the newsletter form and `/form/login` (an XHR fragment) are loaded for cookies and the
 -- `__RequestVerificationToken`, then `/form/submit_login` takes Email/Password/
 -- LongAuthenticationDuration; a successful login sets the `Identity`/`Customer` cookies
--- (the konnector failed with LOGIN_FAILED when they were missing; fyde.http can't read
+-- (the original implementation failed with LOGIN_FAILED when they were missing; fyde.http can't read
 -- cookies, so here the login answer's own error flag/message is used, then the orders call
 -- must work). Orders: `secure.materiel.net/Orders/CompletedOrdersPeriodSelection` (JSON
 -- periods) -> `PartialCompletedOrdersHeader` (Duration/Value) -> one `div.historic` per order
@@ -20,7 +20,7 @@ local XHR = { ["x-requested-with"] = "XMLHttpRequest" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -98,7 +98,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -197,7 +197,7 @@ function M.run(params)
     login(params)
     list = periods()
     if not list then
-      -- No Identity/Customer cookies: the konnector's LOGIN_FAILED case.
+      -- No Identity/Customer cookies: the original implementation's LOGIN_FAILED case.
       fail(INVALID_CREDENTIALS, "orders not reachable after login")
     end
   end

@@ -1,9 +1,9 @@
 -- Scraper for Monoprix (monoprix.fr), the retailer: saves the order history.
 --
--- Ported from github.com/konnectors/monoprix (src/index.js): an ATG login - the home page's
+-- An ATG login - the home page's
 -- `_dynSessConf`, then `jsp/account/loginPage.jsp` takes the ProfileFormHandler login/password
 -- fields (with their `_D:` companions and `_DARGS=/jsp/account/loginPage.jsp.loginForm`). The
--- konnector judged the login by the orders page (`jsp/account/accountOrders.jsp`): a
+-- original implementation judged the login by the orders page (`jsp/account/accountOrders.jsp`): a
 -- `table.table.commandes-related` with 5 rows or fewer meant LOGIN_FAILED - and it never got to
 -- saving any document (work in progress upstream). This port keeps that check and saves the
 -- orders table as a text-only PDF. Monoprix's site has been rebuilt since, so this flow is
@@ -17,7 +17,7 @@ local PFH = "/atg/userprofiling/ProfileFormHandler."
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -95,7 +95,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -151,7 +151,7 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

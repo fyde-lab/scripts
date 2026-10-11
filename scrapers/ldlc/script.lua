@@ -1,6 +1,6 @@
 -- Scraper for LDLC (ldlc.com), the computer-hardware retailer: downloads order invoices.
 --
--- Ported from github.com/konnectors/ldlc (src/index.js). The konnector solved the login's
+-- The original implementation solved the login's
 -- reCAPTCHA (sitekey 6LdgbxgUAAAAAHvdiswvziUz_XecIWb1sWTW7pnz) through a paid service and
 -- posted `#loginForm` (__RequestVerificationToken, Email, Password, g-recaptcha-response) to
 -- `secure2.ldlc.com/fr-fr/Login/Login?returnUrl=/fr-fr/Account`: an `/fr-fr/Account/Logout` link
@@ -20,7 +20,7 @@ local LOGIN_URL = SECURE .. "/Login/Login?returnUrl=/fr-fr/Account"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -98,7 +98,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

@@ -1,7 +1,7 @@
 -- Scraper for Fortuneo (mabanque.fortuneo.fr), the online bank: saves a statement of each
 -- account's recent operations.
 --
--- Ported from github.com/konnectors/fortuneo (src/lib.js), whose form login
+-- The original form login
 -- (`form[name="acces_identification"]` on `/fr/identification.jsp`) is gone: that URL now
 -- redirects to `/mon-espace`, a client-rendered React page, so the login is driven through
 -- `fyde.browser`: `#LOGIN` (a numeric identifier) and `#PASSWD`, sent by the "Connexion"
@@ -10,8 +10,8 @@
 -- `a[href="/logoff"]` link as before (unconfirmed), and "Sécurité renforcée tous les 90 jours"
 -- to mean a user action is needed on the site. Accounts: the `#menu_mes_comptes ul div.compte`
 -- entries (number in `a > div`, label in the link title), read from the webview (unconfirmed
--- since the redesign). The konnector imported operations from a CSV inside a ZIP export into
--- Cozy's banking doctypes; this sandbox can't unzip, so this port saves each account page's
+-- since the redesign). The original implementation imported operations from a CSV inside a ZIP export into
+-- banking doctypes; this sandbox can't unzip, so this port saves each account page's
 -- operations table (`#tableauConsultationHisto`) as a text-only PDF instead. Unverified (see
 -- README.md).
 
@@ -25,7 +25,7 @@ local BAD_CREDENTIALS = { "ne correspondent à aucun compte", "identifiant ou le
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -174,7 +174,7 @@ local function browser_save(selector, filename, fields)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

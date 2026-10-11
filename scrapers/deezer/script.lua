@@ -1,7 +1,7 @@
 -- Scraper for Deezer (deezer.com), the music streaming service: saves the subscription
 -- payment receipts.
 --
--- Ported from github.com/konnectors/deezer (src/index.js). The konnector solved the login
+-- The original implementation solved the login
 -- page's reCAPTCHA through a paid service, read `checkFormLogin` from
 -- `ajax/gw-light.php?method=deezer.getUserData` and posted type=login/mail/password/
 -- checkFormLogin/reCaptchaToken to `ajax/action.php` ("success" / "error" = bad credentials).
@@ -9,8 +9,8 @@
 -- widget may or may not pass in the embedded webview - unconfirmed). A session is valid when
 -- `/fr/login` sends straight back to the home page. Receipts: `.history-list > li` entries
 -- (title, `.payment-history-date`, `.payment-history-price`, link) of
--- `/account/subscription`; they are HTML pages, so - like the konnector, which saved them as
--- .html - their text is saved, here as a text-only PDF. The konnector's playlists import is
+-- `/account/subscription`; they are HTML pages, so - like the original implementation, which saved them as
+-- .html - their text is saved, here as a text-only PDF. The original implementation's playlists import is
 -- data, not documents, so it's not ported. Unverified (see README.md).
 
 local M = {}
@@ -22,7 +22,7 @@ local BAD_CREDENTIALS = { "e-mail ou mot de passe", "adresse e-mail ou le mot de
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -171,7 +171,7 @@ local function browser_save(selector, filename, fields)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

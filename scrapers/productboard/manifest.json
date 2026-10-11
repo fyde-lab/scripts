@@ -25,9 +25,9 @@
     },
     "workspace": {
       "label": "Espace (sous-domaine)",
-      "placeholder": "cozycloud",
+      "placeholder": "mon-espace",
       "type": "string",
-      "required": false
+      "required": true
     }
   },
   "status": {

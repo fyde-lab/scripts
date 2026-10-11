@@ -1,11 +1,11 @@
 -- Scraper for e-Ticket by Qiis (eticket.qiis.fr), a school canteen/after-school billing
 -- service: downloads the invoices and the family's documents.
 --
--- Ported from github.com/konnectors/eticket (src/index.js): `eticket-app.qiis.fr/api/v1/auth/
+-- `eticket-app.qiis.fr/api/v1/auth/
 -- login?login=..&password=..&requestFirebaseCustomToken=true` answers `status: "Success"` and a
 -- Firebase custom token (anything else = bad credentials), exchanged for an ID token at
 -- Google's `identitytoolkit/v3/relyingparty/verifyCustomToken` (with the app's public API key).
--- The konnector then spoke Firebase's realtime-database websocket protocol; this sandbox has no
+-- The original implementation then spoke Firebase's realtime-database websocket protocol; this sandbox has no
 -- websocket, so the same database is read through Firebase's REST API instead
 -- (`qiis-eticket-production.firebaseio.com/<path>.json?auth=<ID token>`), with the
 -- `metaManagerId`/`familyId` taken from the ID token's claims (what the websocket `auth`
@@ -20,7 +20,7 @@ local DB = "https://qiis-eticket-production.firebaseio.com"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -98,7 +98,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

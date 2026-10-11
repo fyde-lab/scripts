@@ -1,7 +1,7 @@
 -- Scraper for net-entreprises.fr's micro-entrepreneur declarations (Urssaf "micro-social"
 -- service on www.ti.urssaf.fr): saves one document per income declaration.
 --
--- Ported from github.com/konnectors/net-entreprise-micro (src/index.js): login posts
+-- Login posts
 -- `form#form__connect` (j_siret, j_nom, j_prenom, j_password) from net-entreprise.fr; landing
 -- under `/auth/erreur` means bad credentials, under `/priv/declarations` success, and the
 -- `#service-10` link opens the micro-entrepreneur service. Its `form[name="form"]` is posted to
@@ -9,7 +9,7 @@
 -- call: `action.encours_netmicro` and `action.histo_netmicro` list the periods
 -- (`.menu_microsocial .subitem_menu_microsocial a`), and posting `periode=<p>` to
 -- `action.histo_netmicro` shows one declaration (`.tableau_donnees`, `#libmtpai` amount), which
--- the konnector rendered into a PDF - here a text-only PDF. Unverified (see README.md).
+-- the original implementation rendered into a PDF - here a text-only PDF. Unverified (see README.md).
 
 local M = {}
 
@@ -19,7 +19,7 @@ local URSSAF = "https://www.ti.urssaf.fr/"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -97,7 +97,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -153,7 +153,7 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

@@ -1,7 +1,7 @@
 -- Scraper for Eovi MCD Mutuelle's members, now Aésio mutuelle's member area
 -- (adherent.aesio.fr): meant to download the health reimbursement statements.
 --
--- Originally ported from github.com/konnectors/eovimcdparticuliers, whose site
+-- The original site
 -- (www.espace-particuliers.eovi-mcd-mutuelle.fr) no longer resolves: Eovi MCD merged into
 -- Aésio, and eovi-mcd.fr now redirects to aesio.fr, whose "Je me connecte" leads to
 -- adherent.aesio.fr/login. That is a client-rendered Angular app (an empty "Navigateur non
@@ -21,7 +21,7 @@ local BAD_CREDENTIALS = { "Nous n'avons pas réussi à vous identifier", "Nous n
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

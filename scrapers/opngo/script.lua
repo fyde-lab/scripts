@@ -1,12 +1,12 @@
 -- Scraper for OPnGO (opngo.com), the parking app: downloads the invoices of paid parking
 -- sessions.
 --
--- Ported from github.com/konnectors/opngo (src/index.js): `now.opngo.com/AppHTTP.php` with
+-- `now.opngo.com/AppHTTP.php` with
 -- operation=login_session_begin (userID, authToken = password, format=json, version 2.7, ...)
 -- answers `status: 1` on success (anything else = bad credentials). Sessions:
 -- `now.opngo.com/?page=history&start=01/01/2000&fmt=ajax&language=fr` (`data[]` rows of
 -- rowType "sessionRow" with a non-zero totalCharge); each invoice comes from AppHTTP.php with
--- operation=invoice_check and data=<txID>. The konnector POSTed that call; fyde.http only
+-- operation=invoice_check and data=<txID>. The original implementation POSTed that call; fyde.http only
 -- downloads with GET, so its fields go in the query string (unconfirmed). Unverified (see
 -- README.md).
 
@@ -17,7 +17,7 @@ local HISTORY = "https://now.opngo.com/?page=history&start=01/01/2000&fmt=ajax&l
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -95,7 +95,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

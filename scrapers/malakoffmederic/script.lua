@@ -1,7 +1,7 @@
 -- Scraper for Malakoff Humanis' (ex Malakoff Médéric) customer area: login check only,
 -- documents not ported yet.
 --
--- Originally ported from github.com/konnectors/cozy-konnector-malakoffmederic, which drove a DWR
+-- The original implementation drove a DWR
 -- login on extranet.malakoffhumanis.com and read the reimbursements from
 -- `/espaceClient/sante/tbs/...`. That extranet now only answers a "Maintenance de l'Espace
 -- Client" page (seen for 8+ hours in a row, so it looks retired): Malakoff Humanis customers
@@ -22,7 +22,7 @@ local JSON = { Accept = "application/json" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -100,7 +100,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

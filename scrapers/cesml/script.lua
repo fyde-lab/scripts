@@ -1,7 +1,7 @@
 -- Scraper for CESML (cesml.com), an electricity distributor/supplier around Montpellier:
 -- meant to download the bills.
 --
--- Originally ported from github.com/konnectors/cesml, whose portal (moncompte.cesml.com) no
+-- The original portal (moncompte.cesml.com) no
 -- longer resolves: cesml.com's "Mon compte" now links to an eFluid customer portal at
 -- moncompte-cesml.multield.net. Its login page
 -- (`/application/jsp/arc/habilitation/login.jsp`) holds `form[name='theForm']` (`lg`/`psw`,
@@ -20,7 +20,7 @@ local BAD_CREDENTIALS = { "Problème d'identification" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -98,7 +98,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

@@ -1,7 +1,7 @@
 -- Scraper for Deliveroo (deliveroo.fr), the food-delivery platform: downloads the receipts of
 -- delivered orders.
 --
--- Originally ported from github.com/konnectors/deliveroo, whose `form#login` no longer exists:
+-- The original `form#login` no longer exists:
 -- deliveroo.fr is now a Next.js app (behind PerimeterX, which `wreq`'s Chrome emulation gets
 -- through). The flow below was rebuilt from that app's own JS bundle (pages/login + _app):
 -- - `GET /fr/api/auth/read` gives a `csrf_token`;
@@ -25,7 +25,7 @@ local ORDERS_URL = ORIGIN .. "/fr/orders"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -103,7 +103,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

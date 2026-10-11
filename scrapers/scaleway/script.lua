@@ -1,14 +1,14 @@
 -- Scraper for Scaleway (scaleway.com), the cloud provider: downloads the paid invoices.
 --
--- Ported from github.com/konnectors/scaleway (src/index.js): `api.scaleway.com/account/v2/login`
--- takes {email, password, captcha} (the konnector solved the console's reCAPTCHA through a paid
+-- `api.scaleway.com/account/v2/login`
+-- takes {email, password, captcha} (the original implementation solved the console's reCAPTCHA through a paid
 -- service - not available here, so the call is made without it and a captcha demand is
 -- reported as such); a 403 "2FA_error" asks for the authenticator code, sent as `2FA_token` to
 -- `/account/v2/login/jwt` (a refusal there = MFA_FAILED); "required passwordless auth for unknown
 -- ip" (magic link) is unsupported; any other refusal = bad credentials. The answer's `token` is
 -- the `X-Session-Token`; `iam/v1alpha1/users/<jwt.issuer_id>` gives the organization, whose
 -- invoices are listed by `billing/v1/invoices?organization_id=...` (paid ones downloaded with
--- `?format=pdf`). The konnector deleted its session JWT at the end (DELETE
+-- `?format=pdf`). The original implementation deleted its session JWT at the end (DELETE
 -- `iam/v1alpha1/jwts/<jti>`); fyde.http has no DELETE, so the JWT is kept in fyde.session instead
 -- and reused by the next run while the users endpoint still accepts it. Unverified (see
 -- README.md).
@@ -19,7 +19,7 @@ local API = "https://api.scaleway.com"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -97,7 +97,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

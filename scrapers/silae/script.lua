@@ -1,6 +1,6 @@
 -- Scraper for Silae, the payroll software's employee space: meant to download the payslips.
 --
--- Originally ported from github.com/konnectors/silae, which spoke SOAP to the SWS web service on
+-- The original implementation spoke SOAP to the SWS web service on
 -- silaexpert01.fr - a host that no longer answers. Silae's web access is now mySilae
 -- (my.silae.fr), taken here to be that space's successor (unconfirmed - no account to check it
 -- with). It is a client-rendered Vue app (an empty shell to plain HTTP), so the login is driven
@@ -18,7 +18,7 @@ local BAD_CREDENTIALS = { "mot de passe incorrect" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

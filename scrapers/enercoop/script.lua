@@ -1,9 +1,9 @@
 -- Scraper for Enercoop's customer area (mon-espace.enercoop.fr), the cooperative green
 -- electricity supplier: downloads the bills.
 --
--- Ported from github.com/konnectors/cozy-konnector-enercoop (src/index.js): a Rails/Devise
+-- A Rails/Devise
 -- login - `/clients/sign_in`'s `#new_ecppp_client` form (authenticity_token,
--- `ecppp_client[email]`, `ecppp_client[password]`, `ecppp_client[remember_me]`). The konnector
+-- `ecppp_client[email]`, `ecppp_client[password]`, `ecppp_client[remember_me]`). The original implementation
 -- treated any non-200 answer as LOGIN_FAILED; Devise also re-renders the form with a flash
 -- message on bad credentials, which is checked too. Bills: `/factures` has one link per year
 -- (`div.dropdown.dropdown-top a`); each year page has `.table-line-collapse > .row` rows reading
@@ -20,7 +20,7 @@ local MONTHS = { "janvier", "f\195\169vrier", "mars", "avril", "mai", "juin", "j
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -98,7 +98,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

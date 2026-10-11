@@ -1,13 +1,13 @@
 -- Scraper for Bip&Go (bipandgo.com), a French motorway toll-badge provider: downloads the
 -- invoices listed under "Mon compte > Factures".
 --
--- Ported from github.com/konnectors/bipandgo (src/index.js). The konnector logged in by
+-- The original implementation logged in by
 -- solving the login page's reCAPTCHA v2 (sitekey 6Lc1dyMUAAAAAASglHuUf-6pMMFKMgCt8ASs9ck1)
 -- through a paid solving service and posting the token with username/password to
 -- `/volatile_cache_context/`. This sandbox has no captcha solver, so the login goes through
 -- `fyde.browser` instead: the real page renders its own reCAPTCHA, which may or may not pass
--- invisibly in the embedded webview (unconfirmed). A failed login is detected the konnector's
--- way: the invoices page still not reachable (it answered 401 / redirected back to the form).
+-- invisibly in the embedded webview (unconfirmed). A failed login is detected as in the original implementation:
+-- the invoices page still not reachable (it answered 401 / redirected back to the form).
 --
 -- Invoices: `tbody.badges-block__table-body tr` rows on `/mon_compte/factures`, paginated by
 -- 15 with `?invoice_listbox_list_start=N` while an `a[rel="next"]` exists; the PDF link is in
@@ -24,7 +24,7 @@ local BAD_CREDENTIALS = { "identifiant ou mot de passe", "mot de passe incorrect
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

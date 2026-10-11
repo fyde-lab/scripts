@@ -1,10 +1,9 @@
 -- Scraper for La Mutuelle Générale's member area (adherent.lamutuellegenerale.fr): downloads
 -- the health documents (reimbursement statements, certificates).
 --
--- Ported from github.com/konnectors/lamutuellegenerale (a cozy-clisk content script driving the
--- real site), so it drives `fyde.browser` too: the member area shows either the login form
+-- Drives `fyde.browser`: the member area shows either the login form
 -- (`#username`, `#password`) or, logged in, an `a[analyticsbuttonlabel="Déconnexion"]` link
--- (`#older_browsers` is an unsupported-browser page). The konnector read the documents from the
+-- (`#older_browsers` is an unsupported-browser page). The original implementation read the documents from the
 -- site's intercepted API answers; this port clicks the download controls of the documents page
 -- (`/mes-documents`, URL unconfirmed). Unverified (see README.md).
 
@@ -19,7 +18,7 @@ local MFA = "#otp, input[name='otp']"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

@@ -1,6 +1,6 @@
 -- Scraper for Uber's rider account (riders.uber.com): downloads the trip invoices.
 --
--- Ported from github.com/konnectors/cozy-konnector-uber (konnector.js, a 2017-era konnector):
+-- Based on a 2017-era implementation:
 -- `login.uber.com/login` gives the `_csrf_token`, then email/password/_csrf_token are posted
 -- back to it (an HTTP error meant LOGIN_FAILED); trips are listed on `riders.uber.com/trips`
 -- (`tbody .trip-expand__origin[data-target="#trip-<uuid>"]`, `a.btn.pagination__next` for
@@ -17,7 +17,7 @@ local TRIPS_URL = "https://riders.uber.com/trips"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -95,7 +95,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

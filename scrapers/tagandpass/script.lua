@@ -1,7 +1,7 @@
 -- Scraper for TAG & Pass (tag.fr), Grenoble's public-transport mobility account: downloads the
 -- monthly invoices.
 --
--- Ported from github.com/konnectors/tagandpass (src/index.js): the login form of
+-- The login form of
 -- `www.tag.fr/171-votre-compte-pass-mobilites.htm` (ECN_EMAIL, ECN_PASSWORD, login, idtf=171,
 -- from, TPL_CODE=TPL_TAGANDGO) answers, on success, a page with an `a.disconnected` link and an
 -- `iframe` whose `src` carries a `token=` for the tag-and-pass.tag.fr API (no such link/iframe
@@ -17,7 +17,7 @@ local API = "https://tag-and-pass.tag.fr"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -95,7 +95,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

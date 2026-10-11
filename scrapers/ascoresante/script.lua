@@ -1,7 +1,7 @@
 -- Scraper for Ascore Santé's member area (ascoregestion.com/assure), a health-insurance
 -- (mutuelle) manager: downloads the reimbursement statements ("décomptes").
 --
--- Ported from github.com/konnectors/ascoresante (src/index.js): login posts `form#form_auth`
+-- Login posts `form#form_auth`
 -- (login/password) from `/assure/connexion`; a session is valid when a logout link
 -- (`a[href=".../assure/logout"]`) is rendered. Each row of `table#remboursements` links (8th
 -- cell) to a details page whose `div.row > div.col-sm-4 a` is the statement PDF.
@@ -17,7 +17,7 @@ local LOGIN_FORM = "form#form_auth"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -95,7 +95,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

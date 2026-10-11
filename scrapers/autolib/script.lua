@@ -1,12 +1,12 @@
 -- Scraper for Autolib' (moncompte.autolib.eu), the former Paris electric car-sharing service:
 -- downloads the paid invoices.
 --
--- Ported from github.com/konnectors/autolib (src/index.js): login posts the page's `form`
+-- Login posts the page's `form`
 -- (username/password) from `/account/login` with that same URL as Referer (required by the
 -- site); a session shows `a[href='/account/logout/']` links. Invoices are the rows of
 -- `table.table-bills` whose status is "Paid", each with a PDF link.
 --
--- The service shut down in 2018 - kept for completeness of the konnectors port, very likely
+-- The service shut down in 2018 - kept for completeness, very likely
 -- unreachable. Unverified (see README.md).
 
 local M = {}
@@ -18,7 +18,7 @@ local LOGGED_IN = "a[href='/account/logout/']"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -96,7 +96,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

@@ -1,8 +1,7 @@
 -- Scraper for the BoursoBank customer area (clients.boursobank.com, formerly Boursorama
 -- Banque / clients.boursorama.com).
 --
--- The login flow is ported from the cozy "boursorama" konnector (konnectors/boursorama,
--- src/lib.js + src/keypad.js) and aligned with woob's boursorama module (modules/boursorama,
+-- The login flow is aligned with woob's boursorama module (modules/boursorama,
 -- PasswordPage.enter_password), which is maintained against the live site:
 --   1. set a `brsDomainMigration=migrated` cookie (woob does; without it the final POST gets a
 --      generic "Une erreur est survenue" instead of a real credentials check - confirmed live);
@@ -388,7 +387,7 @@ local function download_rows(section, rows)
   return saved
 end
 
--- Login error contract shared with every scraper ported from github.com/konnectors (see
+-- Login error contract shared with every scraper (see
 -- README.md): a rejected username/password fails with exactly INVALID_CREDENTIALS, a rejected
 -- or unanswered one-time code with exactly MFA_FAILED.
 function M.run(params)

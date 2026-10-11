@@ -1,8 +1,7 @@
 -- Scraper for TotalEnergies' customer area (totalenergies.fr, ex Direct Énergie): downloads the
 -- electricity/gas bills and the contract.
 --
--- Ported from github.com/konnectors/cozy-konnector-directenergie (a cozy-clisk content script
--- driving the real site), so it drives `fyde.browser` too: `/clients/accueil` shows either a
+-- Drives `fyde.browser`: `/clients/accueil` shows either a
 -- logged-in page (logout link `a[href*="/clients/connexion?logintype=logout"]` or
 -- `a[href="/clients/mon-compte/gerer-mes-comptes"]`) or the login form
 -- (`#formz-authentification-form-login`, `#formz-authentification-form-password`,
@@ -10,7 +9,7 @@
 -- is down. Bills: `/clients/mes-factures/mon-historique-de-factures`, one `div.detail-facture`
 -- per bill in `#js--historique-container-elec` / `#js--historique-container-gaz`, and the
 -- contract's `a[href*="/telechargement-des-contrats"]`; all downloaded through the browser.
--- Accounts with several contracts only get the selected one (the konnector looped over
+-- Accounts with several contracts only get the selected one (the original implementation looped over
 -- `[id*="js--listjs-comptes-"]`). Unverified (see README.md).
 
 local M = {}
@@ -24,7 +23,7 @@ local BAD_CREDENTIALS = { "identifiant ou mot de passe", "mot de passe incorrect
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

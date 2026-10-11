@@ -1,7 +1,7 @@
 -- Scraper for Free Mobile's customer area (mobile.free.fr/account): downloads every line's
 -- monthly bills.
 --
--- Ported from github.com/konnectors/cozy-konnector-free-mobile (src/index.js): a NextAuth
+-- A NextAuth
 -- login - `/account/v2/login/` for cookies, `/account/v2/api/auth/csrf` for `csrfToken`, then
 -- `/account/v2/api/auth/callback/credentials` with username (digits only)/password (HTTP 401 =
 -- bad credentials), then the same endpoint with the SMS `codeOtp` (401 = wrong code, up to 3
@@ -18,7 +18,7 @@ local MAIN_URL = BASE .. "/account/conso-et-factures"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -96,7 +96,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

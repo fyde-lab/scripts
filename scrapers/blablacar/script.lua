@@ -1,12 +1,12 @@
 -- Scraper for BlaBlaCar (blablacar.fr), the car-pooling platform: saves one document per paid
 -- (or refunded) ride.
 --
--- Ported from github.com/konnectors/blablacar (src/index.js): `/login/email` is loaded for its
+-- `/login/email` is loaded for its
 -- cookies, then `/secure-token` takes a JSON `{login, password, rememberMe, grant_type:
 -- "password"}` body - HTTP 401 means bad credentials, 403 a captcha. Rides are the `tbody tr`
 -- rows of `/dashboard/account/payments-done` (then `/2`, `/3`... until a 404); each links to a
 -- ride page whose `window.INIT_STORE=` JSON has the itinerary. BlaBlaCar has no receipts, so
--- the konnector generated a PDF per ride with pdfjs - this port writes a text-only PDF with the
+-- the original implementation generated a PDF per ride with pdfjs - this port writes a text-only PDF with the
 -- same fields. Unverified (see README.md); the site has since become a SPA, so the
 -- payments page may no longer be server-rendered.
 
@@ -26,7 +26,7 @@ local HEADERS = {
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -104,7 +104,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -160,7 +160,7 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

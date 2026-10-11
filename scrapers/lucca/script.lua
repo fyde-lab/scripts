@@ -1,14 +1,14 @@
 -- Scraper for Lucca (lucca.fr), the HR software ("Pagga" payslips module): downloads the
 -- employee's payslips.
 --
--- Ported from github.com/konnectors/lucca (src/index.js): unless the company's instance URL is
+-- Unless the company's instance URL is
 -- given (`loginUrl` parameter, e.g. https://acme.ilucca.net), it is looked up by posting
 -- mail/password/request=emailpass to `www.lucca.fr/login/ws-auth-service/wsauth.service.php`
 -- (HTTP 404 "Wrong password" = bad credentials), which also gives the user's login. Then
 -- `<instance>/login` takes login/Password/PersistentCookie ("Vos identifiants sont erronés" =
 -- bad credentials). Payslips: `/api/v3/users/me?fields=id`, then `/api/v3/payslips?fields=id,
 -- import[endDate]&...&ownerID=<id>`, each PDF at `/pagga/services/download/<id>`; an HTTP 400
--- mentioning a "6 digit security code" means the account requires a 2FA code the konnector
+-- mentioning a "6 digit security code" means the account requires a 2FA code the original implementation
 -- couldn't provide (USER_ACTION_NEEDED.TWOFA_NEEDED) - reported here as MFA_FAILED. The instance
 -- URL is kept in fyde.session to check for a still-valid session. Unverified (see README.md).
 
@@ -16,7 +16,7 @@ local M = {}
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -94,7 +94,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

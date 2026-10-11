@@ -1,12 +1,12 @@
 -- Scraper for E.Leclerc Drive (leclercdrive.fr): downloads the order forms ("bons de
 -- commande") of past orders.
 --
--- Ported from github.com/konnectors/leclercdrive (src/index.js): a session is valid when the
+-- A session is valid when the
 -- home page redirects to a URL carrying the user's store (`?mag=<id>`). Login is a JSONP call:
 -- `secure.leclercdrive.fr/drive/connecter.ashz?callbackJsonp=...&d={"sLogin":..,
 -- "sMotDePasse":..,"fResterConnecte":true}`, whose `objDonneesReponse.iTypeConnexion` is -1 for
 -- bad credentials and whose `sNoPL` is the store; a Datadome captcha may answer instead (the
--- konnector solved it through a paid service - not possible here). The store's site URL comes
+-- original implementation solved it through a paid service - not possible here). The store's site URL comes
 -- from `api-pointsretrait.leclercdrive.fr/.../PointsRetraitParNoPointLivraison/na/drive/<mag>`
 -- (`sUrlSiteCourses`), whose first `a[href*='mes-commandes']` link lists orders per year (the
 -- page's form re-posted with each `select[id*='ddlFiltreAnnees']` option); each
@@ -19,7 +19,7 @@ local BASE = "https://www.leclercdrive.fr"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -97,7 +97,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

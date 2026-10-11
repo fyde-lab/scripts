@@ -1,8 +1,7 @@
 -- Scraper for Veolia Eau's customer area (service.eau.veolia.fr): downloads the water bills and
 -- correspondence.
 --
--- Ported from github.com/konnectors/veoliaeau (a cozy-clisk content script driving the real
--- site), so it drives `fyde.browser` too: `/home/espace-client.html` shows the login form
+-- Drives `fyde.browser`: `/home/espace-client.html` shows the login form
 -- (`#identifiant`, password field) without a session (`.block-deconnecte`), and the documents are
 -- listed on `/home/espace-client/vos-factures-et-correspondances.html` (`?voirPlus` for more),
 -- whose PDF links are clicked in the browser. Unverified (see README.md).
@@ -17,7 +16,7 @@ local MFA = "#__no_mfa__"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

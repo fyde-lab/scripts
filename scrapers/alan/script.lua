@@ -1,12 +1,11 @@
 -- Scraper for Alan (alan.com), the health insurer: downloads the reimbursement statements
 -- ("décomptes") and the mutual card.
 --
--- Ported from github.com/konnectors/alan (a cozy-clisk content script driving the real site), so
--- it drives `fyde.browser` too: `/app/dashboard` shows the care events
+-- Drives `fyde.browser`: `/app/dashboard` shows the care events
 -- (`.ListItem__Clickable`) with a session, else redirects to the login form
 -- (`input[name="email"]`, then - once its `button[data-testid="submitButton"]` ("Continuer") is
 -- clicked - `input[name="password"]` and the same submit button; a wrong login shows "Votre mot
--- de passe ou votre email semble faux"). The konnector itself never automated the login ("website is checking isTrusted") and read the
+-- de passe ou votre email semble faux"). The original implementation itself never automated the login ("website is checking isTrusted") and read the
 -- documents from api.alan.com with the `token` cookie as a bearer
 -- (`/api/users/<id>/decomptes?year=..&month=..`, `/api/users/<tp card id>/tp-card`); neither the
 -- cookie value nor that header is reachable here, so this port fills the form itself (which may
@@ -24,7 +23,7 @@ local MFA = "input[autocomplete='one-time-code'], input[name='code']"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

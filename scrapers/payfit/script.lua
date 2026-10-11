@@ -1,11 +1,10 @@
 -- Scraper for PayFit (app.payfit.com), the payroll software: downloads the employee's payslips.
 --
--- Ported from github.com/konnectors/payfit (a cozy-clisk content script driving the real site),
--- so it drives `fyde.browser` too: the login is two-step - the e-mail (formerly `#username`, now
+-- Drives `fyde.browser`: the login is two-step - the e-mail (formerly `#username`, now
 -- an id-less `input[type=email]`) then the form's submit button ("Continuer"), then `#password`
 -- and the same button (a wrong login shows "E-mail ou mot de passe incorrect" - checked live) -
 -- possibly followed by a `#code` verification step (a refused code is MFA_FAILED); logged in shows the
--- `button[data-testid="accountButton"]`. The konnector listed payslips from the intercepted
+-- `button[data-testid="accountButton"]`. The original implementation listed payslips from the intercepted
 -- `api.payfit.com/files` answer and downloaded each through
 -- `files/file/<id>/presigned-url` with the intercepted bearer token; neither is reachable here,
 -- so this port clicks the download controls of the payslips page (`/payslips`, URL
@@ -22,7 +21,7 @@ local MFA = "#code"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

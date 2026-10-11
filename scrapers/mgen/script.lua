@@ -1,14 +1,13 @@
 -- Scraper for MGEN's member space (mgen.fr/mon-espace-perso): downloads the health
 -- reimbursement statements.
 --
--- Ported from github.com/konnectors/cozy-konnector-mgen (a cozy-clisk content script driving
--- the real site), so it drives `fyde.browser` too: `/login-adherent/` now lands on a Keycloak
+-- Drives `fyde.browser`: `/login-adherent/` now lands on a Keycloak
 -- login (connexion.mgen.fr, `#kc-form-login` with `#username`/`#password` and `#kc-login`); a
 -- wrong login shows "Email de connexion ou mot de passe invalide" (in `#input-error-password`,
 -- checked live) - it used to be `#user`/`#pass`/`#loginBtn` with `.alert-danger`; logged in shows `.deconnexion_auth_link` (or
 -- the `.btn-logout-group` link), and `/mon-espace-perso/` then lists the last reimbursements in
 -- `#tableDernierRemboursement` (`.ligne-remboursement` rows: treatment date, beneficiary, PDF
--- link, payment date, amount), paginated by `#tableDernierRemboursement_next`. The konnector
+-- link, payment date, amount), paginated by `#tableDernierRemboursement_next`. The original implementation
 -- also generated the "attestation de droits" and the mutual card through api.mgen.fr with a
 -- token from localStorage, which this sandbox can't read - not ported. Unverified (see
 -- README.md).
@@ -24,7 +23,7 @@ local BAD_CREDENTIALS = { "mot de passe invalide" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

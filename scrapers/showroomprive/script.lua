@@ -1,12 +1,12 @@
 -- Scraper for Showroomprivé (showroomprive.com), the flash-sales site: saves one document per
 -- order.
 --
--- Ported from github.com/konnectors/showroomprive (src/index.js): an ASP.NET login posting the
+-- An ASP.NET login posting the
 -- home page's `form` (Login$tbLogin, Login$tbPass, __EVENTTARGET=Login$LienLogin); logged in
 -- shows `.icon-mon_compte` (or lands on `/accueil.aspx`). Orders: `/moncompte/mescommandes.aspx`
 -- embeds them as `OrderCtrl.JSONGlobalMesCommandes = {...[orders]}` (orderId,
 -- createShortDate, amount); each invoice page (`/moncompte/iframe/imprimefacture.aspx?
--- commandeid=<id>`) was rendered into a PDF by the konnector - here a text-only PDF.
+-- commandeid=<id>`) was rendered into a PDF by the original implementation - here a text-only PDF.
 -- Unverified (see README.md).
 
 local M = {}
@@ -16,7 +16,7 @@ local ORDERS_URL = BASE .. "/moncompte/mescommandes.aspx"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -94,7 +94,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -150,7 +150,7 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

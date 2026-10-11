@@ -1,6 +1,6 @@
 -- Scraper for easyJet (easyjet.com): saves one confirmation document per booking.
 --
--- Ported from github.com/konnectors/easyjet (src/index.js): `/fr/` for cookies, then
+-- `/fr/` for cookies, then
 -- `ejrebooking/api/v18/account/login` takes Username/Password/KeepMeSignedIn/
 -- KeepMeSignedInMinutes (HTTP 401 = bad credentials). Bookings: the `.allBookingItem` entries
 -- (`.allBookingItemHeaderColumnLeftPast h2` = reference) of
@@ -8,7 +8,7 @@
 -- from `ViewBooking?bookingReference=<ref>` (title, `.yourPaymentDescription` date,
 -- `.totalAmount.yourPaymentAmount`) and the printable confirmation from
 -- `BookingConfirmationPrint.mvc/BookingConfirmationPrintReference?bookingNumber=<ref>`
--- (`.print`), which the konnector rendered to PDF with pdfjs - here as a text-only PDF.
+-- (`.print`), which the original implementation rendered to PDF with pdfjs - here as a text-only PDF.
 -- easyJet's site has been rebuilt since, so this may be outdated. Unverified (see README.md).
 
 local M = {}
@@ -18,7 +18,7 @@ local BOOKINGS_URL = BASE .. "/FR/secure/MyEasyJet.mvc/ShowAllBookingsAjaxCall?s
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -96,7 +96,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -152,7 +152,7 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

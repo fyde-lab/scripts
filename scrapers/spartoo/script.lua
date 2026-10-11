@@ -1,6 +1,6 @@
 -- Scraper for Spartoo (spartoo.com), the shoe/fashion retailer: downloads order invoices.
 --
--- Ported from github.com/konnectors/spartoo (src/index.js): login posts `.loginContent form`
+-- Login posts `.loginContent form`
 -- (email_address/password) from `/securelogin.php?from=compte`; success lands on
 -- `/compte.php` with an `a.deconnect` link. Orders: the `tbody tr:not(.headingTable)` rows of
 -- `/ajax/compte/compte_historique.php?type=article` (date, ..., amount), whose link's onclick
@@ -14,7 +14,7 @@ local HISTORY_URL = BASE .. "/ajax/compte/compte_historique.php?type=article"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -92,7 +92,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

@@ -1,12 +1,11 @@
 -- Scraper for ENGIE's customer area (particuliers.engie.fr): downloads the gas/electricity bills
 -- and the proof of residence.
 --
--- Ported from github.com/konnectors/engie (a cozy-clisk content script driving the real site),
--- so it drives `fyde.browser` too: `/login-page/authentification.html` has `input[type=email]`
+-- Drives `fyde.browser`: `/login-page/authentification.html` has `input[type=email]`
 -- and `input[type=password]` (possibly on two steps) in `form.k-oktaConnexion__form`, sent by
 -- its "Me connecter" `button.k-cta` (a `type=button`; a wrong login shows "L'adresse e-mail
 -- et/ou le mot de passe sont incorrects" - checked live); logged in shows `#header-deconnexion` (or
--- a "Se déconnecter" button). Bills: `/espace-client/prive/mes-factures.html`; the konnector
+-- a "Se déconnecter" button). Bills: `/espace-client/prive/mes-factures.html`; the original implementation
 -- read them from the private API (`cel-ws/api/private/...`, `/SAE/facture.pdf` documents) and
 -- the proof of residence from `cel-ws/api/private/pdf/attestationTitulaireContrat`. The bills
 -- page's download controls are clicked in the browser; the proof of residence is fetched with
@@ -23,7 +22,7 @@ local BAD_CREDENTIALS = { "identifiant ou mot de passe", "mot de passe incorrect
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -101,7 +100,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

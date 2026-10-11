@@ -1,12 +1,11 @@
 -- Scraper for MACIF's customer area (macif.fr), the mutual insurer: downloads the payment
 -- notices ("avis d'échéance") and certificates ("attestations").
 --
--- Ported from github.com/konnectors/macif (a cozy-clisk content script driving the real site), so
--- it drives `fyde.browser` too: the login is two-step - `#login` then
+-- Drives `fyde.browser`: the login is two-step - `#login` then
 -- `button[name="submitButton"]`, then `#password` and `button[onclick="postOk();"]` - possibly
 -- followed by a strong-authentication step (`.auth-factor` choice, then a `#passcode` code; a
 -- refused code is MFA_FAILED) and a "Continuer vers mon espace" link. Logged in shows
--- `#profil-avatar`/`.mcf-navbar__nav`. The konnector read the documents from
+-- `#profil-avatar`/`.mcf-navbar__nav`. The original implementation read the documents from
 -- `ssm.macif.fr/internet-espaceclient-rest/personnes/<id>/document/...` with intercepted
 -- credentials; this port clicks the download links of the documents page (`#avisecheances`,
 -- `#attestations`). Unverified (see README.md).
@@ -22,7 +21,7 @@ local MFA = ".auth-factor, #passcode"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

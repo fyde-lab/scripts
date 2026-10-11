@@ -1,15 +1,14 @@
 -- Scraper for Orange's customer area (espace-client.orange.fr): downloads the mobile and
 -- internet bills of every Orange contract.
 --
--- Ported from github.com/konnectors/cozy-konnector-orange (a cozy-clisk content script
--- driving the real site), so it drives `fyde.browser` too. Login on login.orange.fr is a
+-- Drives `fyde.browser`. Login on login.orange.fr is a
 -- two-step React form: `#login` (then submit), then `#password` (then submit), with possible
--- detours the konnector handled - "choose other account" (`[data-testid=choose-other-account]`),
+-- detours the original implementation handled - "choose other account" (`[data-testid=choose-other-account]`),
 -- "stay connected" (`button[data-testid="button-keepconnected"]`), a reload button, a captcha
 -- (`div[class*="captcha_responseContainer"]`, not solvable here) or Mobile Connect
 -- (`button[data-testid="submit-mc"]`, an approval on the phone). Contracts are listed on
 -- `/accueil` (`ecm-section-bill`); each has `/facture-paiement/<cid>` whose
--- "historique des factures" lists the PDFs (`/ecd_wp/facture/v1.0/pdf...`). The konnector read
+-- "historique des factures" lists the PDFs (`/ecd_wp/facture/v1.0/pdf...`). The original implementation read
 -- those lists from intercepted API answers; this port clicks the download links instead.
 -- Unverified (see README.md).
 
@@ -23,7 +22,7 @@ local BAD_CREDENTIALS = { "non reconnu", "mot de passe incorrect", "identifiant 
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly

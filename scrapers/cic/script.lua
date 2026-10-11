@@ -1,7 +1,7 @@
 -- Scraper for CIC (cic.fr), the French bank: logs in (with its app-push strong
 -- authentication) and saves a statement of every account's operations.
 --
--- Ported from github.com/konnectors/cic (src/lib.js, src/urlBuilder.js): credentials are
+-- Credentials are
 -- posted to `/<lang>/authentification.html` (`_cm_user`, `flag=password`, `_cm_pwd`). Landing
 -- back on `authentification.html` means bad credentials (`.blocmsg.err`), on
 -- `banque/pageaccueil.html` a valid session, and on `banque/validation.aspx` the strong
@@ -9,12 +9,12 @@
 -- carries a `transactionId` polled on `otp/SOSD_OTP_GetTransactionState.htm` until
 -- `<transactionState>` is VALIDATED, after which the `validation.aspx` form (otp_hidden,
 -- _wxf2_cc, _FID_DoValidate.x/y) is posted. Here the user is asked (fyde.input.ask) to confirm
--- once they approved the request in the CIC app, instead of the konnector's timed polling;
+-- once they approved the request in the CIC app, instead of the original implementation's timed polling;
 -- a request still not validated is MFA_FAILED.
 --
--- Documents: the konnector imported bank operations from the Excel export
+-- Documents: the original implementation imported bank operations from the Excel export
 -- (`banque/compte/routetelechargement.asp?formatTelechargement=XL&sdsf_accountselection=all`)
--- into Cozy's banking doctypes. This sandbox can't read .xlsx, so this port asks for the same
+-- into banking doctypes. This sandbox can't read .xlsx, so this port asks for the same
 -- export as CSV (`formatTelechargement=CSV`, unconfirmed) and saves it as a text-only PDF.
 -- Unverified (see README.md).
 
@@ -24,7 +24,7 @@ local HOST = "https://www.cic.fr/"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -102,7 +102,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -158,7 +158,7 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

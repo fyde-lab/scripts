@@ -1,13 +1,12 @@
 -- Scraper for SNCF Connect (sncf-connect.com): downloads the trip proofs ("justificatifs de
 -- voyage") of past trips.
 --
--- Ported from github.com/konnectors/cozy-konnector-sncf (a cozy-clisk content script driving
--- the real site), so it drives `fyde.browser` too: `/app/account` shows either the
+-- Drives `fyde.browser`: `/app/account` shows either the
 -- `button[data-test="account-disconnect-button"]` (logged in) or a "Se connecter" card button
 -- (`.MuiCardContent-root > div > button`) leading to the SNCF account form (`#login`,
 -- `#pass1`, `#validate`; errors in `.error`), possibly followed by an `#otpCode` step and an
 -- `#accessAccount` "continue" button. Past trips are under `/app/trips` (`#nav-tab-1`,
--- `li[data-test="trip"]`); the konnector took each trip's proof URL from the intercepted trips
+-- `li[data-test="trip"]`); the original implementation took each trip's proof URL from the intercepted trips
 -- API answer (`tripDetails...tripProofOperation.url`) - this port looks for those same JSON
 -- fields in the rendered page and downloads them. Unverified (see README.md).
 
@@ -20,7 +19,7 @@ local BAD_CREDENTIALS = { "identifiant ou mot de passe", "mot de passe incorrect
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -98,7 +97,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

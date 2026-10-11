@@ -1,7 +1,7 @@
 -- Scraper for Darty (darty.com), the electronics/home-appliance retailer: downloads the bills
 -- of purchased products.
 --
--- Ported from github.com/konnectors/darty (src/index.js, src/auth.js, src/products.js): a
+-- A
 -- session is valid when `/webapp/wcs/stores/controller/ec/products` doesn't redirect to
 -- `/espace_client/connexion`. Login: GET then POST `/espace_client/connexion` (email/password,
 -- with that page as referer) - HTTP 401 means bad credentials. Products: `ec/products/table`
@@ -20,7 +20,7 @@ local HEADERS = { Accept = "text/html,application/xhtml+xml,application/xml;q=0.
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -98,7 +98,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

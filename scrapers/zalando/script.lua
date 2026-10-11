@@ -1,13 +1,13 @@
 -- Scraper for Zalando (zalando.fr), the fashion retailer: saves one document per order.
 --
--- Ported from github.com/konnectors/zalando (src/index.js). The konnector read the `frsx` XSRF
+-- The original implementation read the `frsx` XSRF
 -- cookie set by `/login/` and posted {username, password, wnaMode: "shop"} as JSON to
 -- `/api/reef/login` with it as `x-xsrf-token` (HTTP 401 = bad credentials). fyde.http can't read
 -- cookie values, so the login goes through `fyde.browser` on `/login/` instead (Zalando's bot
 -- protection may still block the embedded webview - unconfirmed). Orders: the
 -- `#myOrdersTable tr.cWrapper` rows of `/moncompte/commandes/` (`td.order`, `td.date`,
 -- `td.oTotal`); each order's printable page (`/moncompte/detail-commandes/imprimer/<n>/`,
--- `.printPage`) was rendered into a PDF by the konnector - here a text-only PDF. Pages are read
+-- `.printPage`) was rendered into a PDF by the original implementation - here a text-only PDF. Pages are read
 -- through the browser so the session it just opened is used. Unverified (see README.md).
 
 local M = {}
@@ -18,7 +18,7 @@ local BAD_CREDENTIALS = { "adresse e-mail ou mot de passe incorrect", "identifia
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -167,7 +167,7 @@ local function browser_save(selector, filename, fields)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

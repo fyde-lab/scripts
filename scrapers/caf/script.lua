@@ -66,7 +66,7 @@
 
 local M = {}
 
--- Login error contract shared with every scraper ported from github.com/konnectors (see
+-- Login error contract shared with every scraper (see
 -- README.md): a rejected username/password fails with exactly INVALID_CREDENTIALS, a rejected
 -- or unanswered one-time code with exactly MFA_FAILED.
 

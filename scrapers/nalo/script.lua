@@ -1,10 +1,10 @@
 -- Scraper for Nalo (nalo.fr), the online life-insurance/investment platform: saves a statement
 -- of the user's projects and their current value.
 --
--- Ported from github.com/konnectors/nalo (src/index.js): `api.nalo.fr/api/v1/login` takes the
+-- `api.nalo.fr/api/v1/login` takes the
 -- email/password form (userToken=false) and answers `detail.token` (anything else, or an HTTP
 -- error, = bad credentials); `/projects/mine/without-details` with `Authorization: Token <t>`
--- lists the projects (name, id, current_value). The konnector stored them as bank accounts with
+-- lists the projects (name, id, current_value). The original implementation stored them as bank accounts with
 -- their balance; there is no document to download, so this port saves that list as a
 -- text-only PDF. The token is kept in fyde.session to skip the login while it's still accepted.
 -- Unverified (see README.md).
@@ -15,7 +15,7 @@ local API = "https://api.nalo.fr/api/v1"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -93,7 +93,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -149,7 +149,7 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

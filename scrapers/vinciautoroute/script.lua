@@ -1,8 +1,8 @@
 -- Scraper for VINCI Autoroutes' toll-badge customer area, now Ulys (account.ulys.com): login
 -- check only - documents blocked, see below.
 --
--- Originally ported from github.com/konnectors/vinciautoroute, whose
--- espaceabonnes.vinci-autoroutes.com now redirects to account.ulys.com, and whose
+-- The original
+-- espaceabonnes.vinci-autoroutes.com now redirects to account.ulys.com, and the original
 -- oidc-bcu.vinci-autoroutes.com no longer answers. The new customer area is an Angular SPA
 -- signing in through an IdentityServer at connect.ulys.com (client `BCU.EspaceClient`, redirect
 -- `https://account.ulys.com/oidc-callback`, both from the SPA's bundle). Its server-rendered
@@ -33,7 +33,7 @@ local LEFT_LOGIN = { "ne fonctionne pas sur ce navigateur", "Espace Client" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -111,7 +111,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

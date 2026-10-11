@@ -33,6 +33,6 @@
     "documents_fetched": "not_tested",
     "antibot_name": "Cloudflare",
     "antibot_status": "present",
-    "notes": "Upstream konnector never saved documents; order history saved as text PDF; Smoke: login form not found"
+    "notes": "The original implementation never saved documents; order history saved as text PDF; Smoke: login form not found"
   }
 }

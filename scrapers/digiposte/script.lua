@@ -1,11 +1,11 @@
 -- Scraper for Digiposte (secure.digiposte.fr), La Poste's digital safe: downloads every
 -- document of every folder (payslips, bills, ...).
 --
--- Ported from github.com/konnectors/cozy-konnector-digiposte (src/index.js). The konnector
+-- The original implementation
 -- solved the La Poste login page's hCaptcha through a paid service and posted
 -- username/password to the Keycloak form of moncompte.laposte.fr; this sandbox has no captcha
 -- solver, so the login goes through `fyde.browser` (the widget may or may not pass in the
--- embedded webview - unconfirmed). Outcomes, as the konnector read them from the answer:
+-- embedded webview - unconfirmed). Outcomes, as the original implementation read them from the answer:
 -- "identifiant et/ou le mot de passe sont incorrects" = bad credentials; the next steps are
 -- told apart by their `page_name` marker: `connexion_challenge_new_device_add_mobile` and
 -- `connexion_add_2FA` (skipped: "later"), `connexion_challenge_new_device_otp_email`,
@@ -28,7 +28,7 @@ local API = "https://api.digiposte.fr/api/v3"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -106,7 +106,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

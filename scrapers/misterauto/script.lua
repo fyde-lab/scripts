@@ -1,7 +1,7 @@
 -- Scraper for Mister Auto (mister-auto.com), the car-parts retailer: downloads order invoices.
 --
--- Ported from github.com/konnectors/misterauto (src/index.js): login posts `#login_form`
--- (`personnelle[email]`/`personnelle[password]`) from `/moncompte/` (the konnector didn't
+-- Login posts `#login_form`
+-- (`personnelle[email]`/`personnelle[password]`) from `/moncompte/` (the original implementation didn't
 -- validate it; here the orders table must then be reachable, and the form coming back means
 -- bad credentials). Orders: `/moncompte/commandes.html`, `#cmd_table tbody tr` rows - a normal
 -- row is date, id, amount, ..., invoice link (6th cell); rows sharing a date cell with
@@ -15,7 +15,7 @@ local ORDERS_URL = BASE .. "commandes.html"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -93,7 +93,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)

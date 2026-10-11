@@ -1,8 +1,8 @@
 -- Scraper for MAIF (maif.fr), the mutual insurer: meant to save the member's documents.
 --
--- Originally ported from github.com/konnectors/cozy-konnector-maif, which had no login form: it
--- called MAIF's open API (openapiweb.maif.fr/prod/cozy/v1/mes_infos) with an OAuth token
--- obtained through Cozy's OAuth flow. That host no longer resolves, so this script now logs in
+-- The original implementation had no login form: it
+-- called MAIF's open API (openapiweb.maif.fr) with an OAuth token
+-- obtained through an OAuth flow. That host no longer resolves, so this script now logs in
 -- the way a member does, on MAIF's own login (connect.maif.fr/connect/oic/login), in two steps
 -- on the same `form#loginForm`: the identifier first (`username` - an email or a member number),
 -- then, on the page that comes back, the `password`. A wrong login answers that second page
@@ -18,7 +18,7 @@ local BAD_CREDENTIALS = { "mot de passe invalide" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -96,7 +96,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -152,7 +152,7 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)

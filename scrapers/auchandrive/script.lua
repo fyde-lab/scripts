@@ -1,6 +1,6 @@
 -- Scraper for Auchan Drive's customer account, now part of auchan.fr: downloads order invoices.
 --
--- Originally ported from github.com/konnectors/auchandrive, whose auchandrive.fr site now
+-- The original auchandrive.fr site now
 -- redirects to auchan.fr, where the old `/drive/client/identification` form is gone (404).
 -- Rebuilt against the live site: `www.auchan.fr/client/mes-commandes` redirects a logged-out
 -- visitor to a Keycloak SSO (compte.auchan.fr, realm `auchan.fr`) whose `form#kc-form-login`
@@ -8,7 +8,7 @@
 -- that this host can't fill; posted empty, bad credentials still get "Nom d'utilisateur ou mot
 -- de passe invalide." (confirmed against the live site) - whether a correct login goes through
 -- without a token is not. Success hands back to `mes-commandes?auth_callback=1`.
--- Documents: the konnector rendered drive orders' print pages into PDFs itself; that page is gone
+-- Documents: the original implementation rendered drive orders' print pages into PDFs itself; that page is gone
 -- too. Not verified (no account): invoices are looked for as PDF/"facture" links on the orders
 -- page (see README.md).
 
@@ -22,7 +22,7 @@ local BAD_CREDENTIALS = { "mot de passe invalide", "Invalid username or password
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper ported from github.com/konnectors - see README.md).
+-- Shared block (identical in every scraper - see README.md).
 --
 -- Login error contract: a rejected username/password always fails the run with exactly
 -- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
@@ -100,7 +100,7 @@ local function absolute(base, href)
   return dir .. href
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
+-- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
 -- named input's current value (unchecked checkboxes/radios left out, like a browser does).
 local function read_form(page, selector)
@@ -156,7 +156,7 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 
--- Minimal text-only PDF writer, for sites (like the konnector this was ported from) that have
+-- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`
 -- becomes one line of Helvetica (WinAnsi; characters outside Latin-1 become '?').
 local function text_pdf(title, lines)
