@@ -49,7 +49,7 @@
 --
 -- Every capability this script uses comes from the `fyde` host table, implemented by
 -- fyde-sdk's scrapers domain (see ../sdk/src/domains/scrapers/host/*.rs):
--- fyde.log, fyde.progress, fyde.browser.
+-- fyde.log, fyde.progress, fyde.browser, fyde.html.
 
 local M = {}
 
@@ -74,15 +74,61 @@ local FORM_LOAD_TIMEOUT_MS = 30000
 -- POST_SUBMIT_TIMEOUT_MS as a starting point for the same class of bot-mitigation delay.
 local POST_SUBMIT_TIMEOUT_MS = 45000
 
+-- Shown above the form after a refused identifiant/password (checked live, with made-up
+-- credentials): "Nom d'utilisateur ou mot de passe incorrect, veuillez corriger...".
+local BAD_CREDENTIALS = "mot de passe incorrect"
+
+-- `html()`/`wait_for` both fail with "timed out ... waiting for the browser" while the page is
+-- still loading - which, on this site, can last past the form being fully usable. These read the
+-- page tolerating that, as "" when it can't be read yet.
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
 -- True if the login form (see LOGIN_FORM_MARKER) is still/again showing on the current page.
 local function on_login_form()
-  return fyde.browser:html():find(LOGIN_FORM_MARKER, 1, true) ~= nil
+  return page_html():find(LOGIN_FORM_MARKER, 1, true) ~= nil
+end
+
+-- Polls (1s at a time, via `wait_for` on a selector that never exists) until `check()` returns a
+-- truthy value or `timeout_ms` runs out.
+local function poll(check, timeout_ms)
+  local waited = 0
+  repeat
+    local result = check()
+    if result then
+      return result
+    end
+    pcall(function()
+      fyde.browser:wait_for("#__francetravail_scraper_force_wait__", 1000)
+    end)
+    waited = waited + 1000
+  until waited >= timeout_ms
+  return nil
 end
 
 function M.run(params)
   fyde.progress.step("Opening the homepage")
   fyde.browser:open(HOME_URL)
-  fyde.browser:wait_for(IDENTIFIANT_FIELD, FORM_LOAD_TIMEOUT_MS)
+  pcall(function()
+    fyde.browser:wait_for(IDENTIFIANT_FIELD, FORM_LOAD_TIMEOUT_MS)
+  end)
+  -- The load can outlast `wait_for` even once the form is usable (see `page_html`), so whether
+  -- the form is there is checked on the page itself. A page that never shows anything readable
+  -- is an error, not a session: assuming one would hide every broken load as ALREADY_LOGGED_IN.
+  local opened = poll(function()
+    local html = page_html()
+    if html:find(LOGIN_FORM_MARKER, 1, true) then
+      return "login"
+    end
+    return #html > 0 and #fyde.html.select(html, "body *") > 20 and "other" or nil
+  end, FORM_LOAD_TIMEOUT_MS)
+  if not opened then
+    error("France Travail page did not load")
+  end
 
   -- Checking for an existing session: mirrors didaxis/caf's "Checking for an existing session"
   -- pattern, but fyde.browser has no cookie-jar bridge to fyde.http and no way to read the
@@ -110,13 +156,20 @@ function M.run(params)
   -- Force a fixed delay for the page transition/device-profile-check round trip instead (same
   -- reasoning as ameli/script.lua's own POST_SUBMIT_TIMEOUT_MS, a bot-mitigation-related delay
   -- observed taking anywhere from ~20s to noticeably longer there).
-  pcall(function()
-    fyde.browser:wait_for("#__francetravail_scraper_force_wait__", POST_SUBMIT_TIMEOUT_MS)
-  end)
+  local outcome = poll(function()
+    local html = page_html()
+    if html:find(BAD_CREDENTIALS, 1, true) then
+      return "bad"
+    end
+    return html ~= "" and not html:find(LOGIN_FORM_MARKER, 1, true) and "next" or nil
+  end, POST_SUBMIT_TIMEOUT_MS)
 
+  if outcome == "bad" then
+    error("INVALID_CREDENTIALS", 0)
+  end
   if on_login_form() then
-    -- Most likely a wrong identifiant/password (the device-profile check failing silently would
-    -- look the same - unconfirmed).
+    -- Still on the form without the error message: most likely a refused login too (the
+    -- device-profile check failing silently would look the same - unconfirmed).
     fyde.log.warn("still showing the login form after submitting credentials")
     error("INVALID_CREDENTIALS", 0)
   end
@@ -125,7 +178,7 @@ function M.run(params)
   -- dump with real handling for whatever stage(s) actually render (OTP channel choice via
   -- fyde.browser:click, OTP entry via fyde.input.ask + fyde.browser:fill, trusted-device prompt
   -- via fyde.browser:click) - see header comment.
-  local html = fyde.browser:html()
+  local html = page_html()
   fyde.log.info("post-submit page length: " .. #html)
   fyde.log.info("post-submit page snippet: " .. html:sub(1, 2000))
   error(

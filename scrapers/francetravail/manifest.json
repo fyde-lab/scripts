@@ -23,11 +23,11 @@
     }
   },
   "status": {
-    "state": "broken",
-    "login_page_found": "failed",
-    "invalid_credentials_detected": "failed",
+    "state": "wip",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "failed",
     "documents_fetched": "not_tested",
-    "notes": "Timed out waiting for the browser on the `#identifiant` field of candidat.francetravail.fr/espacepersonnel/; Smoke: timed out waiting for the browser"
+    "notes": "The login page outlasts fyde.browser's load wait even once usable: the form is now polled for instead of failing on wait_for; a refused login shows \"Nom d'utilisateur ou mot de passe incorrect\" (checked live); post-login OTP/trusted-device steps and documents still not implemented"
   }
 }
