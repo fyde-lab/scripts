@@ -1,13 +1,14 @@
 {
   "name": "GEG",
   "short_description": "Factures GEG (Grenoble)",
-  "description": "Se connecte à l'agence en ligne GEG (monagence.geg.fr) pour récupérer les factures de gaz et d'électricité de chaque contrat.",
+  "description": "Se connecte à l'espace client GEG (mon-espace.geg.fr) pour récupérer les factures de gaz et d'électricité de chaque contrat.",
   "homepage": "https://www.geg.fr",
   "wreq_emulation": true,
   "debug_http_dump": false,
   "follow_redirects": true,
   "allowed_domains": [
-    "geg.fr"
+    "geg.fr",
+    "hana.ondemand.com"
   ],
   "parameters": {
     "username": {
@@ -26,10 +27,10 @@
   },
   "status": {
     "state": "wip",
-    "login_page_found": "failed",
-    "invalid_credentials_detected": "failed",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "passed",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "PDF fetched with GET instead of POST (unconfirmed); Smoke: host unreachable"
+    "notes": "Agency moved to mon-espace.geg.fr (SAP BTP, login on SAP Identity Authentication at authentification-sap.geg.fr): login rebuilt on it and checked with made-up credentials; bill pages not ported, a successful login stops with an explicit error"
   }
 }

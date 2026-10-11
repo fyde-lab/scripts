@@ -1,28 +1,20 @@
--- Scraper for GEG's online agency (monagence.geg.fr, Gaz Électricité de Grenoble): downloads
--- the bills of every contract.
+-- Scraper for GEG (Gaz Électricité de Grenoble): meant to download the bills.
 --
--- Ported from github.com/konnectors/geg (src/index.js). The agency is a stateful app where
--- every request carries the session's `_sbs_` value and a request counter `_rqId_` echoed by
--- each page (`input[name=_rqId_]`). Login: POST lg/psw to `habilitation.ActorIdentification.go?
--- act=valider&_rqId_=0&ns=9002&cs=5011&fs=9001` - "est temporairement bloqu..." means too many
--- attempts, and no `#fermerSession` button (or a redirect) means bad credentials; `_sbs_` comes
--- from that answer. Contracts: the `select[name=selectionReferenceContrat]` options of
--- `contrat.ZoomerDocumentOConsultation.go?act=demarrer`; for each, `acteur.ZoomerDossierClient.go`
--- act=rechercherContrat finds its hash (option "-- <id> --"), act=consulterContratApresRecherche
--- opens it and act=consulterFactures lists `#tbl_mesFacturesExtrait` rows whose
--- `validerConnexion('...act=consulterFactureDuplicata&selIdmesFacturesExtrait=...')` selects a
--- bill, fetched with act=afficherDocument on `contrat.ZoomerContratOFactures.go`. The konnector
--- POSTed that last call; fyde.http only downloads with GET, so its fields go in the query string
--- (unconfirmed). The `_sbs_` value is kept in fyde.session to detect a still-valid session.
--- Unverified (see README.md).
+-- Originally ported from github.com/konnectors/geg, whose online agency (monagence.geg.fr) no
+-- longer resolves: geg.fr's espace client now links to mon-espace.geg.fr, an SAP BTP app. Its
+-- index page is a JS stub that sets a few cookies and sends the browser (`location="..."`) to
+-- an XSUAA authorize URL on geg-fournisseur-prd.authentication.eu10.hana.ondemand.com, whose
+-- login page only offers one identity provider (`a.saml-login-link`, to
+-- authentification-sap.geg.fr - SAP Identity Authentication). That one shows
+-- `form#logOnForm` (`j_username`/`j_password`); a wrong login answers the same form again with
+-- "Sorry, we could not authenticate you" (checked live, with made-up credentials). Nothing past
+-- the login is known yet (no account to look at the portal with), so a successful login stops
+-- with an explicit error rather than guessing at the old agency's bill endpoints.
 
 local M = {}
 
-local BASE = "https://monagence.geg.fr/aelPROD/jsp/arc/habilitation/"
-local MAIN = BASE .. "acteur.ZoomerDossierClient.go"
-local LOGIN = BASE .. "habilitation.ActorIdentification.go?act=valider&_rqId_=0&ns=9002&cs=5011&fs=9001"
-local DOCUMENTS = BASE .. "contrat.ZoomerDocumentOConsultation.go"
-local INVOICE_FILE = BASE .. "contrat.ZoomerContratOFactures.go"
+local PORTAL_URL = "https://mon-espace.geg.fr/"
+local LOGIN_FORM = "form#logOnForm"
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -161,124 +153,41 @@ local function save_pdf(url, filename, fields, headers)
 end
 -- luacheck: pop
 
-local state = { rq = "0", sbs = nil }
-
-local function track(resp)
-  local rq = fyde.html.select(resp.body, "input[name='_rqId_']")[1]
-  if rq and rq.attrs.value then
-    state.rq = rq.attrs.value
+-- Follows mon-espace.geg.fr's JS redirect and the XSUAA page's identity-provider link down to
+-- the SAP Identity Authentication login page.
+local function login_page()
+  local stub = fyde.http.get(PORTAL_URL)
+  local authorize = stub.body:match('location="(https://[^"]+)"')
+  if not authorize then
+    return stub
   end
-  return resp
-end
-
-local function get(url, query)
-  local parts = {}
-  for k, v in pairs(query) do
-    parts[#parts + 1] = k .. "=" .. tostring(v)
+  local xsuaa = fyde.http.get(authorize)
+  local idp = fyde.html.select(xsuaa.body, "a.saml-login-link")[1]
+  if not idp or not idp.attrs.href then
+    return xsuaa
   end
-  return track(fyde.http.get(url .. "?" .. table.concat(parts, "&")))
-end
-
-local function post(url, form)
-  return track(fyde.http.post_form(url, form))
-end
-
-local function search_form(extra)
-  local form = {
-    _nwg_ = "", _sbs_ = state.sbs, _rqId_ = state.rq, _ongIdx = "", _mnLck_ = "true", _startForm_ = "", _endForm_ = "",
-    CRITERE_OFFRE_PRODUIT = "", CRITERE_STATUT_CONTRAT = "", CRITERE_REFERENCE_EXTERNE = "", CRITERE_NOM_TITULAIRE = "",
-    CRITERE_REFERENCE_TITULAIRE = "", CRITERE_ROLE = "", CRITERE_SPECIFICITE = "", numero = "", typeDonneeGeo = "VIDE",
-    voie = "", codePostal = "", commune = "", CRITERE_REFERENCE_EDL = "",
-  }
-  for k, v in pairs(extra) do
-    form[k] = v
-  end
-  return form
+  return fyde.http.get(absolute(xsuaa.url, idp.attrs.href))
 end
 
 local function login(params)
   fyde.progress.step("Logging in")
-  local page = fyde.http.get("https://monagence.geg.fr/")
-  if page.status >= 500 then
-    error("GEG answered HTTP " .. page.status)
+  local page = login_page()
+  if not has(page, LOGIN_FORM .. " input[name='j_password']") then
+    error("GEG login form not found on " .. page.url)
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = post(LOGIN, { lg = params.username, psw = params.password })
-  if contains(resp.body, "est temporairement bloqu") then
-    error("GEG temporarily blocked the account after too many attempts")
+  local resp = submit_form(page, LOGIN_FORM, { j_username = params.username, j_password = params.password })
+  if has(resp, LOGIN_FORM .. " input[name='j_password']") then
+    fail(INVALID_CREDENTIALS, "still on the login form")
   end
-  if resp.url ~= LOGIN or not has(resp, "#fermerSession") then
-    fail(INVALID_CREDENTIALS)
-  end
-  local sbs = fyde.html.select(resp.body, "input[name='_sbs_']")[1]
-  state.sbs = sbs and sbs.attrs.value or ""
-  fyde.session.geg_sbs = state.sbs
-end
-
-local function contract_ids()
-  local page = get(DOCUMENTS, { _rqId_ = state.rq, _sbs_ = state.sbs, act = "demarrer" })
-  local ids = {}
-  for _, option in ipairs(fyde.html.select(page.body, "select[name='selectionReferenceContrat'] option")) do
-    if option.attrs.value and option.attrs.value ~= "" then
-      ids[#ids + 1] = option.attrs.value
-    end
-  end
-  return ids, page
+  return resp
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
-  state.sbs = fyde.session.geg_sbs
-  local ids = {}
-  if state.sbs then
-    ids = contract_ids()
-  end
-  if #ids > 0 then
-    fyde.log.info("ALREADY_LOGGED_IN")
-  else
-    login(params)
-    ids = contract_ids()
-  end
-
-  fyde.progress.step("Downloading bills")
-  for _, id in ipairs(ids) do
-    get(MAIN, { _rqId_ = state.rq, _sbs_ = state.sbs, act = "demarrer" })
-    local search = post(MAIN, search_form({ act = "rechercherContrat", CRITERE_REFERENCE_CONTRAT = id }))
-    local hash
-    for _, option in ipairs(fyde.html.select(search.body, "option")) do
-      if option.text:find("-- " .. id .. " --", 1, true) then
-        hash = option.attrs.value
-      end
-    end
-    if hash then
-      post(MAIN, search_form({ act = "consulterContratApresRecherche", CRITERE_REFERENCE_CONTRAT = id,
-        selIdlisteResultatRechercheContrats = hash, listeDepliee = "", listeSize = "1" }))
-      local invoices = post(MAIN, { _nwg_ = "", _sbs_ = state.sbs, act = "consulterFactures", _rqId_ = state.rq, _ongIdx = "",
-        _mnLck_ = "false", _startForm_ = "", EQUILIBRE_SERVICE_ID = "", typeAffaireHorsContrat = "vide22546706795", _endForm_ = "" })
-      for _, row in ipairs(fyde.html.select(invoices.body, "#tbl_mesFacturesExtrait tr")) do
-        for _, a in ipairs(fyde.html.select(row.html, "a[onclick]")) do
-          local target = (a.attrs.onclick or ""):match("^validerConnexion%('([%w%.%?=&_]+)'%)$")
-          if target and target:find("act=consulterFactureDuplicata", 1, true) then
-            local cells = fyde.html.select(row.html, "td")
-            local invoice_id = cells[1] and trim(cells[1].text) or "facture"
-            local date = cells[2] and fyde.html.select(cells[2].html, "input")[1]
-            date = date and date.attrs.value or ""
-            get(BASE .. target:gsub("_rqId_=%d*", ""):gsub("&&", "&"), { _rqId_ = state.rq, _sbs_ = state.sbs })
-            local d, m, y = date:match("(%d+)/(%d+)/(%d+)")
-            save_pdf(INVOICE_FILE .. "?_nwg_=&_sbs_=" .. state.sbs .. "&act=afficherDocument&_rqId_=" .. state.rq
-              .. "&_ongIdx=&_mnLck_=false&_startForm_=&listeSize=1&_endForm_=",
-              (y and (y .. "-" .. m .. "-" .. d) or sanitize(date)) .. "_geg_" .. id .. "_" .. invoice_id .. ".pdf", {
-                name = "Facture GEG " .. date,
-                type = "energy_invoice",
-                source_category = "energy",
-                purpose = "invoice",
-              })
-          end
-        end
-      end
-    end
-  end
-  fyde.progress.step("Done")
+  -- No session check: nothing past the login is ported, so there's no session to reuse yet.
+  local resp = login(params)
+  error("credentials accepted (landed on " .. resp.url .. "), but the GEG customer area's bill pages "
+    .. "aren't ported yet - see this script's header comment", 0)
 end
 
 return M
