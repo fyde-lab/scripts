@@ -1,17 +1,23 @@
--- Scraper for Eovi MCD Mutuelle's member area (espace-particuliers.eovi-mcd-mutuelle.fr):
--- downloads the health reimbursement statements ("relevés de prestations").
+-- Scraper for Eovi MCD Mutuelle's members, now Aésio mutuelle's member area
+-- (adherent.aesio.fr): meant to download the health reimbursement statements.
 --
--- Ported from github.com/konnectors/eovimcdparticuliers (src/index.js): login posts the
--- page's `form` (_username/_password) from `/login`; still being on `/login` afterwards means
--- bad credentials. Statements: the `ul.documents a.pdf` links (text = date) of
--- `/ma_sante_et_mes_demarches/mes_remboursements/releve_de_prestations`. Eovi MCD has since
--- merged into Aésio, so this site may be gone. Unverified (see README.md).
+-- Originally ported from github.com/konnectors/eovimcdparticuliers, whose site
+-- (www.espace-particuliers.eovi-mcd-mutuelle.fr) no longer resolves: Eovi MCD merged into
+-- Aésio, and eovi-mcd.fr now redirects to aesio.fr, whose "Je me connecte" leads to
+-- adherent.aesio.fr/login. That is a client-rendered Angular app (an empty "Navigateur non
+-- supporté" shell to plain HTTP), so the login is driven through `fyde.browser`:
+-- `form.loginForm` with an `input[type=email]`, an `input[type=password]` (random ids) and a
+-- submit button; a wrong login shows "Nous n'avons pas réussi à vous identifier" (checked live,
+-- with made-up credentials). The app's menu (including "Déconnexion") is in the page even when
+-- logged out, so it can't tell a session apart. Nothing past the login is known yet (no account
+-- to look at the app with), so a successful login stops with an explicit error rather than
+-- guessing at the documents pages.
 
 local M = {}
 
-local BASE = "https://www.espace-particuliers.eovi-mcd-mutuelle.fr"
-local LOGIN_URL = BASE .. "/login"
-local STATEMENTS_URL = BASE .. "/ma_sante_et_mes_demarches/mes_remboursements/releve_de_prestations"
+local LOGIN_URL = "https://adherent.aesio.fr/login"
+local LOGIN_FORM = "form.loginForm"
+local BAD_CREDENTIALS = { "Nous n'avons pas réussi à vous identifier", "Nous n’avons pas réussi à vous identifier" }
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -71,122 +77,128 @@ local function ask_code(question)
   return (code:gsub("%s", ""))
 end
 
-local function absolute(base, href)
-  if not href or href == "" then
-    return base
-  end
-  href = href:gsub("&amp;", "&")
-  if href:match("^https?://") then
-    return href
-  end
-  local origin = base:match("^(https?://[^/]+)")
-  if href:sub(1, 2) == "//" then
-    return base:match("^(https?:)") .. href
-  end
-  if href:sub(1, 1) == "/" then
-    return origin .. href
-  end
-  if href:sub(1, 1) == "?" then
-    return (base:gsub("%?.*$", "")) .. href
-  end
-  local dir = (base:gsub("[?#].*$", "")):match("^(https?://.*/)") or (origin .. "/")
-  return dir .. href
+-- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
+-- exists.
+local function sleep(ms)
+  pcall(function()
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
+  end)
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
--- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
--- named input's current value (unchecked checkboxes/radios left out, like a browser does).
-local function read_form(page, selector)
-  local form = fyde.html.select(page.body, selector)[1]
-  if not form then
-    return nil
-  end
-  local fields = {}
-  for _, input in ipairs(fyde.html.select(form.html, "input[name]")) do
-    local kind = (input.attrs.type or "text"):lower()
-    if (kind ~= "checkbox" and kind ~= "radio") or input.attrs.checked then
-      fields[input.attrs.name] = input.attrs.value or ""
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+local function present(selector)
+  return #fyde.html.select(page_html(), selector) > 0
+end
+
+local function page_text()
+  local body = fyde.html.select(page_html(), "body")[1]
+  return body and body.text or ""
+end
+
+-- Polls the current page until one of `states` matches and returns its name (or nil after
+-- `timeout_ms`). Each state is `{ name, selector = css }` or `{ name, text = { needles } }`.
+-- Polling in short chunks also survives `fyde.browser:open` not waiting for navigation (a
+-- `wait_for` issued against the previous page just times out and gets retried).
+local function wait_state(states, timeout_ms)
+  local waited = 0
+  repeat
+    local html = page_html()
+    local text
+    for _, state in ipairs(states) do
+      if state.selector and #fyde.html.select(html, state.selector) > 0 then
+        return state[1]
+      end
+      if state.text then
+        if not text then
+          local body = fyde.html.select(html, "body")[1]
+          text = body and body.text or ""
+        end
+        if contains_any(text, state.text) then
+          return state[1]
+        end
+      end
     end
-  end
-  return absolute(page.url, form.attrs.action), fields
-end
-
--- Fills `values` into the form matching `selector` on `page` and posts it.
-local function submit_form(page, selector, values, headers)
-  local action, fields = read_form(page, selector)
-  if not action then
-    error("no form matching '" .. selector .. "' on " .. tostring(page.url))
-  end
-  for name, value in pairs(values) do
-    fields[name] = value
-  end
-  return fyde.http.post_form(action, fields, headers)
-end
-
-local function has(page_or_html, selector)
-  local html = type(page_or_html) == "table" and page_or_html.body or page_or_html
-  return #fyde.html.select(html or "", selector) > 0
-end
-
-local function json_or_nil(body)
-  local ok, value = pcall(fyde.json.decode, body or "")
-  if ok then
-    return value
-  end
+    sleep(1000)
+    waited = waited + 1000
+  until waited >= (timeout_ms or 30000)
   return nil
 end
 
--- Downloads `url` and saves it as `filename` when it really is a PDF; returns true on success.
-local function save_pdf(url, filename, fields, headers)
-  local resp = fyde.http.download(url, headers)
-  local content_type = resp.content_type or ""
-  local is_pdf = content_type:find("pdf", 1, true) or (resp.body or ""):sub(1, 4) == "%PDF"
-  if resp.status == 200 and is_pdf then
-    fyde.save_document(sanitize(filename), resp.body, fields)
+local function open_and_wait(url, states, timeout_ms)
+  fyde.browser:open(url)
+  sleep(1500)
+  return wait_state(states, timeout_ms)
+end
+
+-- Fills the first present selector of each candidate list.
+local function fill_first(selectors, value)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:fill(selector, value)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+local function click_first(selectors)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:click(selector)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+-- Clicks `selector` (a download link/button) and saves what the browser downloads.
+local function browser_save(selector, filename, fields)
+  local ok, bytes = pcall(function()
+    return fyde.browser:download(selector, 60000)
+  end)
+  if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
+    fyde.save_document(sanitize(filename), bytes, fields)
     return true
   end
-  fyde.log.warn(string.format("skipping %s (status %d, content-type %s)", filename, resp.status, content_type))
+  fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
   return false
 end
 -- luacheck: pop
 
 local function login(params)
   fyde.progress.step("Logging in")
-  local page = fyde.http.get(LOGIN_URL)
-  if not has(page, "input[name='_password']") then
-    error("Eovi MCD login form not found on " .. page.url)
+  if open_and_wait(LOGIN_URL, { { "login", selector = LOGIN_FORM .. " input[type='password']" } }, 30000) ~= "login" then
+    error("Aésio login form not found")
   end
   fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = submit_form(page, "form", { _username = params.username, _password = params.password })
-  if resp.url == LOGIN_URL or has(resp, "input[name='_password']") then
-    fail(INVALID_CREDENTIALS)
+  fill_first({ LOGIN_FORM .. " input[type='email']" }, params.username)
+  fill_first({ LOGIN_FORM .. " input[type='password']" }, params.password)
+  click_first({ LOGIN_FORM .. " button[type='submit']" })
+  -- A successful login leaves /login: its form goes away.
+  local waited = 0
+  repeat
+    sleep(1000)
+    waited = waited + 1000
+    if contains_any(page_text(), BAD_CREDENTIALS) then
+      fail(INVALID_CREDENTIALS)
+    end
+  until not present(LOGIN_FORM) or waited >= 30000
+  if present(LOGIN_FORM) then
+    error("Aésio login did not complete - still on the login form")
   end
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
-  local page = fyde.http.get(STATEMENTS_URL)
-  if has(page, "ul.documents") then
-    fyde.log.info("ALREADY_LOGGED_IN")
-  else
-    login(params)
-    page = fyde.http.get(STATEMENTS_URL)
-  end
-
-  fyde.progress.step("Downloading statements")
-  for _, link in ipairs(fyde.html.select(page.body, "ul.documents a.pdf")) do
-    local date = trim(link.text)
-    local d, m, y = date:match("(%d+)/(%d+)/(%d+)")
-    local leaf = (link.attrs.href or ""):match("([^/%-]+)$") or "releve.pdf"
-    save_pdf(BASE .. link.attrs.href, (y and string.format("%s-%02d-%02d", y, tonumber(m), tonumber(d)) or sanitize(date)) .. "_EoviMCD_" .. leaf, {
-      name = "Relevé de prestations Eovi MCD " .. date,
-      type = "health_invoice",
-      source_category = "insurance",
-      source_sub_category = "health",
-      purpose = "report",
-    })
-  end
-  fyde.progress.step("Done")
+  -- No session check: nothing past the login is ported, so there's no session to reuse yet.
+  login(params)
+  error("credentials accepted, but the Aésio member area's documents pages aren't ported yet - see "
+    .. "this script's header comment", 0)
 end
 
 return M
