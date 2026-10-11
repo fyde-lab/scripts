@@ -1,21 +1,28 @@
 -- Scraper for Booking.com (secure.booking.com): saves one document per reservation.
 --
--- Ported from github.com/konnectors/bookingdotcom (src/index.js): login posts the
--- `.js-user-access-form--signin` form of `myreservations.html` (username/password); the answer
--- is a JS redirect whose `has_error=<code>&has_error_action` tells the outcome - `0` is
--- success, `wrong_password`/`wrong_username` bad credentials, `too_many_tries` a locked
--- account. Reservations are the `.js-booking_block` (current) and `.mb-container` (past)
--- blocks of `myreservations.html`. Booking.com has no invoices, so the konnector generated a
--- PDF per reservation (name, number, price, dates) - this port writes the same as a text-only
--- PDF. Booking.com has since moved its login to account.booking.com (a SPA with e-mail
--- codes), so this flow is likely outdated. Unverified (see README.md).
+-- Ported from github.com/konnectors/bookingdotcom (src/index.js), whose form login on
+-- `myreservations.html` is gone: that page now redirects to account.booking.com, a
+-- client-rendered sign-in, so the login is driven through `fyde.browser`. `form.nw-signin` asks
+-- for the e-mail (`input[name=username]`, then its submit button - an `#hidden-password` field
+-- is only an autofill decoy); what comes next depends on the account: a password field, or an
+-- e-mailed 6-digit code (`form.nw-email-otp`, one `input[name=code_<i>]` per digit). A
+-- made-up e-mail gets the code step (checked live), so a wrong login can only end in
+-- `MFA_FAILED`; the password step and its error message are unconfirmed. Reservations are the
+-- `.js-booking_block` (current) and `.mb-container` (past) blocks of `myreservations.html`,
+-- read from the webview (layout unconfirmed since the move). Booking.com has no invoices, so
+-- the konnector generated a PDF per reservation (name, number, price, dates) - this port writes
+-- the same as a text-only PDF. Unverified (see README.md).
 
 local M = {}
 
-local BASE = "https://secure.booking.com/"
-local RESERVATIONS_URL = BASE .. "myreservations.html"
-local LOGIN_FORM = ".js-user-access-form--signin"
-local HEADERS = { Referer = BASE, ["Accept-Language"] = "fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3" }
+local RESERVATIONS_URL = "https://secure.booking.com/myreservations.html"
+local SIGNIN_FORM = "form.nw-signin"
+local OTP_FORM = "form.nw-email-otp"
+local PASSWORD_FIELD = "input[type='password']:not(#hidden-password)"
+local RESERVATIONS = ".js-booking_block, .mb-container, .mb-block"
+-- No error texts are matched: the sign-in embeds its whole translation table (including "Mot de
+-- passe incorrect") as inline JSON, so the page text always "contains" them. Staying on the
+-- password field or the code form after submitting is the refusal instead.
 
 -- luacheck: push ignore 211
 -- ---------------------------------------------------------------------------------------------
@@ -75,81 +82,96 @@ local function ask_code(question)
   return (code:gsub("%s", ""))
 end
 
-local function absolute(base, href)
-  if not href or href == "" then
-    return base
-  end
-  href = href:gsub("&amp;", "&")
-  if href:match("^https?://") then
-    return href
-  end
-  local origin = base:match("^(https?://[^/]+)")
-  if href:sub(1, 2) == "//" then
-    return base:match("^(https?:)") .. href
-  end
-  if href:sub(1, 1) == "/" then
-    return origin .. href
-  end
-  if href:sub(1, 1) == "?" then
-    return (base:gsub("%?.*$", "")) .. href
-  end
-  local dir = (base:gsub("[?#].*$", "")):match("^(https?://.*/)") or (origin .. "/")
-  return dir .. href
+-- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
+-- exists.
+local function sleep(ms)
+  pcall(function()
+    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
+  end)
 end
 
--- Port of cozy-konnector-libs' `signin({ formSelector })`: reads the first form matching
--- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
--- named input's current value (unchecked checkboxes/radios left out, like a browser does).
-local function read_form(page, selector)
-  local form = fyde.html.select(page.body, selector)[1]
-  if not form then
-    return nil
-  end
-  local fields = {}
-  for _, input in ipairs(fyde.html.select(form.html, "input[name]")) do
-    local kind = (input.attrs.type or "text"):lower()
-    if (kind ~= "checkbox" and kind ~= "radio") or input.attrs.checked then
-      fields[input.attrs.name] = input.attrs.value or ""
+local function page_html()
+  local ok, html = pcall(function()
+    return fyde.browser:html()
+  end)
+  return ok and html or ""
+end
+
+local function present(selector)
+  return #fyde.html.select(page_html(), selector) > 0
+end
+
+local function page_text()
+  local body = fyde.html.select(page_html(), "body")[1]
+  return body and body.text or ""
+end
+
+-- Polls the current page until one of `states` matches and returns its name (or nil after
+-- `timeout_ms`). Each state is `{ name, selector = css }` or `{ name, text = { needles } }`.
+-- Polling in short chunks also survives `fyde.browser:open` not waiting for navigation (a
+-- `wait_for` issued against the previous page just times out and gets retried).
+local function wait_state(states, timeout_ms)
+  local waited = 0
+  repeat
+    local html = page_html()
+    local text
+    for _, state in ipairs(states) do
+      if state.selector and #fyde.html.select(html, state.selector) > 0 then
+        return state[1]
+      end
+      if state.text then
+        if not text then
+          local body = fyde.html.select(html, "body")[1]
+          text = body and body.text or ""
+        end
+        if contains_any(text, state.text) then
+          return state[1]
+        end
+      end
     end
-  end
-  return absolute(page.url, form.attrs.action), fields
-end
-
--- Fills `values` into the form matching `selector` on `page` and posts it.
-local function submit_form(page, selector, values, headers)
-  local action, fields = read_form(page, selector)
-  if not action then
-    error("no form matching '" .. selector .. "' on " .. tostring(page.url))
-  end
-  for name, value in pairs(values) do
-    fields[name] = value
-  end
-  return fyde.http.post_form(action, fields, headers)
-end
-
-local function has(page_or_html, selector)
-  local html = type(page_or_html) == "table" and page_or_html.body or page_or_html
-  return #fyde.html.select(html or "", selector) > 0
-end
-
-local function json_or_nil(body)
-  local ok, value = pcall(fyde.json.decode, body or "")
-  if ok then
-    return value
-  end
+    sleep(1000)
+    waited = waited + 1000
+  until waited >= (timeout_ms or 30000)
   return nil
 end
 
--- Downloads `url` and saves it as `filename` when it really is a PDF; returns true on success.
-local function save_pdf(url, filename, fields, headers)
-  local resp = fyde.http.download(url, headers)
-  local content_type = resp.content_type or ""
-  local is_pdf = content_type:find("pdf", 1, true) or (resp.body or ""):sub(1, 4) == "%PDF"
-  if resp.status == 200 and is_pdf then
-    fyde.save_document(sanitize(filename), resp.body, fields)
+local function open_and_wait(url, states, timeout_ms)
+  fyde.browser:open(url)
+  sleep(1500)
+  return wait_state(states, timeout_ms)
+end
+
+-- Fills the first present selector of each candidate list.
+local function fill_first(selectors, value)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:fill(selector, value)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+local function click_first(selectors)
+  for _, selector in ipairs(selectors) do
+    if present(selector) then
+      fyde.browser:click(selector)
+      return selector
+    end
+  end
+  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
+end
+
+-- Clicks `selector` (a download link/button) and saves what the browser downloads.
+local function browser_save(selector, filename, fields)
+  local ok, bytes = pcall(function()
+    return fyde.browser:download(selector, 60000)
+  end)
+  if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
+    fyde.save_document(sanitize(filename), bytes, fields)
     return true
   end
-  fyde.log.warn(string.format("skipping %s (status %d, content-type %s)", filename, resp.status, content_type))
+  fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
   return false
 end
 
@@ -216,46 +238,66 @@ local function html_lines(html)
 end
 -- luacheck: pop
 
-local function is_logged_in(page)
-  return not has(page, LOGIN_FORM) and has(page, ".js-booking_block, .mb-container, .mb-block")
-end
-
-local function login(params)
-  fyde.progress.step("Logging in")
-  local page = fyde.http.get(RESERVATIONS_URL, HEADERS)
-  if not has(page, LOGIN_FORM) then
-    error("Booking.com login form not found on " .. page.url)
-  end
-  fyde.log.info("LOGIN_PAGE_FOUND")
-  local resp = submit_form(page, LOGIN_FORM, { username = params.username, password = params.password }, HEADERS)
-  local code = resp.body:match("has_error=(.-)&has_error_action")
-  if code == "0" then
-    return
-  elseif code == "wrong_password" or code == "wrong_username" then
-    fail(INVALID_CREDENTIALS, code)
-  elseif code == "too_many_tries" then
-    error("Booking.com locked the account after too many tries (password change needed)")
-  end
-  error("Booking.com login failed (has_error=" .. tostring(code) .. ")")
-end
+local LOGGED_IN = { "logged_in", selector = RESERVATIONS }
 
 local function text_of(html, selector)
   local node = fyde.html.select(html, selector)[1]
   return node and trim(node.text) or ""
 end
 
+local function enter_code()
+  local code = ask_code("Code de vérification Booking.com (envoyé par e-mail)")
+  for i = 0, 5 do
+    fyde.browser:fill(OTP_FORM .. " input[name='code_" .. i .. "']", code:sub(i + 1, i + 1))
+  end
+  click_first({ OTP_FORM .. " button[type='submit']" })
+  local state = wait_state({ LOGGED_IN, { "password", selector = PASSWORD_FIELD } }, 30000)
+  if state == nil then
+    fail(MFA_FAILED, page_text():sub(1, 200))
+  end
+  return state
+end
+
+local function login(params)
+  fyde.progress.step("Logging in")
+  if not present(SIGNIN_FORM) then
+    open_and_wait(RESERVATIONS_URL, { { "login", selector = SIGNIN_FORM .. " input[name='username']" } }, 30000)
+  end
+  if not present(SIGNIN_FORM .. " input[name='username']") then
+    error("Booking.com sign-in form not found")
+  end
+  fyde.log.info("LOGIN_PAGE_FOUND")
+  fyde.browser:fill(SIGNIN_FORM .. " input[name='username']", params.username)
+  click_first({ SIGNIN_FORM .. " button[type='submit']" })
+  local state = wait_state({ { "otp", selector = OTP_FORM }, { "password", selector = PASSWORD_FIELD } }, 30000)
+  if state == "otp" then
+    state = enter_code()
+  end
+  if state == "password" then
+    fyde.browser:fill(PASSWORD_FIELD, params.password)
+    click_first({ "button[type='submit']" })
+    state = wait_state({ LOGGED_IN, { "otp", selector = OTP_FORM } }, 30000)
+    if state == "otp" then
+      state = enter_code()
+    elseif state == nil and present(PASSWORD_FIELD) then
+      fail(INVALID_CREDENTIALS, "still on the password step")
+    end
+  end
+  if state ~= "logged_in" and open_and_wait(RESERVATIONS_URL, { LOGGED_IN, { "login", selector = SIGNIN_FORM } }, 30000) ~= "logged_in" then
+    error("Booking.com login did not complete - page says: " .. page_text():sub(1, 300))
+  end
+end
+
 function M.run(params)
   fyde.progress.step("Checking for an existing session")
-  local page = fyde.http.get(RESERVATIONS_URL, HEADERS)
-  if is_logged_in(page) then
+  if open_and_wait(RESERVATIONS_URL, { LOGGED_IN, { "login", selector = SIGNIN_FORM } }, 45000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
-    page = fyde.http.get(RESERVATIONS_URL, HEADERS)
   end
 
   fyde.progress.step("Saving reservations")
-  for _, block in ipairs(fyde.html.select(page.body, ".js-booking_block, .mb-container")) do
+  for _, block in ipairs(fyde.html.select(page_html(), ".js-booking_block, .mb-container")) do
     local name = text_of(block.html, ".mb-block__hotel-name a, .mb-hotel-name a")
     local number = text_of(block.html, ".mb-block__book-number b.marginRight_5")
     local price = text_of(block.html, ".mb-block__price .mb-block__price__big, .mb-price__unit")

@@ -26,10 +26,10 @@
   },
   "status": {
     "state": "wip",
-    "login_page_found": "failed",
-    "invalid_credentials_detected": "failed",
+    "login_page_found": "passed",
+    "invalid_credentials_detected": "not_applicable",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "notes": "Login moved to account.booking.com since; text PDF per reservation; Smoke: login form not found"
+    "notes": "Login moved to account.booking.com (client-rendered): rebuilt in the webview - e-mail first, then a password or an e-mailed 6-digit code; a made-up e-mail gets the code step, so a wrong login can only end in MFA_FAILED; reservations page layout unconfirmed; text PDF per reservation"
   }
 }
