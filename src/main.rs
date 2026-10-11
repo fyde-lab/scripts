@@ -6,7 +6,8 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser, Subcommand};
 use fyde_sdk::{
-    Client, ClientConfig, LogLevel, ProgressEvent, ScriptType, Storage, init_dev_scrapers,
+    Client, ClientConfig, ErrorCode, LogLevel, ProgressEvent, ScriptType, Storage,
+    init_dev_scrapers,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -359,9 +360,10 @@ async fn run(args: RunArgs) -> Result<()> {
 
 /// Reads every `scrapers/<name>/script.lua` under the repo and publishes it
 /// to `args.server`'s scripts service as a public script, authenticated as
-/// `args.username`. Updates a script already owned by this account (by
-/// matching on name) instead of failing, so the command can be re-run after
-/// editing a script.
+/// `args.username`. Updates a script this account already published (matched
+/// on name among its enabled and the public scripts, skipping same-named ones
+/// the server won't let it update) instead of creating a duplicate, so the
+/// command can be re-run after editing a script.
 async fn publish(args: PublishArgs) -> Result<()> {
     let client = Client::init(ClientConfig {
         url: args.server.clone(),
@@ -381,11 +383,26 @@ async fn publish(args: PublishArgs) -> Result<()> {
         .await
         .with_context(|| format!("logging in as {}", args.username))?;
 
-    let existing = client
+    // Scripts this account may already have published: `list_user_scripts`
+    // only returns the ones it has *enabled*, which a script created here
+    // never is, so the public listing (every script `publish` creates is
+    // public) is what actually finds them again. Neither listing says who
+    // owns a script, so a name match is only a candidate - see below.
+    let mut existing = client
         .scripts()
         .list_user_scripts()
         .await
-        .context("listing this account's existing scripts")?;
+        .context("listing this account's enabled scripts")?;
+    for script in client
+        .scripts()
+        .list_public_scripts()
+        .await
+        .context("listing public scripts")?
+    {
+        if !existing.iter().any(|s| s.id() == script.id()) {
+            existing.push(script);
+        }
+    }
 
     for scraper_name in list_scraper_names()? {
         let script_dir = PathBuf::from("scrapers").join(&scraper_name);
@@ -401,44 +418,64 @@ async fn publish(args: PublishArgs) -> Result<()> {
             Vec::new()
         };
 
-        match existing.iter().find(|s| s.name() == manifest.name) {
-            Some(current) => {
-                client
-                    .scripts()
-                    .update_script(
-                        current.id(),
-                        &manifest.name,
-                        true,
-                        logo,
-                        &script,
-                        &manifest.description,
-                        &manifest.short_description,
-                        manifest.allowed_domains.clone(),
-                        ScriptType::Scraper,
-                        std::collections::HashMap::new(),
-                    )
-                    .await
-                    .with_context(|| format!("updating script {scraper_name}"))?;
-                tracing::info!("updated {scraper_name}");
+        // Update the first same-named script this account owns; the server
+        // refuses `update_script` on someone else's, so move on to the next
+        // candidate then, and only create a new script once none is ours.
+        let mut updated = false;
+        for current in existing.iter().filter(|s| s.name() == manifest.name) {
+            match client
+                .scripts()
+                .update_script(
+                    current.id(),
+                    &manifest.name,
+                    true,
+                    logo.clone(),
+                    &script,
+                    &manifest.description,
+                    &manifest.short_description,
+                    manifest.allowed_domains.clone(),
+                    ScriptType::Scraper,
+                    HashMap::new(),
+                )
+                .await
+            {
+                Ok(_) => {
+                    updated = true;
+                    break;
+                }
+                Err(err)
+                    if matches!(
+                        err.code(),
+                        ErrorCode::PermissionDenied | ErrorCode::NotFoundOnServer
+                    ) =>
+                {
+                    continue;
+                }
+                Err(err) => {
+                    return Err(err).with_context(|| format!("updating script {scraper_name}"));
+                }
             }
-            None => {
-                client
-                    .scripts()
-                    .create_script(
-                        &manifest.name,
-                        true,
-                        logo,
-                        &script,
-                        &manifest.description,
-                        &manifest.short_description,
-                        manifest.allowed_domains.clone(),
-                        ScriptType::Scraper,
-                        std::collections::HashMap::new(),
-                    )
-                    .await
-                    .with_context(|| format!("creating script {scraper_name}"))?;
-                tracing::info!("created {scraper_name}");
-            }
+        }
+
+        if updated {
+            tracing::info!("updated {scraper_name}");
+        } else {
+            client
+                .scripts()
+                .create_script(
+                    &manifest.name,
+                    true,
+                    logo,
+                    &script,
+                    &manifest.description,
+                    &manifest.short_description,
+                    manifest.allowed_domains.clone(),
+                    ScriptType::Scraper,
+                    HashMap::new(),
+                )
+                .await
+                .with_context(|| format!("creating script {scraper_name}"))?;
+            tracing::info!("created {scraper_name}");
         }
     }
 
