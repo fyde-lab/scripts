@@ -413,7 +413,7 @@ async fn publish(args: PublishArgs) -> Result<()> {
 
     client
         .users()
-        .login(&args.username, &args.password, "fyde-scripts-publish")
+        .login(&args.username, &args.password, "fyde-scripts-publish", false)
         .await
         .with_context(|| format!("logging in as {}", args.username))?;
 
