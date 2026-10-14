@@ -145,7 +145,7 @@ tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, �
 | [`freemobile`](scrapers/freemobile/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`gazdebordeaux`](scrapers/gazdebordeaux/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`geg`](scrapers/geg/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
-| [`generali`](scrapers/generali/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Imperva | 2026-10-11 |
+| [`generali`](scrapers/generali/manifest.json) | ❌ broken | ❌ | ❔ | ❔ | ❔ | ⚠️ Ilex Sign&go (OIDC) + SMS OTP | 2026-10-14 |
 | [`github`](scrapers/github/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`glisshop`](scrapers/glisshop/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`harmonie`](scrapers/harmonie/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |

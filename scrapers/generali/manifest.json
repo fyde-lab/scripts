@@ -25,14 +25,14 @@
     }
   },
   "status": {
-    "state": "wip",
-    "last_updated": "2026-10-11",
-    "login_page_found": "passed",
-    "invalid_credentials_detected": "passed",
+    "state": "broken",
+    "last_updated": "2026-10-14",
+    "login_page_found": "failed",
+    "invalid_credentials_detected": "not_tested",
     "login_ok": "not_tested",
     "documents_fetched": "not_tested",
-    "antibot_name": "Imperva",
+    "antibot_name": "Ilex Sign&go (OIDC) + SMS OTP",
     "antibot_status": "present",
-    "notes": ""
+    "notes": "Site migrated off the old Drupal espace-client. generali.fr/espace-client/* now 302-redirects to the monespace.generali.fr Angular SPA (empty app-root, no server-rendered login form), so the old virtual-keypad Drupal POST and the Drupal AJAX .../mes-remboursements/more endpoint no longer exist. Login is now OIDC authorization-code + PKCE against an Ilex Sign&go IdP (authorize/token at www.ssoic.generali.fr/IdPOAuth2/.../SSOIC_OIDC_EMPREINTE, client_id 8B8C7A9CFD24EF04 for the GLI distributor, redirect_uri https://www.monespace.generali.fr/connexion), and the IdP's adaptive schema is 'Multifactor authentication with OTP SMS' - an SMS code is required on every fresh login. Reimbursements now come from JSON APIs behind the SPA/Apigee, not HTML. Fixing this is a full rewrite to the OIDC flow (fyde.input.ask for the SMS OTP) that needs a real account + a fresh HAR of the new login and a reimbursement fetch to build and verify; it can't be done from the old script's assumptions or confirmed without credentials."
   }
 }
