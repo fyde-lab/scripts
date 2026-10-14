@@ -178,13 +178,14 @@ fiscal year) and RIBs from `/documents/compte-bancaire`. See the file's header c
 ### The remaining scripts, ported from `../doc-downloaders`
 
 **Superseded in part:** `edf`, `pajemploi` and `scaleway` have since been rewritten (see "The
-shared scraper contract" below), and `boursorama` is covered by `boursobank`; what follows describes the earlier doc-downloaders ports.
+shared scraper contract" below), and the old `boursorama` port has been removed in favour of
+`boursobank`; what follows describes the earlier doc-downloaders ports.
 
 `../doc-downloaders` is a sibling repo of browser-automation (Playwright) scrapers for the same
 sites, run against a real, human-authenticated Chromium (see its own `CLAUDE.md`). Its scripts
 never automate login themselves (a human always logs in by hand, then presses ENTER) and often
 never automate navigation to the documents page either — so unlike didaxis/impots (which were
-reverse-engineered directly against the live sites by hand), porting these five scripts from
+reverse-engineered directly against the live sites by hand), porting these four scripts from
 their Python source alone could only carry over what the Python code and its selectors actually
 reveal: URLs it `goto()`s to directly, text/regex patterns it matches against, and markers it
 checks for being logged out. Each script below states plainly, in its own header comment, what
@@ -192,12 +193,12 @@ is and isn't confirmed, and whether it hits a hard wall this host (no browser, n
 see `../sdk/src/domains/scrapers/host/*.rs`) can't get past, rather than presenting a
 best-guess as if it were verified.
 
-- **`scripts/scrapers/boursorama/script.lua`** and **`scripts/scrapers/edf/script.lua`** — the
+- **`scripts/scrapers/edf/script.lua`** — the
   document-listing/download logic is ported from confirmed URLs/patterns in the Python source,
-  gated the same way behind a restored session cookie, but these two sites run Datadome
+  gated the same way behind a restored session cookie, but this site runs Datadome
   bot-detection (per `../doc-downloaders/CLAUDE.md`) that a plain HTTP client with no JS engine
   very likely can't get past even for a correctly-guessed login request — this is flagged as a
-  probable architectural block in each file's header comment, not just an unconfirmed detail.
+  probable architectural block in the file's header comment, not just an unconfirmed detail.
 - **`scripts/scrapers/cesu/script.lua`** and **`scripts/scrapers/pajemploi/script.lua`** — both
   share Urssaf's SSO login; the Python source for each never reveals even the documents page
   URL (the human navigates there manually), so these are recon-only scaffolds in the same spirit

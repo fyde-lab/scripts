@@ -1,6 +1,6 @@
 ---
 name: fix-script
-description: "Debug and fix a broken Lua scraper script in this repo, in a fixed order: ask for secret.json + a token budget, ask for a fresh HAR capture of the login (and ideally a document fetch), then run/read report/diagnose/patch/retry until it passes, re-run to confirm it doesn't log in twice, and confirm documents + their upload metadata still come through. Use when asked to fix, debug, or get a scraper (didaxis, impots, ameli, edf, boursorama, cesu, pajemploi, scaleway, or a new one) working, or when told to run a script until it passes."
+description: "Debug and fix a broken Lua scraper script in this repo, in a fixed order: ask for secret.json + a token budget, ask for a fresh HAR capture of the login (and ideally a document fetch), then run/read report/diagnose/patch/retry until it passes, re-run to confirm it doesn't log in twice, and confirm documents + their upload metadata still come through. Use when asked to fix, debug, or get a scraper (didaxis, impots, ameli, edf, boursobank, cesu, pajemploi, scaleway, or a new one) working, or when told to run a script until it passes."
 ---
 
 ## What this loop does
@@ -30,7 +30,7 @@ instead.
 
 Read `scrapers/<name>/script.lua` in full and skim this repo's `CLAUDE.md` section about that
 script (the "Architecture" section documents, per script, what's confirmed vs. `TODO` vs.
-architecturally blocked — e.g. Datadome on boursorama/edf, no login flow for cesu/pajemploi,
+architecturally blocked — e.g. Datadome on edf, no login flow for cesu/pajemploi,
 client-side-rendered invoices on scaleway). If `CLAUDE.md` already flags the site as a probable
 hard wall (no JS engine, bot detection), say so up front and ask the user whether to still
 attempt it — don't burn iterations rediscovering a documented blocker.
