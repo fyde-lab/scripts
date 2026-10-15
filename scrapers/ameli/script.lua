@@ -326,16 +326,6 @@ local function classified(fields)
   return fields
 end
 
--- A `kind:value` subject for fyde.save_document's `subjects` (see README.md), the value
--- lowercased with runs of spaces/punctuation turned into "-"; nil for a blank value.
-local function subject(kind, value)
-  local slug = trim(value):lower():gsub("[%s%p]+", "-"):gsub("^%-+", ""):gsub("%-+$", "")
-  if slug == "" then
-    return nil
-  end
-  return kind .. ":" .. slug
-end
-
 -- Clicks `selector` and saves what the webview downloads as `filename`; returns the bytes saved,
 -- or nil (with a warning) when no PDF came back.
 local function download_pdf(selector, filename, fields)
@@ -481,7 +471,6 @@ local function fetch_attestations()
     if download_pdf(ATTESTATION_DOWNLOAD, "ameli-attestation-droits-" .. option.name .. ".pdf", {
       name = "Attestation de droits ameli - " .. option.name,
       type = "rights_certificate",
-      subjects = { subject("person", option.name) },
     }) then
       saved = saved + 1
     end

@@ -149,16 +149,14 @@ Every capability the script can use is the `fyde` global table — nothing else 
   step 4).
 - `fyde.save_document(name, content, fields?)` — uploads a downloaded document. `name` only needs
   to end in `.pdf`; it's a hint, not the document's real identity. The optional `fields` table
-  (used in step 8) sets any of `name`, `type`, `category`, `subcategory`, `subjects`, `purpose`
+  (used in step 8) sets any of `name`, `type`, `category`, `subcategory`, `attributes`
   up front instead of leaving them for a later classification pass — see
   `../sdk/src/domains/documents/models.rs` for each field's valid enum values (`type`: what kind
   of paper it is, never the sector: `invoice`/`receipt`/`statement`/`reimbursement_statement`/`payslip`/`contract`/
   `insurance_certificate`/`insurance_card`/`rights_certificate`/`proof_of_residence`/`rib`/
   `tax_notice`/`tax_return`/`tax_certificate`/`employment_certificate`/`fee_summary`/`booking`/
   `medical_document`/`other`; `category`/`subcategory`: the part of life it's
-  about, see README.md's "Document metadata" for the tree; `purpose`, rarely needed since a
-  `type` implies it: `attestation`/`contract`/`invoice`/`report`/`description`/`evaluation`/
-  `employment`).
+  about, see README.md's "Document metadata" for the tree).
 - `fyde.session` — a plain Lua table you can read/write; whatever's in it when `run` returns is
   persisted and restored verbatim on the next run. Use it only for state beyond what the cookie
   jar already gives you for free (cookies restore automatically already).
@@ -275,14 +273,10 @@ human-readable title, not just the sanitized filename), `type`, and the `categor
 `subcategory` alone is enough, it implies its category); override them per document where the
 site's own page structure makes another value obvious (e.g. a bank's tax-form section is
 `type = "tax_certificate"`, `subcategory = "tax_certificates"`) — don't guess a value the page
-gives you no actual signal for. Leave `purpose` out unless there's no `type`: the sdk derives it.
-When the account covers several people or things and the page says which one a document is
-about (a beneficiary, a phone line, a bank account...), set `subjects` with the shared block's
-`subject(kind, value)` helper (masking identifiers with `mask(value, keep)`), never a free-form
-string: the sdk only accepts README.md's `kind:value` subjects.
+gives you no actual signal for.
 Re-run once more (per step 5's mechanics) after adding this and confirm the report shows no
 error from an invalid value (`fyde.save_document` rejects an unrecognized `type`/`category`/
-`subcategory`/`purpose`, and a `subcategory` outside its `category`).
+`subcategory`, and a `subcategory` outside its `category`).
 
 ## Stopping
 

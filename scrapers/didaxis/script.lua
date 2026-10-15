@@ -35,7 +35,7 @@ local SECTIONS = {
   {
     slug = "personal_documents",
     url = BASE .. "/mon-espace/personal_documents.php",
-    fields = { type = "other", subcategory = "employment", purpose = "description" },
+    fields = { type = "other", subcategory = "employment" },
   },
 }
 
@@ -239,7 +239,6 @@ function M.run(params)
           name = doc.text,
           type = section.fields.type,
           subcategory = section.fields.subcategory,
-          purpose = section.fields.purpose,
         })
       else
         fyde.log.warn(string.format(

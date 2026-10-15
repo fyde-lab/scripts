@@ -188,16 +188,6 @@ local function sanitize(name)
   return name
 end
 
--- A `kind:value` subject for fyde.save_document's `subjects` (see README.md), the value
--- lowercased with runs of spaces/punctuation turned into "-"; nil for a blank value.
-local function subject(kind, value)
-  local slug = trim(value or ""):lower():gsub("[%s%p]+", "-"):gsub("^%-+", ""):gsub("%-+$", "")
-  if slug == "" then
-    return nil
-  end
-  return kind .. ":" .. slug
-end
-
 local function html_unescape(text)
   return (text:gsub("&amp;", "&"))
 end
@@ -385,7 +375,6 @@ local function download_rows(section, rows)
       if not fields.category then
         fields.category, fields.subcategory = "money", "banking"
       end
-      fields.subjects = { subject("account", row.account) }
       fyde.save_document(unique_filename(title), download.body, fields)
       saved = saved + 1
     else
