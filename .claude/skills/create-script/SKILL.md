@@ -156,7 +156,15 @@ Every capability the script can use is the `fyde` global table — nothing else 
   `insurance_certificate`/`insurance_card`/`rights_certificate`/`proof_of_residence`/`rib`/
   `tax_notice`/`tax_return`/`tax_certificate`/`employment_certificate`/`fee_summary`/`booking`/
   `medical_document`/`other`; `category`/`subcategory`: the part of life it's
-  about, see README.md's "Document metadata" for the tree).
+  about, see README.md's "Document metadata" for the tree). `attributes` maps `snake_case`
+  names to typed values: `{ type = "string"|"integer"|"float"|"boolean", value = ... }`,
+  `{ type = "date", value = "2026-10-15" }` (ISO, never the site's own format),
+  `{ type = "amount", value = { minor_units = 215050, currency = "EUR" } }` (an integer count
+  of cents — `math.floor(x * 100 + 0.5)`, never a float amount) or
+  `{ type = "select", value = { selected = "paid", options = { "paid", "unpaid" } } }`.
+  Use a name from `../sdk/src/domains/documents/well_known.rs` whenever one fits (`issued_on`,
+  `reference`, `period_start`/`period_end`, `total_amount`, `due_on`, `net_pay`, `tax_year`...)
+  — any other type than the one registered there is rejected.
 - `fyde.session` — a plain Lua table you can read/write; whatever's in it when `run` returns is
   persisted and restored verbatim on the next run. Use it only for state beyond what the cookie
   jar already gives you for free (cookies restore automatically already).
