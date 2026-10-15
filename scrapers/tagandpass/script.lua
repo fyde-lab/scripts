@@ -223,9 +223,9 @@ function M.run(params)
         local amount = string.format("%.2f", (tonumber(item.montant) or 0) / 100)
         fyde.save_document(tostring(item.date) .. "_tagandpass_" .. amount .. "EUR_" .. tostring(item.numero) .. ".pdf", pdf, {
           name = "Facture TAG " .. tostring(item.date),
-          type = "transport_invoice",
-          source_category = "transport",
-          purpose = "invoice",
+          type = "invoice",
+          category = "transport",
+          subcategory = "road",
         })
       else
         fyde.log.warn("invoice " .. tostring(item.numero) .. " did not decode to a PDF")

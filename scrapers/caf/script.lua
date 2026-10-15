@@ -105,24 +105,28 @@ local DOCUMENTS = {
     url = "https://wwwd.caf.fr/api/attestationsfront/v1/mon_compte/derniere_attestation/paiements",
     referer = "https://wwwd.caf.fr/wps/myportal/caffr/moncompte/mespaiementsmesdroits",
     name = "Attestation de paiement",
+    type = "rights_certificate",
   },
   {
     slug = "mns",
     url = "https://wwwd.caf.fr/api/attestationsfront/v1/mon_compte/derniere_attestation/mns",
     referer = "https://wwwd.caf.fr/wps/myportal/caffr/moncompte/mesattestations",
     name = "Attestation montant net social",
+    type = "rights_certificate",
   },
   {
     slug = "qf",
     url = "https://wwwd.caf.fr/api/attestationsfront/v1/mon_compte/derniere_attestation/qf",
     referer = "https://wwwd.caf.fr/wps/myportal/caffr/moncompte/mesattestations",
     name = "Attestation de quotient familial",
+    type = "rights_certificate",
   },
   {
     slug = "rms",
     url = "https://wwwd.caf.fr/api/rmsfront/v1/mon_compte/rms",
     referer = "https://wwwd.caf.fr/wps/myportal/caffr/moncompte/tableaudebord",
     name = "Relevé de compte",
+    type = "statement",
   },
 }
 
@@ -290,10 +294,9 @@ local function fetch_documents(jwt)
       local filename = document.slug .. ".pdf"
       fyde.save_document(filename, resp.body, {
         name = document.name,
-        type = document.slug,
-        source_category = "gov",
-        source_sub_category = "family",
-        purpose = "attestation",
+        type = document.type,
+        category = "family",
+        subcategory = "benefits",
       })
       fyde.log.info(string.format("saved %s (%d bytes)", filename, #resp.body))
     end

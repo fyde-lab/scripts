@@ -266,8 +266,8 @@ function M.run(params)
       save_pdf(absolute(page.url, href), "auchan_" .. count .. "_" .. sanitize(label) .. ".pdf", {
         name = "Facture Auchan " .. label,
         type = "invoice",
-        source_category = "alimentation",
-        purpose = "invoice",
+        category = "shopping",
+        subcategory = "groceries",
       })
     end
   end

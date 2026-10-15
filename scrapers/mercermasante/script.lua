@@ -323,8 +323,7 @@ local DOCUMENTS = {
     filename = "mon-attestation-de-couverture.pdf",
     fields = {
       name = "Attestation de couverture Mercer",
-      type = "health_insurance_certificate",
-      purpose = "attestation",
+      type = "insurance_certificate",
     },
   },
   {
@@ -333,8 +332,7 @@ local DOCUMENTS = {
     filename = "CarteTiersPayant.pdf",
     fields = {
       name = "Carte de tiers payant Mercer",
-      type = "health_insurance_card",
-      purpose = "attestation",
+      type = "insurance_card",
     },
   },
 }
@@ -452,8 +450,8 @@ local function save(page, href, filename, fields)
     fyde.log.warn("could not download " .. filename .. ": no download link on " .. page)
     return false
   end
-  fields.source_category = "insurance"
-  fields.source_sub_category = "health"
+  fields.category = "health"
+  fields.subcategory = "complementary_health"
   return browser_save(link, filename, fields)
 end
 
@@ -480,7 +478,6 @@ function M.run(params)
     save(refund_page(refund.id), refund_href(refund.id), "mon-decompte-" .. refund.id .. ".pdf", {
       name = "Décompte Mercer - " .. (refund.label or ("remboursement " .. refund.id)),
       type = "reimbursement_statement",
-      purpose = "report",
     })
   end
 

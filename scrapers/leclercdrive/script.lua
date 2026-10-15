@@ -215,8 +215,8 @@ function M.run(params)
         save_pdf(absolute(orders_url, pdf.attrs.href), (y and (y .. "-" .. m .. "-" .. d) or "commande") .. "_" .. sanitize(number and number.text or "") .. "_leclercdrive.pdf", {
           name = "Commande Leclerc Drive " .. (y and (d .. "/" .. m .. "/" .. y) or ""),
           type = "invoice",
-          source_category = "alimentation",
-          purpose = "invoice",
+          category = "shopping",
+          subcategory = "groceries",
         })
       end
     end

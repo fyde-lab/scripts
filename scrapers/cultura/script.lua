@@ -185,8 +185,8 @@ function M.run(params)
       save_pdf(absolute(BASE, invoice.attrs.href), sanitize(date) .. "_" .. number .. "_cultura.pdf", {
         name = "Facture Cultura " .. date,
         type = "invoice",
-        source_category = "shopping",
-        purpose = "invoice",
+        category = "shopping",
+        subcategory = "online",
       })
     end
   end

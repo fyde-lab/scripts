@@ -224,9 +224,9 @@ function M.run(params)
       local month = string.format("%04d-%02d", tonumber(statement.year) or 0, tonumber(statement.month) or 0)
       save_pdf(API .. "/api/statements/" .. id, "N26_releve_" .. month .. ".pdf", {
         name = "Relevé N26 " .. month,
-        type = "bank_statement",
-        source_category = "bank",
-        purpose = "report",
+        type = "statement",
+        category = "money",
+        subcategory = "banking",
       }, { Authorization = "Bearer " .. token, Accept = "application/pdf" })
     end
   end

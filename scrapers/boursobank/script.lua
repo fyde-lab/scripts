@@ -251,7 +251,7 @@ local SECTIONS = {
       return next_url and html_unescape(next_url)
     end,
     fields = function(row)
-      return { type = "bank_statement", purpose = lower_has(row.name, "contrat") and "contract" or "report" }
+      return { type = lower_has(row.name, "contrat") and "contract" or "statement" }
     end,
   },
   {
@@ -263,13 +263,13 @@ local SECTIONS = {
     end,
     fields = function(row)
       -- Not only statements: subscriptions/contracts and invoices land here too.
-      local purpose = "report"
+      local doc_type = "statement"
       if lower_has(row.name, "souscription") or lower_has(row.name, "contrat") then
-        purpose = "contract"
+        doc_type = "contract"
       elseif lower_has(row.name, "factur") then
-        purpose = "invoice"
+        doc_type = "invoice"
       end
-      return { type = "other_bank_document", purpose = purpose }
+      return { type = doc_type }
     end,
   },
   {
@@ -279,11 +279,7 @@ local SECTIONS = {
     url = BASE .. "/documents/ifu",
     years = true,
     fields = function(row)
-      return {
-        type = "tax_form",
-        source_sub_category = "tax",
-        purpose = lower_has(row.name, "attestation") and "attestation" or "report",
-      }
+      return { type = "tax_certificate", category = "taxes", subcategory = "tax_certificates" }
     end,
   },
   {
@@ -376,7 +372,9 @@ local function download_rows(section, rows)
     if download.status == 200 and not content_type:find("html", 1, true) then
       local fields = section.fields(row)
       fields.name = title
-      fields.source_category = "bank"
+      if not fields.category then
+        fields.category, fields.subcategory = "money", "banking"
+      end
       fyde.save_document(unique_filename(title), download.body, fields)
       saved = saved + 1
     else

@@ -237,9 +237,9 @@ function M.run(params)
       local label = trim(link.text) ~= "" and trim(link.text) or tostring(count)
       browser_save(selector, "macif_" .. count .. "_" .. sanitize(label) .. ".pdf", {
         name = "Document MACIF" .. " " .. label,
-        type = "insurance_contract",
-        source_category = "insurance",
-        purpose = "attestation",
+        type = "contract",
+        category = "housing",
+        subcategory = "home_insurance",
       })
     end
   end

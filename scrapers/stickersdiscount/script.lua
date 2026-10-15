@@ -181,8 +181,8 @@ function M.run(params)
       save_pdf(BASE .. "/" .. link.attrs.href, sanitize(date) .. "_" .. sanitize(trim(link.text)) .. ".pdf", {
         name = "Facture Stickers Discount " .. trim(link.text),
         type = "invoice",
-        source_category = "shopping",
-        purpose = "invoice",
+        category = "shopping",
+        subcategory = "online",
       })
     end
   end

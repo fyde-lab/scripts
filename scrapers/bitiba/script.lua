@@ -203,8 +203,8 @@ function M.run(params)
         save_pdf(BASE .. link.attrs.href, sanitize(date) .. "_bitiba_" .. number .. ".pdf", {
           name = "Facture Bitiba " .. date,
           type = "invoice",
-          source_category = "shopping",
-          purpose = "invoice",
+          category = "shopping",
+          subcategory = "pets",
         })
       end
     end

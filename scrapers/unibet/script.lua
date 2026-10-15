@@ -265,8 +265,8 @@ function M.run(params)
         }), {
           name = "Dépôt Unibet " .. date:sub(1, 10),
           type = "invoice",
-          source_category = "web",
-          purpose = "invoice",
+          category = "money",
+          subcategory = "gaming",
         })
     end
     if data.phHasNext == false or page >= 100 then

@@ -183,9 +183,9 @@ function M.run(params)
       local d, m, y = date:match("(%d+)/(%d+)/(%d+)")
       save_pdf(BASE .. "/" .. link.attrs.href:gsub("^/", ""), (y and (y .. "-" .. m .. "-" .. d) or sanitize(date)) .. "_eaudugrandlyon_" .. string.format("%.2f", amount) .. "EUR_" .. ref .. ".pdf", {
         name = "Facture Eau du Grand Lyon " .. date,
-        type = "water_invoice",
-        source_category = "water",
-        purpose = "invoice",
+        type = "invoice",
+        category = "housing",
+        subcategory = "water",
       })
     end
   end

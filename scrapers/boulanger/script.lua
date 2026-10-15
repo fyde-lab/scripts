@@ -200,8 +200,8 @@ function M.run(params)
         save_pdf(url, sanitize(date) .. "_" .. amount .. "_" .. (ref and trim(ref.text) or "") .. ".pdf", {
           name = "Facture Boulanger " .. date,
           type = "invoice",
-          source_category = "shopping",
-          purpose = "invoice",
+          category = "shopping",
+          subcategory = "online",
         })
       end
     end

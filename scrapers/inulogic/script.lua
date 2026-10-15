@@ -248,8 +248,8 @@ function M.run(params)
         text_pdf("Facture Inulogic " .. number, html_lines(facture and facture.html or invoice.body)), {
           name = "Facture Inulogic " .. number,
           type = "invoice",
-          source_category = "web",
-          purpose = "invoice",
+          category = "family",
+          subcategory = "childcare_school",
         })
     end
   end

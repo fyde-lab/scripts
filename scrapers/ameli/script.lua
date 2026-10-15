@@ -320,9 +320,9 @@ local function sanitize(filename)
   return (filename:gsub("[^%w%._-]", "_"))
 end
 
-local function with_source(fields)
-  fields.source_category = "insurance"
-  fields.source_sub_category = "health"
+local function classified(fields)
+  fields.category = "health"
+  fields.subcategory = "health_insurance"
   return fields
 end
 
@@ -333,7 +333,7 @@ local function download_pdf(selector, filename, fields)
     return fyde.browser:download(selector, 60000)
   end)
   if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
-    fyde.save_document(sanitize(filename), bytes, with_source(fields))
+    fyde.save_document(sanitize(filename), bytes, classified(fields))
     return bytes
   end
   fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
@@ -401,7 +401,6 @@ local function fetch_payments()
     if download_pdf("a[href='" .. href .. "']", "ameli-paiement-" .. date .. "-" .. kind .. suffix .. ".pdf", {
       name = "D\195\169compte ameli du " .. shown .. ((label and label ~= "") and (" - " .. label) or ""),
       type = "reimbursement_statement",
-      purpose = "report",
     }) then
       saved = saved + 1
     end
@@ -471,8 +470,7 @@ local function fetch_attestations()
     end
     if download_pdf(ATTESTATION_DOWNLOAD, "ameli-attestation-droits-" .. option.name .. ".pdf", {
       name = "Attestation de droits ameli - " .. option.name,
-      type = "health_insurance_certificate",
-      purpose = "attestation",
+      type = "rights_certificate",
     }) then
       saved = saved + 1
     end
@@ -554,7 +552,6 @@ local function fetch_monthly_statements()
     if download_pdf(depth and nth_in_rows(depth, k) or MONTHLY_DOWNLOAD, "ameli-releve-mensuel-" .. period .. ".pdf", {
       name = "Relev\195\169 mensuel ameli - " .. (year and string.format("%02d/%s", month, year) or period),
       type = "reimbursement_statement",
-      purpose = "report",
     }) then
       saved = saved + 1
     end

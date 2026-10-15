@@ -208,9 +208,9 @@ function M.run(params)
     local selector = item.attrs.href and ("a[href='" .. item.attrs.href .. "']") or ("#" .. item.attrs.id)
     browser_save(selector, "harmonie_" .. sanitize(trim(item.text) ~= "" and trim(item.text) or tostring(i)) .. ".pdf", {
       name = "Document Harmonie Mutuelle " .. trim(item.text),
-      type = "other_health_document",
-      source_category = "insurance",
-      source_sub_category = "health",
+      type = "medical_document",
+      category = "health",
+      subcategory = "complementary_health",
     })
   end
   fyde.progress.step("Done")

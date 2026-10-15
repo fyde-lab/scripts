@@ -42,6 +42,28 @@ listing), all following the shared conventions below; the tables below list them
   `MFA_FAILED` (both raised with `error(code, 0)`, so the message carries nothing else). Any other
   failure (captcha, vendor down, site changed) is a free-form error.
 - **Markers.** `LOGIN_PAGE_FOUND` is logged once the login form/endpoint has been recognised.
+- **Document metadata.** Every `fyde.save_document` call passes a `type` (what kind of paper
+  it is, never the sector: `invoice`/`receipt`/`statement`/`reimbursement_statement`/`payslip`/`contract`/
+  `insurance_certificate`/`insurance_card`/`rights_certificate`/`proof_of_residence`/`rib`/
+  `tax_notice`/`tax_return`/`tax_certificate`/`employment_certificate`/`fee_summary`/`booking`/
+  `medical_document`/`other`) and the
+  `category`/`subcategory` the document is about, set once per scraper and overridden per
+  document where needed (a bank's IFU is `taxes`/`tax_certificates`). `purpose` is left out: the
+  sdk derives it from the type. The tree (a `subcategory` alone implies its category):
+
+  | category | subcategories |
+  |---|---|
+  | `housing` | `energy`, `water`, `internet`, `home_insurance`, `home_services` |
+  | `telecom` | `mobile` |
+  | `money` | `banking`, `savings`, `gaming` |
+  | `taxes` | `income_tax`, `tax_certificates` |
+  | `health` | `health_insurance`, `complementary_health`, `care` |
+  | `work` | `payslips`, `employment`, `household_employer` |
+  | `family` | `benefits`, `childcare_school` |
+  | `transport` | `train`, `flight`, `road`, `ride`, `travel` |
+  | `shopping` | `online`, `pets`, `groceries`, `food_delivery` |
+  | `subscriptions` | `media`, `cloud_software` |
+  | `donations` | |
 - **Shared code.** The Lua sandbox has no `require`, so each script inlines the same helper
   block (error contract, form submission, PDF download, browser polling, and - for sites that
   have no PDF to download - a small text-only PDF writer).

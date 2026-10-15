@@ -267,9 +267,9 @@ function M.run(params)
       fyde.save_document((y and (y .. "-" .. m) or "") .. "-" .. ref .. "-" .. (amount and trim(amount.text):gsub("%s", "") or "") .. ".pdf",
         text_pdf("Réservation easyJet " .. ref, lines), {
           name = "Réservation easyJet " .. ref,
-          type = "transport_invoice",
-          source_category = "transport",
-          purpose = "invoice",
+          type = "invoice",
+          category = "transport",
+          subcategory = "flight",
         })
     end
   end

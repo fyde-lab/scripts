@@ -213,10 +213,9 @@ function M.run(params)
         local amount = cells[5] and trim(cells[5].text):match("^[^\n]*") or ""
         browser_save("a[href='" .. link.attrs.href .. "']", sanitize(date) .. "_MGEN_" .. sanitize(amount) .. ".pdf", {
           name = "Remboursement MGEN " .. date,
-          type = "health_invoice",
-          source_category = "insurance",
-          source_sub_category = "health",
-          purpose = "report",
+          type = "reimbursement_statement",
+          category = "health",
+          subcategory = "complementary_health",
         })
       end
     end

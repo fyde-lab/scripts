@@ -193,10 +193,9 @@ function M.run(params)
       local d, m, y = date:match("(%d+)/(%d+)/(%d+)")
       save_pdf(ACCOUNT .. link.attrs.href, "Numericable-" .. y .. "-" .. m .. "-" .. d .. ".pdf", {
         name = "Facture Numericable " .. date,
-        type = "isp_invoice",
-        source_category = "telecom",
-        source_sub_category = "internet",
-        purpose = "invoice",
+        type = "invoice",
+        category = "housing",
+        subcategory = "internet",
       })
     end
   end

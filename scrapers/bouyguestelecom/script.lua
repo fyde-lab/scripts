@@ -506,12 +506,16 @@ local function save_invoice(invoice)
 
   local line = invoice.line:gsub("%s", "")
   local title = invoice.kind ~= "" and invoice.kind or "Facture"
-  -- Mobile numbers start with 06/07; any other line on a Bouygues invoice is a Bbox line. Some
-  -- invoices (e.g. "Facture d'achat", an equipment purchase) have no line at all, so they get
-  -- no sub-category rather than a guessed one.
-  local sub_category
+  -- Mobile numbers start with 06/07; any other line on a Bouygues invoice is a Bbox line, filed
+  -- under housing like every other internet box. Some invoices (e.g. "Facture d'achat", an
+  -- equipment purchase) have no line at all, so they get no subcategory rather than a guessed one.
+  local category, subcategory = "telecom", nil
   if line ~= "" then
-    sub_category = line:match("^0[67]") and "mobile" or "internet"
+    if line:match("^0[67]") then
+      subcategory = "mobile"
+    else
+      category, subcategory = "housing", "internet"
+    end
   end
   local name = "Bouygues Telecom - " .. title
   if invoice.line ~= "" then
@@ -524,9 +528,9 @@ local function save_invoice(invoice)
   local slug = line ~= "" and line or title:gsub("%s+", "-")
   fyde.save_document(sanitize((invoice.date or "facture") .. "_bouyguestelecom_" .. slug) .. ".pdf", body, {
     name = name,
-    source_category = "telecom",
-    source_sub_category = sub_category,
-    purpose = "invoice",
+    type = "invoice",
+    category = category,
+    subcategory = subcategory,
   })
   return true
 end

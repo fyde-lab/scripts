@@ -190,10 +190,9 @@ function M.run(params)
         local d, m, y = date:match("(%d%d)/(%d%d)/(%d%d%d%d)")
         save_pdf(absolute(details.url, pdf.attrs.href), (y and (y .. m .. d) or date) .. "_" .. number .. ".pdf", {
           name = "Décompte Ascore Santé " .. date,
-          type = "health_invoice",
-          source_category = "insurance",
-          source_sub_category = "health",
-          purpose = "report",
+          type = "reimbursement_statement",
+          category = "health",
+          subcategory = "complementary_health",
         })
       end
     end

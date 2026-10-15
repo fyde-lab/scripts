@@ -186,8 +186,8 @@ function M.run(params)
       save_pdf(absolute("https://www.wanimo.com/", link.attrs.href), (y and (y .. "-" .. m .. "-" .. d) or "") .. "_wanimo_" .. sanitize(id) .. ".pdf", {
         name = "Facture Wanimo " .. id,
         type = "invoice",
-        source_category = "shopping",
-        purpose = "invoice",
+        category = "shopping",
+        subcategory = "pets",
       })
     end
   end

@@ -208,9 +208,9 @@ function M.run(params)
       local date = time and (time.attrs.title or ""):sub(1, 10) or ""
       save_pdf(BASE .. receipt.attrs.href, date .. "_Github_" .. (id and trim(id.text) or "receipt") .. ".pdf", {
         name = "Reçu GitHub " .. date,
-        type = "other_invoice",
-        source_category = "web",
-        purpose = "invoice",
+        type = "invoice",
+        category = "subscriptions",
+        subcategory = "cloud_software",
       })
     end
   end

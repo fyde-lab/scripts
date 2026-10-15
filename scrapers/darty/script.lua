@@ -214,8 +214,8 @@ function M.run(params)
         save_pdf(ROOT .. href, (y and (y .. "-" .. m .. "-" .. d) or "") .. "-" .. sanitize(label and label.text or (product.attrs["data-omniture-codic"] or "produit")) .. ".pdf", {
           name = "Facture Darty " .. (label and trim(label.text) or ""),
           type = "invoice",
-          source_category = "shopping",
-          purpose = "invoice",
+          category = "shopping",
+          subcategory = "online",
         })
       end
     end

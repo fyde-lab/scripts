@@ -236,8 +236,8 @@ function M.run(params)
       save_pdf(invoice.attachment.url, date .. "_eTickets_" .. tostring((tonumber(body.totalAmountTTCCent) or 0) / 100) .. "EUR_" .. tostring(body.reference) .. ".pdf", {
         name = tostring(body.label or "Facture e-Ticket"),
         type = "invoice",
-        source_category = "education",
-        purpose = "invoice",
+        category = "family",
+        subcategory = "childcare_school",
       })
     end
   end
@@ -246,7 +246,11 @@ function M.run(params)
   local _, documents = query(base .. "/document/native", token)
   for _, doc in pairs(type(documents) == "table" and documents or {}) do
     if type(doc) == "table" and doc.dlUrl then
-      save_pdf(doc.dlUrl, tostring(doc.name) .. ".pdf", { name = tostring(doc.name), source_category = "education" })
+      save_pdf(doc.dlUrl, tostring(doc.name) .. ".pdf", {
+        name = tostring(doc.name),
+        category = "family",
+        subcategory = "childcare_school",
+      })
     end
   end
   fyde.progress.step("Done")

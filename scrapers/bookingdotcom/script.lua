@@ -316,8 +316,8 @@ function M.run(params)
       }), {
         name = "Réservation Booking.com " .. name,
         type = "invoice",
-        source_category = "transport",
-        purpose = "invoice",
+        category = "transport",
+        subcategory = "travel",
       })
     end
   end

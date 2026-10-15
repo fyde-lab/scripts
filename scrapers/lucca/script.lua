@@ -218,9 +218,9 @@ function M.run(params)
     local month = tostring(payslip.import and payslip.import.endDate or ""):sub(1, 7):gsub("-", "_")
     save_pdf(url, month .. ".pdf", {
       name = "Bulletin de paie " .. month:gsub("_", "/"),
-      type = "pay_sheet",
-      source_category = "employer",
-      purpose = "employment",
+      type = "payslip",
+      category = "work",
+      subcategory = "payslips",
     })
   end
   fyde.progress.step("Done")

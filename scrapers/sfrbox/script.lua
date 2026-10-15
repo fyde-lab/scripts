@@ -190,10 +190,9 @@ local function bill_from(html, container, label)
   local d, m, y = date:match("(%d+)/(%d+)/(%d+)")
   save_pdf(CLIENT .. link.attrs.href, (y and (y .. m .. d) or sanitize(date)) .. "_SFR_box.pdf", {
     name = "Facture SFR box " .. date,
-    type = "isp_invoice",
-    source_category = "telecom",
-    source_sub_category = "internet",
-    purpose = "invoice",
+    type = "invoice",
+    category = "housing",
+    subcategory = "internet",
   })
 end
 

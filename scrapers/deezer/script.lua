@@ -289,8 +289,8 @@ function M.run(params)
       fyde.save_document(sanitize(d) .. "_deezer.pdf", text_pdf("Deezer - " .. (title and trim(title.text) or "Reçu"), lines), {
         name = "Reçu Deezer " .. d .. (price and (" (" .. trim(price.text) .. ")") or ""),
         type = "invoice",
-        source_category = "web",
-        purpose = "invoice",
+        category = "subscriptions",
+        subcategory = "media",
       })
     end
   end

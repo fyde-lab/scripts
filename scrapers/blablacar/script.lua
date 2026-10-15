@@ -297,9 +297,9 @@ function M.run(params)
         local title = refund and "Informations de remboursement de voyage Blablacar.fr" or "Informations de voyage Blablacar.fr"
         fyde.save_document(sanitize(date) .. (refund and "_Remboursement_" or "_") .. amount .. ".pdf", text_pdf(title, lines), {
           name = "BlaBlaCar " .. date,
-          type = "transport_invoice",
-          source_category = "transport",
-          purpose = "invoice",
+          type = "invoice",
+          category = "transport",
+          subcategory = "ride",
         })
       end
     end

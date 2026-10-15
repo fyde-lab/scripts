@@ -213,10 +213,9 @@ local function save_bill(href, label, line)
   local month = label:gsub("^.*%-", "")
   save_pdf(BASE .. href, line .. "_" .. sanitize(trim(month)) .. "_freemobile.pdf", {
     name = "Facture Free Mobile " .. trim(month) .. " (" .. line .. ")",
-    type = "phone_invoice",
-    source_category = "telecom",
-    source_sub_category = "mobile",
-    purpose = "invoice",
+    type = "invoice",
+    category = "telecom",
+    subcategory = "mobile",
   })
 end
 

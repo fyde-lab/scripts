@@ -204,8 +204,8 @@ function M.run(params)
       save_pdf(absolute(page.url, href), "fulli_" .. sanitize(label) .. ".pdf", {
         name = "Facture Fulli (APRR) " .. label,
         type = "invoice",
-        source_category = "transport",
-        purpose = "invoice",
+        category = "transport",
+        subcategory = "road",
       })
     end
   end

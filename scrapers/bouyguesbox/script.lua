@@ -232,9 +232,9 @@ function M.run(params)
           local date = tostring(bill.dateFacturation):sub(1, 10)
           save_pdf(API .. action, date:gsub("-", ""):sub(1, 6) .. "_bouygues_" .. tostring(bill.mntTotFacture) .. "EUR_" .. tostring(bill.idFacture) .. ".pdf", {
             name = "Facture Bouygues Telecom " .. date,
-            type = "telecom_invoice",
-            source_category = "telecom",
-            purpose = "invoice",
+            type = "invoice",
+            category = "housing",
+            subcategory = "internet",
           }, auth)
         end
       end

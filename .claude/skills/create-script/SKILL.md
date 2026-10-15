@@ -149,14 +149,16 @@ Every capability the script can use is the `fyde` global table — nothing else 
   step 4).
 - `fyde.save_document(name, content, fields?)` — uploads a downloaded document. `name` only needs
   to end in `.pdf`; it's a hint, not the document's real identity. The optional `fields` table
-  (used in step 8) sets any of `name`, `type`, `source_category`, `source_sub_category`,
-  `subjects`, `purpose` up front instead of leaving them for a later classification pass — see
-  `../sdk/src/domains/documents/models.rs` for each field's valid enum values
-  (`source_category`: `bank`/`insurance`/`retail`/`telecom`/`energy`/`water`/`health`/`gov`/
-  `association`/`education`/`employer`/`transport`/`goods`/`alimentation`/`building`/...;
-  `source_sub_category`: `civil_registration`/`immigration`/`transport`/`family`/`tax`/`health`/
-  `real_estate`/`mobile`/`internet`/`citizen`/`sport`; `purpose`:
-  `attestation`/`contract`/`invoice`/`report`/`description`/`evaluation`/`employment`).
+  (used in step 8) sets any of `name`, `type`, `category`, `subcategory`, `subjects`, `purpose`
+  up front instead of leaving them for a later classification pass — see
+  `../sdk/src/domains/documents/models.rs` for each field's valid enum values (`type`: what kind
+  of paper it is, never the sector: `invoice`/`receipt`/`statement`/`reimbursement_statement`/`payslip`/`contract`/
+  `insurance_certificate`/`insurance_card`/`rights_certificate`/`proof_of_residence`/`rib`/
+  `tax_notice`/`tax_return`/`tax_certificate`/`employment_certificate`/`fee_summary`/`booking`/
+  `medical_document`/`other`; `category`/`subcategory`: the part of life it's
+  about, see README.md's "Document metadata" for the tree; `purpose`, rarely needed since a
+  `type` implies it: `attestation`/`contract`/`invoice`/`report`/`description`/`evaluation`/
+  `employment`).
 - `fyde.session` — a plain Lua table you can read/write; whatever's in it when `run` returns is
   persisted and restored verbatim on the next run. Use it only for state beyond what the cookie
   jar already gives you for free (cookies restore automatically already).
@@ -268,13 +270,15 @@ under a `.pdf` name — go back through the run/fix/retry loop from step 5 if no
 
 Pass `fyde.save_document`'s third `fields` argument on every call from step 7, instead of
 leaving every document's metadata for a later classification pass. At minimum set `name` (a
-human-readable title, not just the sanitized filename) and `source_category`; set
-`source_sub_category`/`subjects`/`purpose` wherever the site's own page structure makes the
-right value obvious (e.g. a dedicated "payslips" section implies
-`purpose = "employment"`/`source_sub_category` matching that site's domain) — don't guess a
-value the page gives you no actual signal for. Re-run once more (per step 5's mechanics) after
-adding this and confirm the report shows no error from an invalid enum value (`fyde.save_document`
-rejects an unrecognized `source_category`/`source_sub_category`/`purpose` string).
+human-readable title, not just the sanitized filename), `type`, and the `category`/
+`subcategory` the site belongs to (README.md's "Document metadata" lists the tree; a
+`subcategory` alone is enough, it implies its category); override them per document where the
+site's own page structure makes another value obvious (e.g. a bank's tax-form section is
+`type = "tax_certificate"`, `subcategory = "tax_certificates"`) — don't guess a value the page
+gives you no actual signal for. Leave `purpose` out unless there's no `type`: the sdk derives it.
+Re-run once more (per step 5's mechanics) after adding this and confirm the report shows no
+error from an invalid value (`fyde.save_document` rejects an unrecognized `type`/`category`/
+`subcategory`/`purpose`, and a `subcategory` outside its `category`).
 
 ## Stopping
 

@@ -250,9 +250,9 @@ function M.run(params)
       local price = bill.priceWithTax and bill.priceWithTax.text or ""
       save_pdf(bill.pdfUrl, date .. "_" .. price:gsub("%s", "") .. "_" .. tostring(bill.billId) .. ".pdf", {
         name = "Facture OVH " .. tostring(bill.billId),
-        type = "web_service_invoice",
-        source_category = "web",
-        purpose = "invoice",
+        type = "invoice",
+        category = "subscriptions",
+        subcategory = "cloud_software",
       })
     end
   end

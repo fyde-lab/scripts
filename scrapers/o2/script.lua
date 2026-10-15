@@ -188,8 +188,8 @@ function M.run(params)
       save_pdf(BASE .. href, (end_date or sanitize(link.text)) .. "_o2.pdf", {
         name = "Facture O2 " .. (end_date or trim(link.text)),
         type = "invoice",
-        source_category = "individual",
-        purpose = "invoice",
+        category = "housing",
+        subcategory = "home_services",
       })
     end
   end

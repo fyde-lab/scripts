@@ -143,9 +143,9 @@ function M.run(params)
         local filename = section.slug .. "/" .. sanitize(bill.date) .. "_" .. sanitize(bill.ref) .. ".pdf"
         fyde.save_document(filename, download.body, {
           name = "Facture " .. bill.date,
-          type = "bill",
-          source_category = "water",
-          purpose = "invoice",
+          type = "invoice",
+          category = "housing",
+          subcategory = "water",
         })
       else
         fyde.log.warn(string.format(

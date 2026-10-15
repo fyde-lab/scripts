@@ -378,8 +378,8 @@ function M.run(params)
     fyde.log.info(#bulletin_ids .. " bulletin(s) de salaire found")
     download_and_save(bulletin_ids, "bulletin", "bulletin de salaire", {
       type = "payslip",
-      source_category = "gov",
-      purpose = "employment",
+      category = "work",
+      subcategory = "household_employer",
     })
   else
     fyde.log.warn('could not find the "Mes déclarations" menu link on the dashboard')
@@ -394,9 +394,8 @@ function M.run(params)
     fyde.log.info(#attestation_ids .. " attestation(s) fiscale(s) found")
     download_and_save(attestation_ids, "attestation_fiscale", "attestation fiscale", {
       type = "tax_certificate",
-      source_category = "gov",
-      source_sub_category = "tax",
-      purpose = "attestation",
+      category = "taxes",
+      subcategory = "tax_certificates",
     })
   else
     fyde.log.warn('could not find the "Mon avantage fiscal" menu link on the current page')

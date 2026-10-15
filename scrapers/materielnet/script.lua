@@ -218,8 +218,8 @@ function M.run(params)
           save_pdf(SECURE .. pdf.attrs.href, (y and (y .. "-" .. m .. "-" .. d) or "commande") .. "_Materiel.net_" .. sanitize(ref and ref.text or "") .. ".pdf", {
             name = "Facture Materiel.net " .. (date and trim(date.text) or ""),
             type = "invoice",
-            source_category = "shopping",
-            purpose = "invoice",
+            category = "shopping",
+            subcategory = "online",
           })
         end
       end

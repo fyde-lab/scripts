@@ -201,8 +201,9 @@ function M.run(params)
     if doc.url then
       save_pdf(BASE .. doc.url, tostring(doc.shared_at) .. "_" .. tostring(doc.name) .. "_" .. tostring(doc.created_by) .. ".pdf", {
         name = tostring(doc.name),
-        type = "other_health_document",
-        source_category = "health",
+        type = "medical_document",
+        category = "health",
+        subcategory = "care",
       })
     end
   end

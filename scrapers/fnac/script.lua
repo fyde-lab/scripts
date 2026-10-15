@@ -334,8 +334,8 @@ function M.run(params)
         save_pdf(url, sanitize(date) .. "_Fnac_" .. (order.attrs["data-order-id"] or "commande") .. ".pdf", {
           name = "Facture Fnac " .. date,
           type = "invoice",
-          source_category = "shopping",
-          purpose = "invoice",
+          category = "shopping",
+          subcategory = "online",
         })
       end
     end

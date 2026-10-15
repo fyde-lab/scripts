@@ -200,9 +200,9 @@ function M.run(params)
       local date = tostring(invoice.date):sub(1, 10)
       save_pdf(invoice.downloadUrl, date .. "_luko_" .. string.format("%.2f", (tonumber(invoice.amount) or 0) / 100) .. "EUR.pdf", {
         name = "Facture Luko " .. date,
-        type = "house_insurance",
-        source_category = "insurance",
-        purpose = "invoice",
+        type = "contract",
+        category = "housing",
+        subcategory = "home_insurance",
       })
     end
   end
@@ -223,9 +223,9 @@ function M.run(params)
     if doc.url then
       save_pdf(doc.url, "luko_" .. sanitize(doc.title) .. ".pdf", {
         name = tostring(doc.title),
-        type = "insurance_contract",
-        source_category = "insurance",
-        purpose = "contract",
+        type = "contract",
+        category = "housing",
+        subcategory = "home_insurance",
       })
     end
   end

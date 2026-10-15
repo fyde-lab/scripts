@@ -244,9 +244,9 @@ function M.run(params)
         if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
           fyde.save_document(sanitize((year and (year .. "-" .. month .. "-" .. day) or "") .. "_thomann_" .. number .. ".pdf"), bytes, {
             name = "Facture Thomann " .. number,
-            type = "other_invoice",
-            source_category = "shopping",
-            purpose = "invoice",
+            type = "invoice",
+            category = "shopping",
+            subcategory = "online",
           })
         else
           fyde.log.warn("no invoice PDF for order " .. number .. ": " .. tostring(ok and "not a PDF" or bytes))

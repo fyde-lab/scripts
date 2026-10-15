@@ -291,8 +291,8 @@ function M.run(params)
         fyde.save_document(sanitize("Veepee_" .. order.id .. ".pdf"), bytes, {
           name = "Facture Veepee " .. order.id,
           type = "invoice",
-          source_category = "shopping",
-          purpose = "invoice",
+          category = "shopping",
+          subcategory = "online",
         })
       else
         fyde.log.warn("no invoice PDF for order " .. order.id .. ": " .. tostring(ok and "not a PDF" or bytes))

@@ -223,6 +223,8 @@ follow too:
   `ALREADY_LOGGED_IN`); log `LOGIN_PAGE_FOUND` once the login form/endpoint is recognised;
 - fail with exactly `error("INVALID_CREDENTIALS", 0)` for a rejected username/password and
   `error("MFA_FAILED", 0)` for a rejected/unanswered one-time code;
+- pass every saved document a `type` and its `category`/`subcategory` (see README.md's
+  "Document metadata" for the values and the tree), leaving `purpose` to the sdk;
 - the shared helpers (`fail`, `submit_form`, `save_pdf`, `wait_state`, `browser_save`,
   `text_pdf`...) are inlined between `-- luacheck: push ignore 211` / `-- luacheck: pop` in each
   script, since the sandbox has no `require` - keep that block identical across scripts.

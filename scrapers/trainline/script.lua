@@ -221,9 +221,9 @@ function M.run(params)
         local date = tostring(proof.created_at or ""):sub(1, 10)
         save_pdf(proof.url, date .. "_trainline_" .. tostring(proof.id) .. ".pdf", {
           name = (proof.type == "purchase" and "Achat" or "Remboursement") .. " Trainline " .. date,
-          type = "transport_invoice",
-          source_category = "transport",
-          purpose = "invoice",
+          type = "invoice",
+          category = "transport",
+          subcategory = "train",
         })
       end
     end

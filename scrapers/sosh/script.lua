@@ -323,9 +323,8 @@ function M.run(params)
       local label = trim(link.text) ~= "" and trim(link.text) or tostring(i)
       browser_save("a[href='" .. link.attrs.href .. "']", cid .. "_" .. sanitize(label) .. "_" .. BRAND:lower() .. ".pdf", {
         name = "Facture " .. BRAND .. " " .. label,
-        type = "telecom_invoice",
-        source_category = "telecom",
-        purpose = "invoice",
+        type = "invoice",
+        category = "telecom",
       })
     end
   end

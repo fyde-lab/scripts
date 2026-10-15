@@ -198,9 +198,9 @@ function M.run(params)
         end
         save_pdf(BASE .. "/invoice/" .. ref .. "/pdf?invoice_type=factures", string.format("%s%02d_enercoop_%s.pdf", year, month_number, ref), {
           name = "Facture Enercoop " .. month .. " " .. year .. " (" .. amount .. " €)",
-          type = "energy_invoice",
-          source_category = "energy",
-          purpose = "invoice",
+          type = "invoice",
+          category = "housing",
+          subcategory = "energy",
         })
       end
     end

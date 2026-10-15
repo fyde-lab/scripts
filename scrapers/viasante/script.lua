@@ -213,9 +213,9 @@ function M.run(params)
         .. "&codeCentreGestion=VIASANTE&docId=" .. tostring(doc.id) .. "&type=" .. url_encode(doc.type),
         date .. "_viasante_" .. tostring(doc.id) .. ".pdf", {
           name = "Viasanté " .. tostring(doc.type) .. " " .. date,
-          type = doc.type == "PRESTATIONS" and "health_invoice" or "other_health_document",
-          source_category = "insurance",
-          source_sub_category = "health",
+          type = doc.type == "PRESTATIONS" and "reimbursement_statement" or "medical_document",
+          category = "health",
+          subcategory = "complementary_health",
         }, { ["Content-Type"] = "application/json" })
     end
   end

@@ -238,9 +238,9 @@ function M.run(params)
       local date = tostring(invoice.settlementDate or invoice.dueDate or ""):sub(1, 10)
       fyde.save_document(date .. "_saur_" .. string.format("%.2f", tonumber(invoice.amountIncludingTaxes) or 0) .. "Eur_" .. tostring(invoice.reference) .. ".pdf", pdf, {
         name = "Facture SAUR " .. date,
-        type = "water_invoice",
-        source_category = "water",
-        purpose = "invoice",
+        type = "invoice",
+        category = "housing",
+        subcategory = "water",
       })
     end
   end

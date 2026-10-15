@@ -327,8 +327,8 @@ function M.run(params)
   fyde.save_document("monoprix_commandes.pdf", text_pdf("Monoprix - historique des commandes", lines), {
     name = "Historique des commandes Monoprix",
     type = "invoice",
-    source_category = "alimentation",
-    purpose = "report",
+    category = "shopping",
+    subcategory = "groceries",
   })
   fyde.progress.step("Done")
 end

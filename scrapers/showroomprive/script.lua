@@ -252,8 +252,8 @@ function M.run(params)
       text_pdf("Commande Showroomprivé " .. id, lines), {
         name = "Commande Showroomprivé " .. id,
         type = "invoice",
-        source_category = "shopping",
-        purpose = "invoice",
+        category = "shopping",
+        subcategory = "online",
       })
   end
   fyde.progress.step("Done")

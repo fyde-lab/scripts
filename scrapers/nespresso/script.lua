@@ -257,8 +257,8 @@ function M.run(params)
         text_pdf("Commande Nespresso " .. number, html_lines(details and details.html or order.body)), {
           name = "Commande Nespresso " .. number,
           type = "invoice",
-          source_category = "alimentation",
-          purpose = "invoice",
+          category = "shopping",
+          subcategory = "groceries",
         })
     end
   end

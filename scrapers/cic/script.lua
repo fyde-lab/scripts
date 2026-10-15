@@ -308,9 +308,9 @@ function M.run(params)
   end
   fyde.save_document("CIC_operations.pdf", text_pdf("Opérations CIC", lines), {
     name = "Opérations bancaires CIC",
-    type = "bank_statement",
-    source_category = "bank",
-    purpose = "report",
+    type = "statement",
+    category = "money",
+    subcategory = "banking",
   })
   fyde.progress.step("Done")
 end

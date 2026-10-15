@@ -322,9 +322,8 @@ function M.run(params)
       fyde.save_document("impots/" .. sanitize(doc.text) .. ".pdf", download.body, {
         name = doc.text,
         type = "tax_notice",
-        source_category = "gov",
-        source_sub_category = "tax",
-        purpose = "attestation",
+        category = "taxes",
+        subcategory = "income_tax",
       })
     else
       fyde.log.warn(string.format(

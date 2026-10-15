@@ -302,9 +302,9 @@ function M.run(params)
       local date = tostring(invoice.created_at):sub(1, 10)
       save_pdf(invoice.invoice_url, date .. "_" .. tostring(invoice.total) .. "EUR_" .. tostring(invoice.id) .. ".pdf", {
         name = "Facture Productboard " .. date,
-        type = "web_service_invoice",
-        source_category = "web",
-        purpose = "invoice",
+        type = "invoice",
+        category = "subscriptions",
+        subcategory = "cloud_software",
       })
     end
   end

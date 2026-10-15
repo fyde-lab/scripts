@@ -193,9 +193,9 @@ function M.run(params)
       save_pdf(APP .. "?data=" .. tostring(row.txID) .. "&format=json&initWith=session&language=fr&operation=invoice_check&usageMethod=Web&version=2.7",
         "OPnGO-" .. tostring(row.txID) .. "-" .. tostring(row.totalCharge) .. "EUR.pdf", {
           name = "Facture OPnGO " .. tostring(row.info or row.txID),
-          type = "transport_invoice",
-          source_category = "transport",
-          purpose = "invoice",
+          type = "invoice",
+          category = "transport",
+          subcategory = "road",
         })
     end
   end

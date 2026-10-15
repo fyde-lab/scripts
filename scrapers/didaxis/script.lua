@@ -17,17 +17,25 @@ local M = {}
 local BASE = "https://eolys.didaxis.fr"
 
 local SECTIONS = {
-  { slug = "payslip", url = BASE .. "/mon-espace/payslip.php", purpose = "employment" },
+  {
+    slug = "payslip",
+    url = BASE .. "/mon-espace/payslip.php",
+    fields = { type = "payslip", subcategory = "payslips" },
+  },
   {
     slug = "employment_contract",
     url = BASE .. "/mon-espace/employment_contract.php",
-    purpose = "contract",
+    fields = { type = "contract", subcategory = "employment" },
   },
-  { slug = "bills", url = BASE .. "/mon-espace/bills.php", purpose = "invoice" },
+  {
+    slug = "bills",
+    url = BASE .. "/mon-espace/bills.php",
+    fields = { type = "invoice", subcategory = "employment" },
+  },
   {
     slug = "personal_documents",
     url = BASE .. "/mon-espace/personal_documents.php",
-    purpose = "description",
+    fields = { type = "other", subcategory = "employment", purpose = "description" },
   },
 }
 
@@ -229,9 +237,9 @@ function M.run(params)
         local filename = section.slug .. "/" .. sanitize(doc.text) .. ".pdf"
         fyde.save_document(filename, download.body, {
           name = doc.text,
-          type = section.slug,
-          source_category = "employer",
-          purpose = section.purpose,
+          type = section.fields.type,
+          subcategory = section.fields.subcategory,
+          purpose = section.fields.purpose,
         })
       else
         fyde.log.warn(string.format(

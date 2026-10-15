@@ -180,9 +180,9 @@ function M.run(params)
       local end_date = e1 and (e3 .. "-" .. e2 .. "-" .. e1) or "?"
       save_pdf("https://moncompte.mediapart.fr/facture/" .. id .. "/telecharger", "Facture Mediapart du " .. start_date .. " au " .. end_date .. " (" .. id .. ").pdf", {
         name = "Facture Mediapart " .. start_date .. " - " .. end_date,
-        type = "other_invoice",
-        source_category = "web",
-        purpose = "invoice",
+        type = "invoice",
+        category = "subscriptions",
+        subcategory = "media",
       })
     end
   end

@@ -254,9 +254,9 @@ function M.run(params)
   end
   fyde.save_document("nalo_projets.pdf", text_pdf("Nalo - valeur des projets", lines), {
     name = "Nalo - valeur des projets",
-    type = "bank_statement",
-    source_category = "bank",
-    purpose = "report",
+    type = "statement",
+    category = "money",
+    subcategory = "savings",
   })
   fyde.progress.step("Done")
 end

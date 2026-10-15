@@ -291,16 +291,16 @@ function M.run(params)
     count = count + 1
     browser_save("a[href='" .. link.attrs.href .. "']", "Engie_facture_" .. count .. "_" .. sanitize(trim(link.text)) .. ".pdf", {
       name = "Facture ENGIE " .. trim(link.text),
-      type = "energy_invoice",
-      source_category = "energy",
-      purpose = "invoice",
+      type = "invoice",
+      category = "housing",
+      subcategory = "energy",
     })
   end
   save_pdf(BASE .. "/cel-ws/api/private/pdf/attestationTitulaireContrat", "justificatif de domicile.pdf", {
     name = "Justificatif de domicile ENGIE",
     type = "proof_of_residence",
-    source_category = "energy",
-    purpose = "attestation",
+    category = "housing",
+    subcategory = "energy",
   })
   fyde.progress.step("Done")
 end

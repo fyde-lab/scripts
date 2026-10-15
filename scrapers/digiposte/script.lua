@@ -318,8 +318,9 @@ local function save_folder(folder_id, token)
     if file.status == 200 and (file.body or ""):sub(1, 4) == "%PDF" then
       fyde.save_document(sanitize(doc.filename or doc.title or doc.id) .. (tostring(doc.filename):match("%.pdf$") and "" or ".pdf"), file.body, {
         name = doc.title or doc.filename,
-        type = doc.category == "Bulletin de paie" and "pay_sheet" or nil,
-        purpose = doc.category == "Bulletin de paie" and "employment" or nil,
+        -- A digital safe holds anything: only payslips, the one category it names, are classified.
+        type = doc.category == "Bulletin de paie" and "payslip" or nil,
+        subcategory = doc.category == "Bulletin de paie" and "payslips" or nil,
       })
     end
   end

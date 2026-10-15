@@ -183,8 +183,8 @@ function M.run(params)
       save_pdf(absolute(BASE, link.attrs.href), sanitize(date) .. "_" .. number .. "_glisshop.pdf", {
         name = "Facture Glisshop " .. date,
         type = "invoice",
-        source_category = "shopping",
-        purpose = "invoice",
+        category = "shopping",
+        subcategory = "online",
       })
     end
   end

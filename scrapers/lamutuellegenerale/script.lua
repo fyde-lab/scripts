@@ -232,10 +232,9 @@ function M.run(params)
       local label = trim(link.text) ~= "" and trim(link.text) or tostring(count)
       browser_save(selector, "lmg_" .. count .. "_" .. sanitize(label) .. ".pdf", {
         name = "Document La Mutuelle Générale" .. " " .. label,
-        type = "other_health_document",
-        source_category = "insurance",
-        source_sub_category = "health",
-        purpose = "report",
+        type = "medical_document",
+        category = "health",
+        subcategory = "complementary_health",
       })
     end
   end

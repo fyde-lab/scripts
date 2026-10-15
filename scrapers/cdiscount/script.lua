@@ -233,8 +233,8 @@ local function save_order_documents()
       browser_save("a[href='" .. link.attrs.href .. "']", (date and sanitize(date.text) or "") .. "_Cdiscount_" .. ref .. ".pdf", {
         name = "Facture Cdiscount " .. ref,
         type = "invoice",
-        source_category = "shopping",
-        purpose = "invoice",
+        category = "shopping",
+        subcategory = "online",
       })
     end
   end

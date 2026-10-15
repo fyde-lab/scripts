@@ -209,9 +209,9 @@ function M.run(params)
       save_pdf(API .. "/billing/v1/invoices/" .. tostring(invoice.organization_id) .. "/" .. tostring(invoice.start_date) .. "/" .. tostring(invoice.id) .. "?format=pdf",
         date .. "_" .. tostring(invoice.total_taxed) .. "_" .. tostring(invoice.currency) .. ".pdf", {
           name = "Facture Scaleway " .. date,
-          type = "web_service_invoice",
-          source_category = "web",
-          purpose = "invoice",
+          type = "invoice",
+          category = "subscriptions",
+          subcategory = "cloud_software",
         }, headers)
     end
   end

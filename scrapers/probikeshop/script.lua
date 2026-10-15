@@ -234,8 +234,8 @@ function M.run(params)
       fyde.save_document(sanitize("probikeshop_" .. i .. "_" .. (label ~= "" and label or "facture") .. ".pdf"), bytes, {
         name = "Facture Probikeshop " .. (label ~= "" and label or tostring(i)),
         type = "invoice",
-        source_category = "shopping",
-        purpose = "invoice",
+        category = "shopping",
+        subcategory = "online",
       })
     else
       fyde.log.warn("could not download " .. link.attrs.href .. ": " .. tostring(ok and "not a PDF" or bytes))

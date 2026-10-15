@@ -235,10 +235,9 @@ function M.run(params)
         local d, m, y = date:match("(%d+)/(%d+)/(%d+)")
         save_pdf(BASE .. statement.attrs.href, (y and string.format("%s-%02d-%02d", y, tonumber(m), tonumber(d)) or sanitize(date)) .. "_generali.pdf", {
           name = "Remboursement Generali " .. date,
-          type = "health_invoice",
-          source_category = "insurance",
-          source_sub_category = "health",
-          purpose = "report",
+          type = "reimbursement_statement",
+          category = "health",
+          subcategory = "complementary_health",
         })
       end
     end

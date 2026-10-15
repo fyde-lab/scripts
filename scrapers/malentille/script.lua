@@ -191,8 +191,8 @@ function M.run(params)
       save_pdf(absolute(BASE, link.attrs.href), "Digital Eyewear_facture_" .. (y and (y .. "-" .. m .. "-" .. d) or sanitize(date)) .. "_n_" .. number .. ".pdf", {
         name = "Facture Malentille " .. date,
         type = "invoice",
-        source_category = "health",
-        purpose = "invoice",
+        category = "health",
+        subcategory = "care",
       })
     end
   end

@@ -202,10 +202,9 @@ function M.run(params)
     if month and tonumber(month:sub(1, 4)) > 2011 then
       save_pdf("https://adsl.free.fr/" .. href:gsub("^/", ""), month .. "_free.pdf", {
         name = "Facture Free " .. month:sub(5, 6) .. "/" .. month:sub(1, 4),
-        type = "isp_invoice",
-        source_category = "telecom",
-        source_sub_category = "internet",
-        purpose = "invoice",
+        type = "invoice",
+        category = "housing",
+        subcategory = "internet",
       })
     elseif id then
       fyde.log.info("bill " .. id .. " predates 2012 and has no file")

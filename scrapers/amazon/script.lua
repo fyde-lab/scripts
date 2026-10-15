@@ -240,8 +240,8 @@ local function save_order_invoices(card)
         browser_save("a[href='" .. link.attrs.href .. "']", ref .. (i > 1 and ("_" .. i) or "") .. "_amazon.pdf", {
           name = "Facture Amazon " .. ref,
           type = "invoice",
-          source_category = "shopping",
-          purpose = "invoice",
+          category = "shopping",
+          subcategory = "online",
         })
       end
     end

@@ -284,8 +284,8 @@ function M.run(params)
     fyde.save_document(sanitize(order.date) .. "-" .. order.number .. ".pdf", text_pdf("Commande Zalando " .. order.number, lines), {
       name = "Commande Zalando " .. order.number,
       type = "invoice",
-      source_category = "shopping",
-      purpose = "invoice",
+      category = "shopping",
+      subcategory = "online",
     })
   end
   fyde.progress.step("Done")

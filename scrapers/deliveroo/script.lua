@@ -264,8 +264,8 @@ function M.run(params)
       save_pdf(ORIGIN .. "/order/receipt/" .. number, "deliveroo-" .. number .. ".pdf", {
         name = "Reçu Deliveroo " .. (label ~= "" and label or number),
         type = "invoice",
-        source_category = "alimentation",
-        purpose = "invoice",
+        category = "shopping",
+        subcategory = "food_delivery",
       })
     end
   end

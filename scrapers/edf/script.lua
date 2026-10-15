@@ -227,9 +227,9 @@ function M.run(params)
     local label = trim(control.text) ~= "" and trim(control.text) or tostring(count)
     browser_save(selector, "EDF_facture_" .. sanitize(label) .. ".pdf", {
       name = "Facture EDF " .. label,
-      type = "energy_invoice",
-      source_category = "energy",
-      purpose = "invoice",
+      type = "invoice",
+      category = "housing",
+      subcategory = "energy",
     })
   end
   fyde.progress.step("Done")

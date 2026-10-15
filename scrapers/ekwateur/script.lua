@@ -190,17 +190,17 @@ function M.run(params)
       local date = trim(cells[1].text)
       save_pdf(BASE .. trim(link.attrs.href), sanitize(date) .. "_ekwateur.pdf", {
         name = "Facture ekWateur " .. date,
-        type = "energy_invoice",
-        source_category = "energy",
-        purpose = "invoice",
+        type = "invoice",
+        category = "housing",
+        subcategory = "energy",
       })
     end
   end
   save_pdf(BASE .. "/client/justificatif_de_domicile", "attestation de contrat (justificatif de domicile).pdf", {
     name = "Justificatif de domicile ekWateur",
     type = "proof_of_residence",
-    source_category = "energy",
-    purpose = "attestation",
+    category = "housing",
+    subcategory = "energy",
   })
   fyde.progress.step("Done")
 end

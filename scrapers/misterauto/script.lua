@@ -194,8 +194,8 @@ function M.run(params)
       save_pdf(absolute(BASE, link.attrs.href), "misterauto-" .. (y and (y .. "-" .. m .. "-" .. d) or "commande") .. "-" .. sanitize(id) .. ".pdf", {
         name = "Facture Mister Auto " .. id,
         type = "invoice",
-        source_category = "shopping",
-        purpose = "invoice",
+        category = "shopping",
+        subcategory = "online",
       })
     end
   end

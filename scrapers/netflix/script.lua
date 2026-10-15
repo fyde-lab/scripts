@@ -300,8 +300,8 @@ function M.run(params)
     fyde.save_document(sanitize(bill.date) .. "_" .. sanitize(bill.total) .. ".pdf", text_pdf("Facture Netflix " .. bill.date, lines), {
       name = "Facture Netflix " .. bill.date,
       type = "invoice",
-      source_category = "web",
-      purpose = "invoice",
+      category = "subscriptions",
+      subcategory = "media",
     })
   end
   fyde.progress.step("Done")

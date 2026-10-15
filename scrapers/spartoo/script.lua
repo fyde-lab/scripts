@@ -182,8 +182,8 @@ function M.run(params)
       save_pdf(BASE .. "/facturesclient.php?" .. order, (y and (y .. "-" .. m .. "-" .. d) or sanitize(date)) .. "_spartoo_" .. sanitize(trim(link.text):match("^(%S+)") or "") .. ".pdf", {
         name = "Facture Spartoo " .. date,
         type = "invoice",
-        source_category = "shopping",
-        purpose = "invoice",
+        category = "shopping",
+        subcategory = "online",
       })
     end
   end

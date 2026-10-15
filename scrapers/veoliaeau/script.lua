@@ -212,9 +212,9 @@ function M.run(params)
       local label = trim(link.text) ~= "" and trim(link.text) or tostring(count)
       browser_save(selector, "veolia_" .. count .. "_" .. sanitize(label) .. ".pdf", {
         name = "Document Veolia Eau" .. " " .. label,
-        type = "water_invoice",
-        source_category = "water",
-        purpose = "invoice",
+        type = "invoice",
+        category = "housing",
+        subcategory = "water",
       })
     end
   end

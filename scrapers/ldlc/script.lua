@@ -306,8 +306,8 @@ function M.run(params)
         save_pdf(SECURE .. "/Orders/DownloadOrderInvoice" .. query, (y and (y .. "-" .. m .. "-" .. d) or "commande") .. "_ldlc_" .. sanitize(ref and ref.text or "") .. ".pdf", {
           name = "Facture LDLC " .. (date and trim(date.text) or ""),
           type = "invoice",
-          source_category = "shopping",
-          purpose = "invoice",
+          category = "shopping",
+          subcategory = "online",
         })
       end
     end

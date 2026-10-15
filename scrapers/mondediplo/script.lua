@@ -250,8 +250,8 @@ function M.run(params)
       fyde.save_document(sanitize(title) .. "-" .. number .. ".pdf", text_pdf("Le Monde diplomatique - commande " .. number, lines), {
         name = "Le Monde diplomatique - " .. title,
         type = "invoice",
-        source_category = "web",
-        purpose = "invoice",
+        category = "subscriptions",
+        subcategory = "media",
       })
     end
   end

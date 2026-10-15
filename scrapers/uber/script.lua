@@ -185,9 +185,9 @@ function M.run(params)
         local date = tostring(invoices[1].invoice_date or ""):sub(1, 10)
         save_pdf("https://riders.uber.com/invoice-gen" .. invoices[1].document_path, date .. "_uber_" .. uuid .. ".pdf", {
           name = "Facture Uber " .. date,
-          type = "transport_invoice",
-          source_category = "transport",
-          purpose = "invoice",
+          type = "invoice",
+          category = "transport",
+          subcategory = "ride",
         })
       end
     end

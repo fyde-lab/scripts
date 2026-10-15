@@ -190,9 +190,9 @@ If the script's job includes fetching documents, confirm the clean run from step
 at least one real document under `data/documents/<name>/` (content-type/byte-size consistent
 with a real file, not an HTML error page saved under a `.pdf` name), and that every
 `fyde.save_document(name, content, fields)` call's `fields` table still has valid values —
-`source_category`/`source_sub_category`/`purpose` are enums (see
-`../sdk/src/domains/documents/models.rs`); a run error naming one of them means the fix
-introduced or left behind an invalid value. If the original breakage touched this logic at all,
+`type`/`category`/`subcategory`/`purpose` are enums, and a `subcategory` must belong to its
+`category` (see README.md's "Document metadata" and `../sdk/src/domains/documents/models.rs`); a
+run error naming one of them means the fix introduced or left behind an invalid value. If the original breakage touched this logic at all,
 re-run once more per the mechanics above after any change here.
 
 ## Stopping

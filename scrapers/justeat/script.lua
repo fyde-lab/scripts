@@ -257,8 +257,8 @@ function M.run(params)
         text_pdf("Commande Just Eat " .. (name and trim(name.text) or ""), html_lines(detail.body)), {
           name = "Commande Just Eat " .. date,
           type = "invoice",
-          source_category = "alimentation",
-          purpose = "invoice",
+          category = "shopping",
+          subcategory = "food_delivery",
         })
     end
   end

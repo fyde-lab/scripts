@@ -209,10 +209,9 @@ function M.run(params)
       local selector = control.attrs.href and ("a[href='" .. control.attrs.href .. "']") or ("#" .. control.attrs.id)
       browser_save(selector, "PRIXTEL_facture_" .. count .. ".pdf", {
         name = "Facture Prixtel",
-        type = "phone_invoice",
-        source_category = "telecom",
-        source_sub_category = "mobile",
-        purpose = "invoice",
+        type = "invoice",
+        category = "telecom",
+        subcategory = "mobile",
       })
     end
   end

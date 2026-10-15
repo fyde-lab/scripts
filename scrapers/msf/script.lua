@@ -183,10 +183,8 @@ function M.run(params)
       if download and download.attrs.href then
         save_pdf(BASE .. "/donateur/" .. download.attrs.href, sanitize(link.text) .. ".pdf", {
           name = "Reçu fiscal MSF " .. trim(link.text),
-          type = "tax_receipt",
-          source_category = "association",
-          source_sub_category = "tax",
-          purpose = "attestation",
+          type = "tax_certificate",
+          category = "donations",
         })
       end
     end

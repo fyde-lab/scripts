@@ -188,8 +188,8 @@ function M.run(params)
       save_pdf(absolute(BASE, link.attrs.href), sanitize(date) .. "_" .. id .. "_autolib.pdf", {
         name = "Facture Autolib " .. date,
         type = "invoice",
-        source_category = "transport",
-        purpose = "invoice",
+        category = "transport",
+        subcategory = "road",
       })
     end
   end

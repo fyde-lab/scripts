@@ -218,9 +218,9 @@ function M.run(params)
         local ref, date = trim(cells[1].text), trim(cells[2].text)
         browser_save("a[href='" .. link.attrs.href .. "']", sanitize(date) .. "_" .. ref .. ".pdf", {
           name = "Facture Bip&Go " .. date,
-          type = "transport_invoice",
-          source_category = "transport",
-          purpose = "invoice",
+          type = "invoice",
+          category = "transport",
+          subcategory = "road",
         })
       end
     end

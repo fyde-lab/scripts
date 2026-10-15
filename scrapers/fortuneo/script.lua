@@ -294,9 +294,9 @@ function M.run(params)
       if #lines > 0 then
         fyde.save_document("Fortuneo_" .. sanitize(number) .. ".pdf", text_pdf("Fortuneo - " .. (link.attrs.title or number), lines), {
           name = "Opérations Fortuneo " .. (link.attrs.title or number),
-          type = "bank_statement",
-          source_category = "bank",
-          purpose = "report",
+          type = "statement",
+          category = "money",
+          subcategory = "banking",
         })
       end
     end

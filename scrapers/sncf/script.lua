@@ -378,9 +378,9 @@ function M.run(params)
       count = count + 1
       save_pdf(url, "SNCF_justificatif_" .. count .. ".pdf", {
         name = "Justificatif de voyage SNCF",
-        type = "transport_invoice",
-        source_category = "transport",
-        purpose = "invoice",
+        type = "invoice",
+        category = "transport",
+        subcategory = "train",
       })
     end
   end

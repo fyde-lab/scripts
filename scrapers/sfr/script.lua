@@ -254,9 +254,8 @@ function M.run(params)
       local label = trim(link.text) ~= "" and trim(link.text) or tostring(count)
       browser_save(selector, "sfr_" .. count .. "_" .. sanitize(label) .. ".pdf", {
         name = "Facture SFR" .. " " .. label,
-        type = "telecom_invoice",
-        source_category = "telecom",
-        purpose = "invoice",
+        type = "invoice",
+        category = "telecom",
       })
     end
   end

@@ -238,9 +238,9 @@ function M.run(params)
       local label = trim(link.text) ~= "" and trim(link.text) or tostring(count)
       browser_save(selector, "payfit_" .. count .. "_" .. sanitize(label) .. ".pdf", {
         name = "Bulletin de paie PayFit" .. " " .. label,
-        type = "pay_sheet",
-        source_category = "employer",
-        purpose = "employment",
+        type = "payslip",
+        category = "work",
+        subcategory = "payslips",
       })
     end
   end

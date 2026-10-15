@@ -295,9 +295,7 @@ function M.run(params)
     fyde.save_document("declaration_" .. period .. ".pdf", text_pdf(kind .. " - " .. period, lines), {
       name = kind .. " " .. period,
       type = "tax_return",
-      source_category = "gov",
-      source_sub_category = "tax",
-      purpose = "report",
+      category = "taxes",
     })
   end
   fyde.progress.step("Done")

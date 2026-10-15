@@ -216,9 +216,9 @@ function M.run(params)
       local date = bill.text:match("(%d%d/%d%d/%d%d%d%d)") or tostring(count)
       browser_save("a[href='" .. link.attrs.href .. "']", sanitize(date) .. "_TotalEnergies_facture.pdf", {
         name = "Facture TotalEnergies " .. date,
-        type = "energy_invoice",
-        source_category = "energy",
-        purpose = "invoice",
+        type = "invoice",
+        category = "housing",
+        subcategory = "energy",
       })
     end
   end
@@ -226,9 +226,9 @@ function M.run(params)
   if contract then
     browser_save("a[href='" .. contract.attrs.href .. "']", "TotalEnergies_Contrat.pdf", {
       name = "Contrat TotalEnergies",
-      type = "energy_contract",
-      source_category = "energy",
-      purpose = "contract",
+      type = "contract",
+      category = "housing",
+      subcategory = "energy",
     })
   end
   fyde.progress.step("Done")

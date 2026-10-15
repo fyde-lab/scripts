@@ -253,8 +253,8 @@ function M.run(params)
       fyde.save_document(sanitize(trim(cells[1].text)) .. "_" .. id .. "_TheOldReader.pdf", text_pdf("The Old Reader invoice", lines), {
         name = "Facture The Old Reader " .. trim(cells[1].text),
         type = "invoice",
-        source_category = "web",
-        purpose = "invoice",
+        category = "subscriptions",
+        subcategory = "media",
       })
     end
   end
