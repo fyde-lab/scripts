@@ -224,7 +224,9 @@ follow too:
 - fail with exactly `error("INVALID_CREDENTIALS", 0)` for a rejected username/password and
   `error("MFA_FAILED", 0)` for a rejected/unanswered one-time code;
 - pass every saved document a `type` and its `category`/`subcategory` (see README.md's
-  "Document metadata" for the values and the tree), leaving `purpose` to the sdk;
+  "Document metadata" for the values and the tree), leaving `purpose` to the sdk, plus
+  `subjects` (`subject(kind, value)`/`mask(value, keep)` from the shared block) when the account
+  covers several people, lines, accounts... and the page says which one a document is about;
 - the shared helpers (`fail`, `submit_form`, `save_pdf`, `wait_state`, `browser_save`,
   `text_pdf`...) are inlined between `-- luacheck: push ignore 211` / `-- luacheck: pop` in each
   script, since the sandbox has no `require` - keep that block identical across scripts.

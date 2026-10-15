@@ -276,6 +276,10 @@ human-readable title, not just the sanitized filename), `type`, and the `categor
 site's own page structure makes another value obvious (e.g. a bank's tax-form section is
 `type = "tax_certificate"`, `subcategory = "tax_certificates"`) — don't guess a value the page
 gives you no actual signal for. Leave `purpose` out unless there's no `type`: the sdk derives it.
+When the account covers several people or things and the page says which one a document is
+about (a beneficiary, a phone line, a bank account...), set `subjects` with the shared block's
+`subject(kind, value)` helper (masking identifiers with `mask(value, keep)`), never a free-form
+string: the sdk only accepts README.md's `kind:value` subjects.
 Re-run once more (per step 5's mechanics) after adding this and confirm the report shows no
 error from an invalid value (`fyde.save_document` rejects an unrecognized `type`/`category`/
 `subcategory`/`purpose`, and a `subcategory` outside its `category`).

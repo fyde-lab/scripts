@@ -64,6 +64,14 @@ listing), all following the shared conventions below; the tables below list them
   | `shopping` | `online`, `pets`, `groceries`, `food_delivery` |
   | `subscriptions` | `media`, `cloud_software` |
   | `donations` | |
+
+  When an account covers several people or things, each document also says which one it
+  concerns in `subjects`: `kind:value` tags whose kind is `person`, `line`, `account`,
+  `contract`, `place`, `vehicle` or `trip`, built with the shared `subject(kind, value)` helper
+  (`person:lea-dupont`), identifiers masked down to their last digits with `mask(value, keep)`
+  (`line:xxxxxx5678`). The sdk rejects any other shape. Only scrapers that already read the
+  person/line/account off the page set them so far: ameli and mgen (beneficiary), freemobile and
+  Bouygues Telecom (phone line), BoursoBank (account).
 - **Shared code.** The Lua sandbox has no `require`, so each script inlines the same helper
   block (error contract, form submission, PDF download, browser polling, and - for sites that
   have no PDF to download - a small text-only PDF writer).

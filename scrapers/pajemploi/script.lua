@@ -75,6 +75,28 @@ local function sanitize(name)
   return name
 end
 
+-- A `kind:value` subject for fyde.save_document's `subjects`: who or what the document concerns
+-- when the account covers several (`person`, `line`, `account`, `contract`, `place`, `vehicle`
+-- or `trip`). The value is lowercased with runs of spaces/punctuation turned into "-"; nil for a
+-- blank value, which a `subjects` list simply skips.
+local function subject(kind, value)
+  local slug = trim(value or ""):lower():gsub("[%s%p]+", "-"):gsub("^%-+", ""):gsub("%-+$", "")
+  if slug == "" then
+    return nil
+  end
+  return kind .. ":" .. slug
+end
+
+-- Masks all but the last `keep` characters of an identifier (phone number, IBAN, contract
+-- number...), enough to tell them apart without spelling them out in a subject.
+local function mask(value, keep)
+  value = (value or ""):gsub("%s", "")
+  if #value <= keep then
+    return value
+  end
+  return string.rep("x", #value - keep) .. value:sub(-keep)
+end
+
 -- Asks the user for a one-time code through fyde.input.ask; an unanswered/empty prompt (or no
 -- input handler at all, e.g. an unattended run) is an MFA failure.
 local function ask_code(question)
