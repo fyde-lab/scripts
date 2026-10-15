@@ -6,8 +6,8 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser, Subcommand};
 use fyde_sdk::{
-    Client, ClientConfig, ErrorCode, LogLevel, ProgressEvent, ScriptParameter, ScriptParameterType,
-    ScriptType, Storage, init_dev_scrapers,
+    Client, ClientConfig, ErrorCode, LogLevel, LoginOutcome, ProgressEvent, ScriptParameter,
+    ScriptParameterType, ScriptType, Storage, init_dev_scrapers,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -411,11 +411,24 @@ async fn publish(args: PublishArgs) -> Result<()> {
     .await
     .with_context(|| format!("connecting to {}", args.server))?;
 
-    client
+    let outcome = client
         .users()
-        .login(&args.username, &args.password, "fyde-scripts-publish", false)
+        .login(
+            &args.username,
+            &args.password,
+            "fyde-scripts-publish",
+            false,
+            None,
+        )
         .await
         .with_context(|| format!("logging in as {}", args.username))?;
+    if let LoginOutcome::SessionLimitReached { max_sessions, .. } = outcome {
+        anyhow::bail!(
+            "{} already has {max_sessions} open session(s), its plan's limit: log one out before \
+             publishing",
+            args.username
+        );
+    }
 
     // Scripts this account may already have published: `list_user_scripts`
     // only returns the ones it has *enabled*, which a script created here
