@@ -430,6 +430,28 @@ async fn publish(args: PublishArgs) -> Result<()> {
         );
     }
 
+    // Close the session whether publishing succeeded or not, so a failed run
+    // doesn't leave one open against the account's plan limit. A logout
+    // failure after a publishing failure is only logged, to keep the error
+    // that actually stopped the run.
+    let published = publish_scripts(&client).await;
+    if let Err(err) = client
+        .users()
+        .logout()
+        .await
+        .with_context(|| format!("logging out {}", args.username))
+    {
+        if published.is_ok() {
+            return Err(err);
+        }
+        tracing::warn!("{err:#}");
+    }
+    published
+}
+
+/// Publishes every scraper through `client`, which must already be logged in;
+/// see [`publish`].
+async fn publish_scripts(client: &Client) -> Result<()> {
     // Scripts this account may already have published: `list_user_scripts`
     // only returns the ones it has *enabled*, which a script created here
     // never is, so the public listing (every script `publish` creates is

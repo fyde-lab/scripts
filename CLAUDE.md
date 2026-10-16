@@ -109,7 +109,7 @@ vendored, patched BoringSSL used by `wreq`, the scrapers domain's HTTP client).
 ### `src/main.rs`
 
 Six subcommands: `run`, `publish` (sends every scraper to a fyde server's scripts service as
-a public script), `check` (loads every script in the same restricted Lua stdlib as the sdk,
+a public script, logging the session out again at the end whether publishing succeeded or failed), `check` (loads every script in the same restricted Lua stdlib as the sdk,
 without calling `run`), `list` (prints every scraper's directory name with the `name`/
 `short_description` from its `manifest.json`), `status` (prints the `manifest.json` `status`
 object of the named scrapers, or of every scraper) and `status-table` (rewrites the table between
