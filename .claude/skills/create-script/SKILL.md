@@ -162,9 +162,10 @@ Every capability the script can use is the `fyde` global table — nothing else 
   `{ type = "amount", value = { minor_units = 215050, currency = "EUR" } }` (an integer count
   of cents — `math.floor(x * 100 + 0.5)`, never a float amount) or
   `{ type = "select", value = { selected = "paid", options = { "paid", "unpaid" } } }`.
-  Use a name from `../sdk/src/domains/documents/well_known.rs` whenever one fits (`issued_on`,
-  `reference`, `period_start`/`period_end`, `total_amount`, `due_on`, `net_pay`, `tax_year`...)
-  — any other type than the one registered there is rejected.
+  Use one of the default attribute names whenever one fits (`issued_on`, `reference`,
+  `period_start`/`period_end`, `total_amount`, `due_on`, `net_pay`, `tax_year`... — seeded by
+  `../server/migrations/0012_create_attributes.sql`): a value of any other type than the one
+  defined there is rejected on upload.
 - `fyde.session` — a plain Lua table you can read/write; whatever's in it when `run` returns is
   persisted and restored verbatim on the next run. Use it only for state beyond what the cookie
   jar already gives you for free (cookies restore automatically already).
