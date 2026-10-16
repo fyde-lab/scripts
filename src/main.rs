@@ -401,6 +401,7 @@ async fn run(args: RunArgs) -> Result<()> {
 async fn publish(args: PublishArgs) -> Result<()> {
     let client = Client::init(ClientConfig {
         url: args.server.clone(),
+        client_name: "fyde-scripts".to_string(),
         storage: Storage::Memory,
         log_level: LogLevel::Info,
         on_log: None,
