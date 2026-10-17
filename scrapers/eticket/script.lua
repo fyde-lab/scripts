@@ -34,6 +34,7 @@ local helpers = fyde.helpers
 local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local fail = helpers.fail
 local sanitize = helpers.sanitize
+local url_encode = helpers.url_encode
 local base64url_decode = helpers.base64url_decode
 
 local function absolute(base, href)
@@ -114,12 +115,6 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 -- luacheck: pop
-
-local function url_encode(s)
-  return (tostring(s):gsub("[^%w%-_%.~]", function(c)
-    return string.format("%%%02X", c:byte())
-  end))
-end
 
 local function claims(id_token)
   return json_or_nil(base64url_decode(id_token:match("^[^.]+%.([^.]+)") or "")) or {}
