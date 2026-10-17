@@ -33,10 +33,7 @@ local helpers = fyde.helpers
 local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local MFA_FAILED = helpers.MFA_FAILED
 local fail = helpers.fail
-
-local function contains(haystack, needle)
-  return (haystack or ""):lower():find(needle:lower(), 1, true) ~= nil
-end
+local contains = helpers.contains
 
 local function contains_any(haystack, needles)
   for _, needle in ipairs(needles) do
