@@ -52,43 +52,17 @@ local LOGIN_URL = BASE .. "/connexion"
 local HOME_URL = BASE .. "/journal"
 local REFUNDS_URL = BASE .. "/remboursements"
 
--- luacheck: push ignore 211
--- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper - see README.md).
---
--- Login error contract: a rejected username/password always fails the run with exactly
--- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
--- `MFA_FAILED` (both raised with `error(code, 0)`, so the message carries no position prefix).
--- Any other failure is a free-form error message.
---
--- Log markers (grepped by tests/login_smoke.sh): `LOGIN_PAGE_FOUND` once the login form has
--- been seen, `ALREADY_LOGGED_IN` when a restored session made the login step unnecessary.
--- ---------------------------------------------------------------------------------------------
 local helpers = fyde.helpers
 local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local MFA_FAILED = helpers.MFA_FAILED
 local fail = helpers.fail
-local sanitize = helpers.sanitize
 local ask_code = helpers.ask_code
 local page_html = helpers.page_html
 local present = helpers.present
 local page_text = helpers.page_text
 local wait_state = helpers.wait_state
 local open_and_wait = helpers.open_and_wait
-
--- Clicks `selector` (a download link/button) and saves what the browser downloads.
-local function browser_save(selector, filename, fields)
-  local ok, bytes = pcall(function()
-    return fyde.browser:download(selector, 60000)
-  end)
-  if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
-    fyde.save_document(sanitize(filename), bytes, fields)
-    return true
-  end
-  fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
-  return false
-end
--- luacheck: pop
+local browser_save = helpers.browser_save
 
 local USERNAME_FIELD = "#username"
 local PASSWORD_FIELD = "#password"
