@@ -36,10 +36,7 @@ local MFA_FAILED = helpers.MFA_FAILED
 local fail = helpers.fail
 local contains = helpers.contains
 local contains_any = helpers.contains_any
-
-local function trim(s)
-  return ((s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
-end
+local trim = helpers.trim
 
 local function sanitize(name)
   name = trim((name or ""):gsub("%s+", " "))
