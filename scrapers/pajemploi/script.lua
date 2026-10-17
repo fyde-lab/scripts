@@ -46,28 +46,7 @@ local fail = helpers.fail
 local contains_any = helpers.contains_any
 local sanitize = helpers.sanitize
 local ask_code = helpers.ask_code
-
-local function absolute(base, href)
-  if not href or href == "" then
-    return base
-  end
-  href = href:gsub("&amp;", "&")
-  if href:match("^https?://") then
-    return href
-  end
-  local origin = base:match("^(https?://[^/]+)")
-  if href:sub(1, 2) == "//" then
-    return base:match("^(https?:)") .. href
-  end
-  if href:sub(1, 1) == "/" then
-    return origin .. href
-  end
-  if href:sub(1, 1) == "?" then
-    return (base:gsub("%?.*$", "")) .. href
-  end
-  local dir = (base:gsub("[?#].*$", "")):match("^(https?://.*/)") or (origin .. "/")
-  return dir .. href
-end
+local absolute = helpers.absolute
 
 -- Form login helper (`signin({ formSelector })`-style): reads the first form matching
 -- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
