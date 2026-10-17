@@ -37,14 +37,6 @@ local sanitize = helpers.sanitize
 local submit_form = helpers.submit_form
 local has = helpers.has
 
-local function json_or_nil(body)
-  local ok, value = pcall(fyde.json.decode, body or "")
-  if ok then
-    return value
-  end
-  return nil
-end
-
 -- Downloads `url` and saves it as `filename` when it really is a PDF; returns true on success.
 local function save_pdf(url, filename, fields, headers)
   local resp = fyde.http.download(url, headers)
