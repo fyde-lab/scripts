@@ -72,17 +72,6 @@ local sanitize = helpers.sanitize
 local ask_code = helpers.ask_code
 local sleep = helpers.sleep
 local page_html = helpers.page_html
-local present = helpers.present
-
-local function click_first(selectors)
-  for _, selector in ipairs(selectors) do
-    if present(selector) then
-      fyde.browser:click(selector)
-      return selector
-    end
-  end
-  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
-end
 
 -- Clicks `selector` (a download link/button) and saves what the browser downloads.
 local function browser_save(selector, filename, fields)

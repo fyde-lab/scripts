@@ -45,16 +45,6 @@ local page_text = helpers.page_text
 local wait_state = helpers.wait_state
 local open_and_wait = helpers.open_and_wait
 
-local function click_first(selectors)
-  for _, selector in ipairs(selectors) do
-    if present(selector) then
-      fyde.browser:click(selector)
-      return selector
-    end
-  end
-  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
-end
-
 -- Clicks `selector` (a download link/button) and saves what the browser downloads.
 local function browser_save(selector, filename, fields)
   local ok, bytes = pcall(function()
