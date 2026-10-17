@@ -35,25 +35,7 @@ local fail = helpers.fail
 local contains = helpers.contains
 local trim = helpers.trim
 local sanitize = helpers.sanitize
-local absolute = helpers.absolute
-
--- Form login helper (`signin({ formSelector })`-style): reads the first form matching
--- `selector` on `page` (a fyde.http response) and returns its absolute action URL plus every
--- named input's current value (unchecked checkboxes/radios left out, like a browser does).
-local function read_form(page, selector)
-  local form = fyde.html.select(page.body, selector)[1]
-  if not form then
-    return nil
-  end
-  local fields = {}
-  for _, input in ipairs(fyde.html.select(form.html, "input[name]")) do
-    local kind = (input.attrs.type or "text"):lower()
-    if (kind ~= "checkbox" and kind ~= "radio") or input.attrs.checked then
-      fields[input.attrs.name] = input.attrs.value or ""
-    end
-  end
-  return absolute(page.url, form.attrs.action), fields
-end
+local read_form = helpers.read_form
 
 -- Fills `values` into the form matching `selector` on `page` and posts it.
 local function submit_form(page, selector, values, headers)
