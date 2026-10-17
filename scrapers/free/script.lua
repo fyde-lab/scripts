@@ -34,15 +34,7 @@ local MFA_FAILED = helpers.MFA_FAILED
 local fail = helpers.fail
 local contains = helpers.contains
 local trim = helpers.trim
-
-local function sanitize(name)
-  name = trim((name or ""):gsub("%s+", " "))
-  name = name:gsub('[<>:"/\\|%?%*]', "_"):gsub("%c", "")
-  if name == "" then
-    name = "document"
-  end
-  return name
-end
+local sanitize = helpers.sanitize
 
 -- Asks the user for a one-time code through fyde.input.ask; an unanswered/empty prompt (or no
 -- input handler at all, e.g. an unattended run) is an MFA failure.
