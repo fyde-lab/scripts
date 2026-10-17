@@ -51,17 +51,10 @@ local sanitize = helpers.sanitize
 local ask_code = helpers.ask_code
 local has = helpers.has
 local save_pdf = helpers.save_pdf
-local sleep = helpers.sleep
 local page_html = helpers.page_html
 local present = helpers.present
 local page_text = helpers.page_text
 local wait_state = helpers.wait_state
-
-local function open_and_wait(url, states, timeout_ms)
-  fyde.browser:open(url)
-  sleep(1500)
-  return wait_state(states, timeout_ms)
-end
 
 -- Fills the first present selector of each candidate list.
 local function fill_first(selectors, value)

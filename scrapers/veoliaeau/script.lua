@@ -31,17 +31,11 @@ local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local fail = helpers.fail
 local trim = helpers.trim
 local sanitize = helpers.sanitize
-local sleep = helpers.sleep
 local page_html = helpers.page_html
 local present = helpers.present
 local page_text = helpers.page_text
 local wait_state = helpers.wait_state
-
-local function open_and_wait(url, states, timeout_ms)
-  fyde.browser:open(url)
-  sleep(1500)
-  return wait_state(states, timeout_ms)
-end
+local open_and_wait = helpers.open_and_wait
 
 -- Fills the first present selector of each candidate list.
 local function fill_first(selectors, value)
