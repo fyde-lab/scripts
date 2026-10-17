@@ -35,13 +35,7 @@ local contains_any = helpers.contains_any
 local ask_code = helpers.ask_code
 local has = helpers.has
 local sleep = helpers.sleep
-
-local function page_html()
-  local ok, html = pcall(function()
-    return fyde.browser:html()
-  end)
-  return ok and html or ""
-end
+local page_html = helpers.page_html
 
 -- Polls the page every second for up to `timeout_ms` and returns the first state seen:
 -- "mfa", "login" (the credentials form), or "logged_in" (no form, a logout control) - nil on

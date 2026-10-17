@@ -30,13 +30,7 @@ local sanitize = helpers.sanitize
 local ask_code = helpers.ask_code
 local has = helpers.has
 local sleep = helpers.sleep
-
-local function page_html()
-  local ok, html = pcall(function()
-    return fyde.browser:html()
-  end)
-  return ok and html or ""
-end
+local page_html = helpers.page_html
 
 -- Polls the page for up to `timeout_ms` for the first of `states` ({ name, selector }) present.
 local function wait_state(states, timeout_ms)
