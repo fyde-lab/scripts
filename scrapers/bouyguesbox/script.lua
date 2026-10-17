@@ -38,10 +38,7 @@ local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local MFA_FAILED = helpers.MFA_FAILED
 local fail = helpers.fail
 local contains = helpers.contains
-
-local function trim(s)
-  return ((s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
-end
+local trim = helpers.trim
 
 local function sanitize(name)
   name = trim((name or ""):gsub("%s+", " "))
