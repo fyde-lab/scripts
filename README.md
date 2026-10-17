@@ -64,9 +64,10 @@ listing), all following the shared conventions below; the tables below list them
   | `shopping` | `online`, `pets`, `groceries`, `food_delivery` |
   | `subscriptions` | `media`, `cloud_software` |
   | `donations` | |
-- **Shared code.** The Lua sandbox has no `require`, so each script inlines the same helper
-  block (error contract, form submission, PDF download, browser polling, and - for sites that
-  have no PDF to download - a small text-only PDF writer).
+- **Shared code.** The Lua sandbox has no `require`, so the generic helpers (error contract,
+  string/URL utilities, form submission, PDF download and browser polling) ship with the sdk as `fyde.helpers`
+  (`../sdk/src/domains/scrapers/host/helpers.lua`); each script aliases the ones it uses
+  (`local helpers = fyde.helpers` / `local fail = helpers.fail`).
 - **Plain HTTP vs browser.** Sites that can be scraped with plain requests use `fyde.http`;
   sites that need to be driven in a real webview, or whose login needs a captcha or JS, use
   `fyde.browser`. Two host limitations come up repeatedly and are

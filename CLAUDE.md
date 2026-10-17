@@ -133,7 +133,7 @@ instead of a local one that no longer exists here) — see each file's header co
 it scrapes and how. Any new per-site script must follow the same contract: return a table
 with a single `run(parameters)` function, and only call into the `fyde` host table (`fyde.log`,
 `fyde.http`, `fyde.html`, `fyde.json`, `fyde.progress`, `fyde.input`, `fyde.save_document`,
-`fyde.session`) — see `../sdk/src/domains/scrapers/host/`.
+`fyde.session`, `fyde.helpers`) — see `../sdk/src/domains/scrapers/host/`.
 
 ### `scripts/scrapers/ameli/script.lua`
 
@@ -225,9 +225,11 @@ follow too:
   `error("MFA_FAILED", 0)` for a rejected/unanswered one-time code;
 - pass every saved document a `type` and its `category`/`subcategory` (see README.md's
   "Document metadata" for the values and the tree);
-- the shared helpers (`fail`, `submit_form`, `save_pdf`, `wait_state`, `browser_save`,
-  `text_pdf`...) are inlined between `-- luacheck: push ignore 211` / `-- luacheck: pop` in each
-  script, since the sandbox has no `require` - keep that block identical across scripts.
+- the shared helpers (`fail`, `submit_form`, `save_pdf`, `wait_state`, `browser_save`...)
+  come from `fyde.helpers` (`../sdk/src/domains/scrapers/host/helpers.lua`,
+  since the sandbox has no `require`): alias the ones a script uses at its top
+  (`local helpers = fyde.helpers` then `local fail = helpers.fail`, ...) rather than copying
+  them, and add any new helper that more than one script needs there instead.
 
 `tests/login_smoke.sh [scraper ...]` runs scrapers with made-up credentials and reports, per
 scraper, whether the login page was found and the bad credentials reported as
