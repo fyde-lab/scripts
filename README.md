@@ -138,9 +138,9 @@ tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, �
 | [`caf`](scrapers/caf/manifest.json) | ✅ verified | ✅ | ✅ | ✅ | ✅ | ⚠️ Reblaze | 2026-10-11 |
 | [`cdiscount`](scrapers/cdiscount/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Cloudflare | 2026-10-11 |
 | [`cesml`](scrapers/cesml/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
-| [`cesu`](scrapers/cesu/manifest.json) | ❌ broken | ❌ | ❌ | ✅ | ❌ | ⚠️ F5 BIG-IP ASM | 2026-10-11 |
+| [`cesu`](scrapers/cesu/manifest.json) | 🚧 wip | ✅ | ✅ | ✅ | ❔ | ⚠️ F5 BIG-IP ASM | 2026-10-11 |
 | [`cultura`](scrapers/cultura/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
-| [`darty`](scrapers/darty/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⛔ DataDome, Akamai Bot Manager | 2026-10-11 |
+| [`darty`](scrapers/darty/manifest.json) | 🚫 blocked | ❌ | ❌ | ❔ | ❔ | ⛔ DataDome, Akamai Bot Manager | 2026-10-11 |
 | [`deliveroo`](scrapers/deliveroo/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ PerimeterX, Cloudflare | 2026-10-11 |
 | [`didaxis`](scrapers/didaxis/manifest.json) | ✅ verified | ✅ | ✅ | ✅ | ✅ | ✅ | 2026-10-11 |
 | [`digiposte`](scrapers/digiposte/manifest.json) | 🚫 blocked | ✅ | ✅ | ❔ | ❔ | ⚠️ hCaptcha | 2026-10-11 |
@@ -168,7 +168,7 @@ tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, �
 | [`harmonie`](scrapers/harmonie/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`humanis`](scrapers/humanis/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Imperva | 2026-10-11 |
 | [`impots`](scrapers/impots/manifest.json) | ✅ verified | ✅ | ✅ | ✅ | ✅ | ⚠️ Reblaze | 2026-10-11 |
-| [`lamutuellegenerale`](scrapers/lamutuellegenerale/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⚠️ Imperva | 2026-10-11 |
+| [`lamutuellegenerale`](scrapers/lamutuellegenerale/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Imperva | 2026-10-11 |
 | [`ldlc`](scrapers/ldlc/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ reCAPTCHA | 2026-10-11 |
 | [`leclercdrive`](scrapers/leclercdrive/manifest.json) | 🚧 wip | ✅ | ❌ | ❔ | ❔ | ⛔ DataDome | 2026-10-11 |
 | [`lucca`](scrapers/lucca/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
@@ -210,7 +210,7 @@ tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, �
 | [`thomann`](scrapers/thomann/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Cloudflare, Cloudflare Turnstile | 2026-10-11 |
 | [`trainline`](scrapers/trainline/manifest.json) | 🚧 wip | ✅ | ❌ | ❔ | ❔ | ⚠️ DataDome | 2026-10-11 |
 | [`uber`](scrapers/uber/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⚠️ Cloudflare, reCAPTCHA | 2026-10-11 |
-| [`venteprivee`](scrapers/venteprivee/manifest.json) | 🚧 wip | ✅ | ❌ | ❔ | ❔ | ⚠️ Cloudflare | 2026-10-11 |
+| [`venteprivee`](scrapers/venteprivee/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Cloudflare | 2026-10-11 |
 | [`veoliaeau`](scrapers/veoliaeau/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⚠️ Friendly Captcha | 2026-10-11 |
 | [`viasante`](scrapers/viasante/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ F5 BIG-IP ASM | 2026-10-11 |
 | [`vinciautoroute`](scrapers/vinciautoroute/manifest.json) | 🚫 blocked | ✅ | ✅ | ❔ | ❔ | ⚠️ Friendly Captcha | 2026-10-11 |
