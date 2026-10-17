@@ -130,8 +130,6 @@ tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, �
 | [`autolib`](scrapers/autolib/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ❔ | 2026-10-11 |
 | [`bipandgo`](scrapers/bipandgo/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ reCAPTCHA v2 | 2026-10-11 |
 | [`bitiba`](scrapers/bitiba/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
-| [`blablacar`](scrapers/blablacar/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⛔ DataDome | 2026-10-11 |
-| [`bookingdotcom`](scrapers/bookingdotcom/manifest.json) | 🚧 wip | ✅ | ➖ | ❔ | ❔ | ⚠️ AWS WAF, PerimeterX | 2026-10-11 |
 | [`boulanger`](scrapers/boulanger/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Akamai Bot Manager | 2026-10-11 |
 | [`boursobank`](scrapers/boursobank/manifest.json) | ✅ verified | ✅ | ✅ | ✅ | ✅ | ⚠️ in-house (__brs_mit cookie) | 2026-10-11 |
 | [`bouyguesbox`](scrapers/bouyguesbox/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Akamai Bot Manager | 2026-10-11 |
@@ -140,16 +138,13 @@ tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, �
 | [`cdiscount`](scrapers/cdiscount/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Cloudflare | 2026-10-11 |
 | [`cesml`](scrapers/cesml/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`cesu`](scrapers/cesu/manifest.json) | ❌ broken | ❌ | ❌ | ✅ | ❌ | ⚠️ F5 BIG-IP ASM | 2026-10-11 |
-| [`cic`](scrapers/cic/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`cultura`](scrapers/cultura/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`darty`](scrapers/darty/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⛔ DataDome, Akamai Bot Manager | 2026-10-11 |
-| [`deezer`](scrapers/deezer/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Akamai Bot Manager, reCAPTCHA | 2026-10-11 |
 | [`deliveroo`](scrapers/deliveroo/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ PerimeterX, Cloudflare | 2026-10-11 |
 | [`didaxis`](scrapers/didaxis/manifest.json) | ✅ verified | ✅ | ✅ | ✅ | ✅ | ✅ | 2026-10-11 |
 | [`digiposte`](scrapers/digiposte/manifest.json) | 🚫 blocked | ✅ | ✅ | ❔ | ❔ | ⚠️ hCaptcha | 2026-10-11 |
 | [`directenergie`](scrapers/directenergie/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`doctolib`](scrapers/doctolib/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Cloudflare | 2026-10-11 |
-| [`easyjet`](scrapers/easyjet/manifest.json) | 🚧 wip | ✅ | ❌ | ❔ | ❔ | ⛔ Akamai Bot Manager | 2026-10-11 |
 | [`eaudubassinrennais`](scrapers/eaudubassinrennais/manifest.json) | ✅ verified | ✅ | ✅ | ✅ | ✅ | ✅ | 2026-10-11 |
 | [`eaudugrandlyon`](scrapers/eaudugrandlyon/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`edf`](scrapers/edf/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Akamai Bot Manager | 2026-10-11 |
@@ -161,7 +156,6 @@ tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, �
 | [`eticket`](scrapers/eticket/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`facebook`](scrapers/facebook/manifest.json) | 🚫 blocked | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`fnac`](scrapers/fnac/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⛔ DataDome, Akamai Bot Manager | 2026-10-11 |
-| [`fortuneo`](scrapers/fortuneo/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`francetravail`](scrapers/francetravail/manifest.json) | 🚧 wip | ✅ | ✅ | ❌ | ❔ | ✅ | 2026-10-11 |
 | [`free`](scrapers/free/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`freemobile`](scrapers/freemobile/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
@@ -173,8 +167,6 @@ tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, �
 | [`harmonie`](scrapers/harmonie/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`humanis`](scrapers/humanis/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Imperva | 2026-10-11 |
 | [`impots`](scrapers/impots/manifest.json) | ✅ verified | ✅ | ✅ | ✅ | ✅ | ⚠️ Reblaze | 2026-10-11 |
-| [`inulogic`](scrapers/inulogic/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ❔ | 2026-10-11 |
-| [`justeat`](scrapers/justeat/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Cloudflare | 2026-10-11 |
 | [`lamutuellegenerale`](scrapers/lamutuellegenerale/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⚠️ Imperva | 2026-10-11 |
 | [`ldlc`](scrapers/ldlc/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ reCAPTCHA | 2026-10-11 |
 | [`leclercdrive`](scrapers/leclercdrive/manifest.json) | 🚧 wip | ✅ | ❌ | ❔ | ❔ | ⛔ DataDome | 2026-10-11 |
@@ -190,14 +182,8 @@ tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, �
 | [`mgen`](scrapers/mgen/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`mint-energie`](scrapers/mint-energie/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`misterauto`](scrapers/misterauto/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ DataDome | 2026-10-11 |
-| [`mondediplo`](scrapers/mondediplo/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
-| [`monoprix`](scrapers/monoprix/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⚠️ Cloudflare | 2026-10-11 |
 | [`msf`](scrapers/msf/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`n26`](scrapers/n26/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
-| [`nalo`](scrapers/nalo/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
-| [`nespresso`](scrapers/nespresso/manifest.json) | 🚧 wip | ✅ | ❌ | ❔ | ❔ | ⛔ Akamai Bot Manager | 2026-10-11 |
-| [`net-entreprise-micro`](scrapers/net-entreprise-micro/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
-| [`netflix`](scrapers/netflix/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ reCAPTCHA | 2026-10-11 |
 | [`numericable`](scrapers/numericable/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`o2`](scrapers/o2/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`opngo`](scrapers/opngo/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
@@ -214,24 +200,20 @@ tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, �
 | [`scaleway`](scrapers/scaleway/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ reCAPTCHA | 2026-10-11 |
 | [`sfr`](scrapers/sfr/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ reCAPTCHA | 2026-10-11 |
 | [`sfrbox`](scrapers/sfrbox/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ reCAPTCHA | 2026-10-11 |
-| [`showroomprive`](scrapers/showroomprive/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Cloudflare, reCAPTCHA | 2026-10-11 |
 | [`silae`](scrapers/silae/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`sncf`](scrapers/sncf/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⛔ DataDome | 2026-10-11 |
 | [`sosh`](scrapers/sosh/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ in-house captcha | 2026-10-11 |
 | [`spartoo`](scrapers/spartoo/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`stickersdiscount`](scrapers/stickersdiscount/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`tagandpass`](scrapers/tagandpass/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ❔ | 2026-10-11 |
-| [`theoldreader`](scrapers/theoldreader/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`thomann`](scrapers/thomann/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Cloudflare, Cloudflare Turnstile | 2026-10-11 |
 | [`trainline`](scrapers/trainline/manifest.json) | 🚧 wip | ✅ | ❌ | ❔ | ❔ | ⚠️ DataDome | 2026-10-11 |
 | [`uber`](scrapers/uber/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⚠️ Cloudflare, reCAPTCHA | 2026-10-11 |
-| [`unibet`](scrapers/unibet/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⚠️ DataDome | 2026-10-11 |
 | [`venteprivee`](scrapers/venteprivee/manifest.json) | 🚧 wip | ✅ | ❌ | ❔ | ❔ | ⚠️ Cloudflare | 2026-10-11 |
 | [`veoliaeau`](scrapers/veoliaeau/manifest.json) | 🚧 wip | ❌ | ❌ | ❔ | ❔ | ⚠️ Friendly Captcha | 2026-10-11 |
 | [`viasante`](scrapers/viasante/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ F5 BIG-IP ASM | 2026-10-11 |
 | [`vinciautoroute`](scrapers/vinciautoroute/manifest.json) | 🚫 blocked | ✅ | ✅ | ❔ | ❔ | ⚠️ Friendly Captcha | 2026-10-11 |
 | [`wanimo`](scrapers/wanimo/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
-| [`zalando`](scrapers/zalando/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Akamai Bot Manager | 2026-10-11 |
 | [`zooplus`](scrapers/zooplus/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 <!-- status-table:end -->
 
