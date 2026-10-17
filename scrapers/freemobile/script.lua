@@ -39,7 +39,7 @@ local function is_logged_in(page)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if not tostring(params.username):match("^%d+$") then
     fail(INVALID_CREDENTIALS, "the Free Mobile login is a number")
   end
@@ -111,7 +111,7 @@ local function save_page_bills(page, line)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(MAIN_URL)
   if is_logged_in(page) then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -123,7 +123,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   if has(page, "#multi-ligne-selector") then
     for _, user in ipairs(fyde.html.select(page.body, "li.user")) do
       local link = fyde.html.select(user.html, "a")[1]
@@ -136,7 +136,7 @@ function M.run(params)
     local msisdn = fyde.html.select(page.body, "#user-msisdn")[1]
     save_page_bills(page, msisdn and (msisdn.text:gsub("%s", "")) or "ligne")
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

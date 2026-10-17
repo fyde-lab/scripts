@@ -40,7 +40,7 @@ local function login_page()
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = login_page()
   if not has(page, LOGIN_FORM .. " input[name='j_password']") then
     error("GEG login form not found on " .. page.url)

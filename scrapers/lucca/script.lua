@@ -29,7 +29,7 @@ local function me(instance)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local instance, user = params.loginUrl, params.username
   if not instance or instance == "" then
     local resp = fyde.http.post_form("https://www.lucca.fr/login/ws-auth-service/wsauth.service.php",
@@ -61,7 +61,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local instance = fyde.session.lucca_instance
   local id = instance and me(instance)
   if id then
@@ -74,7 +74,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Downloading payslips")
+  fyde.progress.step("downloading_documents")
   local list = json_or_nil(fyde.http.get(instance .. "/api/v3/payslips?fields=id,import[endDate]&orderby=import.endDate,desc,import.startDate,desc,import.creationDate,desc&ownerID=" .. id,
     { Accept = "application/json" }).body) or {}
   local items = list.data and list.data.items or {}
@@ -94,7 +94,7 @@ function M.run(params)
       subcategory = "payslips",
     })
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

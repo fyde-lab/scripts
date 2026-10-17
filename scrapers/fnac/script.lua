@@ -60,7 +60,7 @@ local function wait_past_datadome(states, timeout_ms)
       return state
     end
     if datadome_shown() then
-      fyde.progress.step("Waiting for the Fnac captcha to be solved in the browser window")
+      fyde.progress.step("waiting_for_captcha")
       fyde.log.warn("DataDome captcha shown; it must be solved by hand in the browser window (--visible)")
       state = wait_state(states, CAPTCHA_TIMEOUT_MS)
       if not state then
@@ -74,7 +74,7 @@ local function wait_past_datadome(states, timeout_ms)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   fyde.browser:open(SIGNIN_URL)
   sleep(1500)
   if wait_past_datadome({ { "login", selector = "input[type='password'], input[type='email']" } }, 30000) ~= "login" then
@@ -100,14 +100,14 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if logged_in_http() then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   for range = 3, 6 do
     local page = fyde.http.get(ORDERS_URL .. range)
     for _, order in ipairs(fyde.html.select(page.body, ".ma-Order")) do
@@ -125,7 +125,7 @@ function M.run(params)
       end
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

@@ -106,7 +106,7 @@ local function poll(check, timeout_ms)
 end
 
 function M.run(params)
-  fyde.progress.step("Opening the homepage")
+  fyde.progress.step("logging_in")
   fyde.browser:open(HOME_URL)
   pcall(function()
     fyde.browser:wait_for(IDENTIFIANT_FIELD, FORM_LOAD_TIMEOUT_MS)
@@ -135,12 +135,12 @@ function M.run(params)
   if not on_login_form() then
     fyde.log.info("login form not shown on open - assuming an existing session is still valid")
     fyde.log.info("ALREADY_LOGGED_IN")
-    fyde.progress.step("Done")
+    fyde.progress.step("done")
     return
   end
 
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fyde.progress.step("Submitting credentials")
+  fyde.progress.step("logging_in")
   fyde.browser:fill(IDENTIFIANT_FIELD, params.username)
   fyde.browser:fill(PASSWORD_FIELD, params.password)
   fyde.browser:click(SUBMIT_CONTROL)

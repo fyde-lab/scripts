@@ -74,7 +74,7 @@ local function handle_challenges()
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if open_and_wait(LOGIN_URL, { { "login", selector = "input[name='password']" } }, 30000) ~= "login" then
     error("La Poste login form not found")
   end
@@ -113,14 +113,14 @@ local function save_folder(folder_id, token)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if open_and_wait(HOME_URL, { LOGGED_IN, { "login", selector = "input[name='password']" } }, 30000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading documents")
+  fyde.progress.step("downloading_documents")
   local token = json_or_nil(fyde.http.get("https://secure.digiposte.fr/rest/security/token").body)
   if not (token and token.access_token) then
     error("could not get a Digiposte API token: it needs the XSRF-TOKEN cookie's value as a header, which fyde.http can't read")
@@ -134,7 +134,7 @@ function M.run(params)
     end
   end
   walk(folders.folders)
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

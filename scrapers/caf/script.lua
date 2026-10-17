@@ -152,11 +152,11 @@ end
 -- Logs in from scratch: fetches an anonymous token, submits credentials, and - the only path
 -- confirmed so far (see header comment) - completes the mandatory email OTP step.
 local function login(params)
-  fyde.progress.step("Fetching an anonymous session token")
+  fyde.progress.step("logging_in")
   local token = fetch_public_token()
 
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fyde.progress.step("Submitting credentials")
+  fyde.progress.step("logging_in")
   local connexion_resp = fyde.http.post_json(CONNEXION_URL, {
     identifiant = params.nir,
     motDePasse = params.password,
@@ -187,7 +187,7 @@ local function login(params)
   if ccode then
     fyde.log.info("device remembered, no one-time code needed")
   elseif needs_mfa then
-    fyde.progress.step("Requesting a one-time code by email")
+    fyde.progress.step("waiting_for_verification_code")
     local envoi_resp = fyde.http.post_json(
       ENVOI_OTP_URL,
       { modeEnvoi = "MAIL", contexteAppel = "caffr" },
@@ -203,7 +203,7 @@ local function login(params)
       error("requesting the one-time code failed: " .. envoi_resp.body)
     end
 
-    fyde.progress.step("Waiting for the one-time code")
+    fyde.progress.step("waiting_for_verification_code")
     local asked, answer = pcall(fyde.input.ask, "CAF emailed a one-time code - enter it:")
     local otp = asked and tostring(answer):gsub("%D", "") or ""
     if #otp == 0 then
@@ -250,7 +250,7 @@ local function login(params)
     )
   end
 
-  fyde.progress.step("Opening the portal session")
+  fyde.progress.step("logging_in")
   local acces_resp = fyde.http.get(ACCES_PORTAIL_URL .. "?ccode=" .. ccode)
   fyde.log.info(string.format(
     "GET %s -> status %d, landed on %s", ACCES_PORTAIL_URL, acces_resp.status, acces_resp.url
@@ -270,7 +270,7 @@ end
 -- available for this account, unexpected content, ...) logs a warning rather than aborting the
 -- whole run - the same convention as didaxis/script.lua's document loop.
 local function fetch_documents(jwt)
-  fyde.progress.step("Fetching documents")
+  fyde.progress.step("downloading_documents")
   for _, document in ipairs(DOCUMENTS) do
     local headers = {
       Authorization = "Bearer " .. jwt,
@@ -309,7 +309,7 @@ function M.run(params)
   -- (LtpaToken2/JSESSIONID/CFSESSIONID, see header comment) can still be valid, which would land
   -- us on the real dashboard here without ever hitting CAF's login API or OTP step again. Mirrors
   -- didaxis/script.lua's "Checking for an existing session" pattern.
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local dashboard_resp = fyde.http.get(DASHBOARD_URL)
   if dashboard_resp.body:find(LOGGED_IN_TITLE_MARKER, 1, true) then
     fyde.log.info("restored session is still valid, skipping login")
@@ -331,7 +331,7 @@ function M.run(params)
   local jwt = extract_portal_jwt(dashboard_resp.body)
   fetch_documents(jwt)
 
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

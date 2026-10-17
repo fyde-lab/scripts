@@ -47,7 +47,7 @@ local function keypad(page)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(LOGIN_URL)
   if not has(page, "#generali-connexion-form") then
     error("Generali login form not found on " .. page.url)
@@ -75,7 +75,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(BASE .. "/espace-client/private/individuel")
   if has(page, ".consulter-mes-remboursements") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -88,7 +88,7 @@ function M.run(params)
     error("no reimbursements link after login (vendor down?)")
   end
 
-  fyde.progress.step("Downloading reimbursement statements")
+  fyde.progress.step("downloading_documents")
   local start = 0
   while true do
     local commands = json_or_nil(fyde.http.get(MORE_URL .. "contrat=" .. contract .. "&start=" .. start).body) or {}
@@ -119,7 +119,7 @@ function M.run(params)
     end
     start = start + 10
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

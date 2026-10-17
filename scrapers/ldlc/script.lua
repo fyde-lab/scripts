@@ -42,7 +42,7 @@ local function periods()
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if open_and_wait(LOGIN_URL, { { "login", selector = "#loginForm, input[name='Password']" } }, 30000) ~= "login" then
     error("LDLC login form not found")
   end
@@ -62,7 +62,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local list = periods()
   if list then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -75,7 +75,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   for _, period in ipairs(list) do
     local page = fyde.http.post_form(SECURE .. "/Orders/PartialCompletedOrdersHeader",
       { duration = tostring(period.duration), value = tostring(period.value) }, { ["x-requested-with"] = "XMLHttpRequest" })
@@ -95,7 +95,7 @@ function M.run(params)
       end
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

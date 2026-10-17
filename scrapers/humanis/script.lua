@@ -26,7 +26,7 @@ local fail = helpers.fail
 local json_or_nil = helpers.json_or_nil
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local resp = fyde.http.post_json(AUTHENTICATE_URL, {
     module = "UsernameAndPassword",
     definition = { username = params.username, password = params.password },

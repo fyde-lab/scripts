@@ -46,7 +46,7 @@ local click_first = helpers.click_first
 local browser_save = helpers.browser_save
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if not present(EMAIL_STEP) and not present(EMAIL) then
     error("Cdiscount login form not found")
   end
@@ -104,7 +104,7 @@ local function save_order_documents()
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   open_and_wait(HOME_URL, { { "home", selector = ACCOUNT_LINK } }, 30000)
   fyde.browser:click(ACCOUNT_LINK)
   local state = wait_state({ { "logged_in", selector = LOGGED_IN }, { "login", selector = EMAIL_STEP .. ", " .. EMAIL } }, 60000)
@@ -114,11 +114,11 @@ function M.run(params)
     login(params)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   open_and_wait(ORDERS_URL, { { "orders", selector = "#orderdetails, " .. ORDER_SELECT } }, 30000)
   local options = fyde.html.select(page_html(), ORDER_SELECT .. " option")
   for i, option in ipairs(options) do
-    fyde.progress.update(i, #options, option.text)
+    fyde.progress.update(i, #options)
     if i > 1 then
       -- The page submits its own form when the select changes (the original implementation called
       -- form.submit() itself; `fill` dispatches the same change event).
@@ -128,7 +128,7 @@ function M.run(params)
     end
     save_order_documents()
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

@@ -39,7 +39,7 @@ local function invoices(base)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if open_and_wait(LOGIN_URL, { { "login", selector = PASSWORD } }, 30000) ~= "login" then
     error("Productboard login form not found")
   end
@@ -66,7 +66,7 @@ function M.run(params)
     error("Productboard needs the `workspace` parameter (the <workspace>.productboard.com subdomain)")
   end
   local base = "https://" .. params.workspace .. ".productboard.com"
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local list = invoices(base)
   if list then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -78,7 +78,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   for _, invoice in ipairs(list) do
     if invoice.invoice_url then
       local date = tostring(invoice.created_at):sub(1, 10)
@@ -90,7 +90,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

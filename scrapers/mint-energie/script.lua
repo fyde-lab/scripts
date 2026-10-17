@@ -22,7 +22,7 @@ local has = helpers.has
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(BASE .. "/Pages/Connexion/connexion.aspx")
   if not has(page, "input[name='TB_Password'], input[id$='TB_Password']") then
     error("Mint Énergie login form not found on " .. page.url)
@@ -35,7 +35,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(BILLS_URL)
   if has(page, "#header1_LB_Exit") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -44,7 +44,7 @@ function M.run(params)
     page = fyde.http.get(BILLS_URL)
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   for _, bill in ipairs(fyde.html.select(page.body, ".factulist")) do
     local link = fyde.html.select(bill.html, "div.colC a")[1]
     local date = fyde.html.select(bill.html, "div.colA b")[1]
@@ -60,7 +60,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

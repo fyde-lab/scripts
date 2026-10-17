@@ -30,7 +30,7 @@ local function invoices(token)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(LOGIN_URL)
   if not has(page, "input[name='ECN_PASSWORD']") then
     error("TAG login form not found on " .. page.url)
@@ -55,7 +55,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local token = fyde.session.tagandpass_token
   local list = token and invoices(token)
   if list then
@@ -65,7 +65,7 @@ function M.run(params)
     list = invoices(token) or {}
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   for _, item in ipairs(list) do
     if item.urlPdf then
       local file = json_or_nil(fyde.http.get(API .. item.urlPdf, { Authorization = "Bearer " .. token }).body)
@@ -83,7 +83,7 @@ function M.run(params)
       end
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

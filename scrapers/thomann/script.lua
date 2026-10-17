@@ -57,7 +57,7 @@ end
 
 local function login(params)
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   fyde.browser:fill("input[name='uname']", params.username)
   fyde.browser:fill(PASSWORD_FIELD, params.password)
   fyde.browser:click(SUBMIT)
@@ -78,7 +78,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local html = open(LOGIN_URL, { PASSWORD_FIELD, LOGGED_IN }, 45000)
   if has(html, PASSWORD_FIELD) then
     login(params)
@@ -88,7 +88,7 @@ function M.run(params)
     error("Thomann login page not found (Cloudflare challenge not passed?)")
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   local page = open(ORDERS_URL, { ".mythomann-order-teaser", "#order-list" }, 30000)
   for _ = 1, 50 do
     for _, teaser in ipairs(fyde.html.select(page, ".mythomann-order-teaser")) do
@@ -125,7 +125,7 @@ function M.run(params)
     end
     page = open(absolute(BASE, next_url), { ".mythomann-order-teaser" }, 30000)
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

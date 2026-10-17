@@ -19,7 +19,7 @@ local has = helpers.has
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get("https://www.mediapart.fr/login")
   if not has(page, "#logFormEl") then
     error("Mediapart login form not found on " .. page.url)
@@ -32,7 +32,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(ACCOUNT_URL)
   if has(page, ".billing__list__item, a[href='/logout']") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -41,7 +41,7 @@ function M.run(params)
     page = fyde.http.get(ACCOUNT_URL)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   for _, item in ipairs(fyde.html.select(page.body, ".billing__list__item")) do
     local id = item.html:match('href="/facture/(%d*)/telecharger"')
     if id then
@@ -56,7 +56,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

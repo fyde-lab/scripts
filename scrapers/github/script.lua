@@ -39,7 +39,7 @@ local function handle_code(page)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(BASE .. "/login")
   if not has(page, "input[name='password']") then
     error("GitHub login form not found on " .. page.url)
@@ -54,7 +54,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local pulls = fyde.http.get(BASE .. "/pulls")
   if pulls.status == 200 and not pulls.url:find("/login", 1, true) then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -62,7 +62,7 @@ function M.run(params)
     login(params)
   end
 
-  fyde.progress.step("Downloading receipts")
+  fyde.progress.step("downloading_documents")
   local path = "/account/billing/history"
   if params.organization and params.organization ~= "" then
     local profile = fyde.http.get(BASE .. "/" .. params.username)
@@ -87,7 +87,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

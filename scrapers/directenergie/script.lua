@@ -36,7 +36,7 @@ local browser_save = helpers.browser_save
 local LOGGED_IN = { "logged_in", selector = "a[href*='/clients/connexion?logintype=logout'], a[href='/clients/mon-compte/gerer-mes-comptes']" }
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if not present(LOGIN) then
     error("TotalEnergies login form not found")
   end
@@ -55,7 +55,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local state = open_and_wait(HOME_URL, { LOGGED_IN, { "login", selector = LOGIN }, { "maintenance", text = { "maintenance" } } }, 45000)
   if state == "maintenance" then
     error("TotalEnergies' customer area is under maintenance (vendor down)")
@@ -65,7 +65,7 @@ function M.run(params)
     login(params)
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   open_and_wait(BILLS_URL, { { "bills", selector = "div.detail-facture, a[href*='/telechargement-des-contrats']" } }, 30000)
   local html = page_html()
   local count = 0
@@ -91,7 +91,7 @@ function M.run(params)
       subcategory = "energy",
     })
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

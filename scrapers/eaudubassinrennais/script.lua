@@ -96,13 +96,13 @@ function M.run(params)
   -- fyde.http's cookie jar is restored from the previous run's saved cookies before this script
   -- even starts, so a still-valid JSESSIONID can land us on the authenticated dashboard here,
   -- skipping the login POST entirely.
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local check = fyde.http.get(HOME_URL)
   if is_logged_in(check.body) then
     fyde.log.info("restored session is still valid, skipping login")
     fyde.log.info("ALREADY_LOGGED_IN")
   else
-    fyde.progress.step("Logging in as " .. username)
+    fyde.progress.step("logging_in")
     if check.body:find('name="loginForm"', 1, true) then
       fyde.log.info("LOGIN_PAGE_FOUND")
     end
@@ -123,7 +123,8 @@ function M.run(params)
   end
 
   for _, section in ipairs(SECTIONS) do
-    fyde.progress.step("Section " .. section.slug)
+    fyde.log.info("Section " .. section.slug)
+    fyde.progress.step("downloading_documents")
     local page = fyde.http.get(section.url)
     if not is_logged_in(page.body) then
       fyde.log.warn("session was logged out while browsing " .. section.slug .. ", stopping")
@@ -134,7 +135,7 @@ function M.run(params)
     fyde.log.info(string.format("%s: %d document(s) found", section.slug, #bills))
 
     for i, bill in ipairs(bills) do
-      fyde.progress.update(i, #bills, bill.date)
+      fyde.progress.update(i, #bills)
 
       local url = resolve_url(section.url, bill.href)
       local download = fyde.http.download(url)
@@ -156,7 +157,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

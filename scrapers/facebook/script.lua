@@ -47,11 +47,11 @@ function M.run(params)
   if not token or token == "" then
     fail(INVALID_CREDENTIALS, "no access token given")
   end
-  fyde.progress.step("Checking the access token")
+  fyde.progress.step("logging_in")
   local me = api("/me", token)
   fyde.log.info("token valid for " .. tostring(me.name))
 
-  fyde.progress.step("Listing albums")
+  fyde.progress.step("listing_documents")
   local url = "/me/albums"
   local photos = 0
   while url do
@@ -63,7 +63,7 @@ function M.run(params)
     url = page.paging and page.paging.next
   end
   fyde.log.warn(photos .. " photo(s) found but not saved: fyde.save_document only accepts PDFs")
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

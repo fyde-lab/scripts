@@ -66,7 +66,7 @@ end
 
 local function login(params)
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fyde.progress.step("Submitting credentials")
+  fyde.progress.step("logging_in")
   fyde.browser:fill(USERNAME_FIELD, params.username)
   fyde.browser:fill(PASSWORD_FIELD, params.password)
   fyde.browser:click(SUBMIT_CONTROL)
@@ -76,7 +76,7 @@ local function login(params)
   elseif state == nil and has(html, USERNAME_FIELD) then
     fail(INVALID_CREDENTIALS, "still on the login form")
   elseif state == "mfa" then
-    fyde.progress.step("Waiting for the one-time code")
+    fyde.progress.step("waiting_for_verification_code")
     fyde.browser:fill(MFA_CODE_FIELD, ask_code("Code reçu par e-mail de l'Urssaf (Pajemploi)"))
     pcall(function()
       fyde.browser:click("#rememberDeviceConsent")
@@ -92,7 +92,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   fyde.browser:open(APP_URL)
   sleep(1500)
   local state = wait_state(45000)

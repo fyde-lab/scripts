@@ -48,7 +48,7 @@ end
 
 local function login(params)
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   fyde.browser:fill(EMAIL_FIELD, params.username)
   fyde.browser:click(SUBMIT)
   sleep(1500)
@@ -65,7 +65,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   fyde.browser:open(ACCOUNT_URL)
   sleep(1500)
   local state = wait_state({ { "login", EMAIL_FIELD }, { "logged_in", LOGGED_IN } }, 45000)
@@ -77,7 +77,7 @@ function M.run(params)
     error("Probikeshop login page not found on " .. ACCOUNT_URL)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   fyde.browser:open(ORDERS_URL)
   sleep(1500)
   local _, html = wait_state({ { "invoices", INVOICE_LINKS } }, 20000)
@@ -101,7 +101,7 @@ function M.run(params)
       fyde.log.warn("could not download " .. link.attrs.href .. ": " .. tostring(ok and "not a PDF" or bytes))
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

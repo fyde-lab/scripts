@@ -158,7 +158,7 @@ end
 local function login(params)
   fyde.log.info("LOGIN_PAGE_FOUND")
 
-  fyde.progress.step("Submitting credentials")
+  fyde.progress.step("logging_in")
   fyde.browser:fill(USER_FIELD, params.identifiant)
   fyde.browser:fill(PASSWORD_FIELD, params.password)
   fyde.browser:click(SUBMIT_CONTROL)
@@ -211,16 +211,16 @@ local function login(params)
   if browser_has(LOGGED_IN_MARKER) then
     fyde.log.info("logged in without a one-time passcode step")
   elseif browser_has(OTP_REQUEST_BUTTON) then
-    fyde.progress.step("Requesting a security code")
+    fyde.progress.step("waiting_for_verification_code")
     fyde.browser:click(OTP_REQUEST_BUTTON)
     if not wait_across_navigation(OTP_FIRST_DIGIT, POST_SUBMIT_TIMEOUT_MS) then
       error("the one-time passcode form never showed up after requesting a code", 0)
     end
 
-    fyde.progress.step("Waiting for the one-time passcode")
+    fyde.progress.step("waiting_for_verification_code")
     submit_otp()
   elseif browser_has(OTP_FIRST_DIGIT) then
-    fyde.progress.step("Waiting for the one-time passcode")
+    fyde.progress.step("waiting_for_verification_code")
     submit_otp()
   elseif browser_has(USER_FIELD) then
     fyde.log.warn("still on the login form after submitting: credentials rejected")
@@ -355,7 +355,7 @@ local function log_controls(label, html)
 end
 
 local function fetch_payments()
-  fyde.progress.step("Listing payments")
+  fyde.progress.step("listing_documents")
   fyde.browser:open(PAYMENTS_URL)
   sleep(1500)
   if not wait_across_navigation(PAYMENT_LINK .. ", #paiements_1paiementForm", PAGE_TIMEOUT_MS) then
@@ -366,7 +366,7 @@ local function fetch_payments()
   local links = fyde.html.select(html, PAYMENT_LINK)
   fyde.log.info(#links .. " payment statement(s) found")
 
-  fyde.progress.step("Downloading payment statements")
+  fyde.progress.step("downloading_documents")
   local per_date, saved, search_from = {}, 0, 1
   for n, link in ipairs(links) do
     local href = link.attrs.href
@@ -393,7 +393,7 @@ local function fetch_payments()
     per_date[date .. kind] = (per_date[date .. kind] or 0) + 1
     local suffix = per_date[date .. kind] > 1 and ("-" .. per_date[date .. kind]) or ""
     local shown = (year and day) and string.format("%02d/%02d/%s", day, month, year) or "date inconnue"
-    fyde.progress.update(n, #links, shown)
+    fyde.progress.update(n, #links)
     if download_pdf("a[href='" .. href .. "']", "ameli-paiement-" .. date .. "-" .. kind .. suffix .. ".pdf", {
       name = "D\195\169compte ameli du " .. shown .. ((label and label ~= "") and (" - " .. label) or ""),
       type = "reimbursement_statement",
@@ -436,7 +436,7 @@ local function open_attestation_page()
 end
 
 local function fetch_attestations()
-  fyde.progress.step("Opening the attestation de droits page")
+  fyde.progress.step("listing_documents")
   local options = {}
   for index, option in ipairs(fyde.html.select(open_attestation_page(), ATTESTATION_OPTION)) do
     local name = trim(option.text)
@@ -451,10 +451,10 @@ local function fetch_attestations()
     error("the attestation de droits menu lists no beneficiary", 0)
   end
 
-  fyde.progress.step("Downloading the attestations de droits")
+  fyde.progress.step("downloading_documents")
   local saved = 0
   for n, option in ipairs(options) do
-    fyde.progress.update(n, #options, option.name)
+    fyde.progress.update(n, #options)
     if n > 1 then
       open_attestation_page()
     end
@@ -484,7 +484,7 @@ local function nth_in_rows(rows_depth, k)
 end
 
 local function fetch_monthly_statements()
-  fyde.progress.step("Opening the relev\195\169s mensuels page")
+  fyde.progress.step("listing_documents")
   fyde.browser:open(MONTHLY_URL)
   sleep(1500)
   if not wait_across_navigation(MONTHLY_DOWNLOAD .. ", " .. MONTHLY_MORE, PAGE_TIMEOUT_MS) then
@@ -527,7 +527,7 @@ local function fetch_monthly_statements()
     end
   end
 
-  fyde.progress.step("Downloading the relev\195\169s mensuels")
+  fyde.progress.step("downloading_documents")
   local saved, seen_month, search_from = 0, {}, 1
   for k = 1, count do
     -- The month is the last "SEPTEMBRE 2026" heading before this row's button.
@@ -544,7 +544,7 @@ local function fetch_monthly_statements()
       period = period .. "-" .. k
     end
     seen_month[period] = true
-    fyde.progress.update(k, count, period)
+    fyde.progress.update(k, count)
     if download_pdf(depth and nth_in_rows(depth, k) or MONTHLY_DOWNLOAD, "ameli-releve-mensuel-" .. period .. ".pdf", {
       name = "Relev\195\169 mensuel ameli - " .. (year and string.format("%02d/%s", month, year) or period),
       type = "reimbursement_statement",
@@ -558,7 +558,7 @@ local function fetch_monthly_statements()
 end
 
 function M.run(params)
-  fyde.progress.step("Visiting the login page")
+  fyde.progress.step("logging_in")
   -- A real browser follows LOGIN_URL's redirect chain (through ameliconnect.ameli.fr's OAuth2
   -- flow) on its own; unlike the old fyde.http-based version, there's no manual Location-header
   -- chasing to do here.

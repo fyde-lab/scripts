@@ -366,7 +366,7 @@ local function download_rows(section, rows)
     if row.account ~= "" and not row.name:find(row.account, 1, true) then
       title = row.name .. " - " .. row.account
     end
-    fyde.progress.update(i, #rows, title)
+    fyde.progress.update(i, #rows)
     local download = fyde.http.download(row.url)
     local content_type = download.content_type or ""
     if download.status == 200 and not content_type:find("html", 1, true) then
@@ -389,14 +389,14 @@ end
 -- README.md): a rejected username/password fails with exactly INVALID_CREDENTIALS, a rejected
 -- or unanswered one-time code with exactly MFA_FAILED.
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   set_domain_migration_cookie()
   local home = with_brs_mit(URL_DASHBOARD)
   if is_logged_in(home.body) then
     fyde.log.info("restored session is still valid, skipping login")
     fyde.log.info("ALREADY_LOGGED_IN")
   else
-    fyde.progress.step("Logging in")
+    fyde.progress.step("logging_in")
     local resp = login(params.username, params.password)
     if resp.status >= 400 then
       error("login request failed with HTTP status " .. resp.status)
@@ -411,13 +411,14 @@ function M.run(params)
   end
 
   for _, section in ipairs(SECTIONS) do
-    fyde.progress.step("Section " .. section.slug)
+    fyde.log.info("Section " .. section.slug)
+    fyde.progress.step("downloading_documents")
     local rows = list_section(section)
     local saved = download_rows(section, rows)
     fyde.log.info(string.format("%s: %d/%d document(s) saved", section.slug, saved, #rows))
   end
 
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

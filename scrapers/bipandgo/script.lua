@@ -44,7 +44,7 @@ local STATES = {
 }
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if open_and_wait(LOGIN_URL, { STATES[2] }, 30000) ~= "login" then
     error("Bip&Go login form not found on " .. LOGIN_URL)
   end
@@ -62,14 +62,14 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if open_and_wait(BILLS_URL, STATES, 30000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   local start = 0
   repeat
     fyde.browser:open(BILLS_URL .. "/?invoice_listbox_list_start=" .. start)
@@ -90,7 +90,7 @@ function M.run(params)
     end
     start = start + 15
   until #fyde.html.select(html, "a[rel='next']") == 0
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

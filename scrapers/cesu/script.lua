@@ -310,7 +310,7 @@ local function download_and_save(ids, slug, label, fields)
 end
 
 function M.run(params)
-  fyde.progress.step("Visiting the login page")
+  fyde.progress.step("logging_in")
   -- A real browser follows LOGIN_URL's cross-domain OAuth redirect chain (and runs the SPA's own
   -- PKCE-generating JS) on its own - there's no manual Location-header chasing to do here.
   fyde.browser:open(LOGIN_URL)
@@ -327,7 +327,7 @@ function M.run(params)
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     fyde.log.info("LOGIN_PAGE_FOUND")
-    fyde.progress.step("Submitting credentials")
+    fyde.progress.step("logging_in")
     fyde.browser:fill(USERNAME_FIELD, params.username)
     fyde.browser:fill(PASSWORD_FIELD, params.password)
     fyde.browser:click(SUBMIT_CONTROL)
@@ -351,7 +351,7 @@ function M.run(params)
     if browser_has(LOGGED_IN_MARKER) then
       fyde.log.info("logged in without a one-time code step (device already remembered)")
     elseif browser_has(MFA_CODE_FIELD) then
-      fyde.progress.step("Waiting for the one-time code")
+      fyde.progress.step("waiting_for_verification_code")
       if not pcall(submit_mfa_code) then
         fyde.log.warn("the one-time code was not accepted")
         error("MFA_FAILED", 0)
@@ -370,7 +370,7 @@ function M.run(params)
     fyde.log.info("authenticated")
   end
 
-  fyde.progress.step("Listing bulletins de salaire")
+  fyde.progress.step("listing_documents")
   local dashboard_html = fyde.browser:html()
   if click_menu_link(dashboard_html, "page_empl_mes_declarations") then
     sleep_ms(3000)
@@ -386,7 +386,7 @@ function M.run(params)
     log_page_for_diagnosis("no Mes déclarations link")
   end
 
-  fyde.progress.step("Listing avantage fiscal attestations")
+  fyde.progress.step("listing_documents")
   local current_html = fyde.browser:html()
   if click_menu_link(current_html, "page_empl_avantage_fiscal") then
     sleep_ms(3000)
