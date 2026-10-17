@@ -81,12 +81,7 @@ local BAD_CREDENTIALS = "mot de passe incorrect"
 -- `html()`/`wait_for` both fail with "timed out ... waiting for the browser" while the page is
 -- still loading - which, on this site, can last past the form being fully usable. These read the
 -- page tolerating that, as "" when it can't be read yet.
-local function page_html()
-  local ok, html = pcall(function()
-    return fyde.browser:html()
-  end)
-  return ok and html or ""
-end
+local page_html = fyde.helpers.page_html
 
 -- True if the login form (see LOGIN_FORM_MARKER) is still/again showing on the current page.
 local function on_login_form()

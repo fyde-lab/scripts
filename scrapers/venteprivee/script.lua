@@ -34,16 +34,10 @@ local sanitize = helpers.sanitize
 local absolute = helpers.absolute
 local has = helpers.has
 local sleep = helpers.sleep
+local page_html = helpers.page_html
 
 -- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
 -- exists.
-local function page_html()
-  local ok, html = pcall(function()
-    return fyde.browser:html()
-  end)
-  return ok and html or ""
-end
-
 local function body_text(html)
   local body = fyde.html.select(html, "body")[1]
   return body and body.text or ""

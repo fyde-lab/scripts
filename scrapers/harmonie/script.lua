@@ -35,13 +35,7 @@ local contains_any = helpers.contains_any
 local trim = helpers.trim
 local sanitize = helpers.sanitize
 local sleep = helpers.sleep
-
-local function page_html()
-  local ok, html = pcall(function()
-    return fyde.browser:html()
-  end)
-  return ok and html or ""
-end
+local page_html = helpers.page_html
 
 local function present(selector)
   return #fyde.html.select(page_html(), selector) > 0

@@ -47,13 +47,7 @@ local sanitize = helpers.sanitize
 local ask_code = helpers.ask_code
 local json_or_nil = helpers.json_or_nil
 local sleep = helpers.sleep
-
-local function page_html()
-  local ok, html = pcall(function()
-    return fyde.browser:html()
-  end)
-  return ok and html or ""
-end
+local page_html = helpers.page_html
 
 local function present(selector)
   return #fyde.html.select(page_html(), selector) > 0
