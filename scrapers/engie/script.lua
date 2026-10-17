@@ -42,11 +42,7 @@ local save_pdf = helpers.save_pdf
 local sleep = helpers.sleep
 local page_html = helpers.page_html
 local present = helpers.present
-
-local function page_text()
-  local body = fyde.html.select(page_html(), "body")[1]
-  return body and body.text or ""
-end
+local page_text = helpers.page_text
 
 -- Polls the current page until one of `states` matches and returns its name (or nil after
 -- `timeout_ms`). Each state is `{ name, selector = css }` or `{ name, text = { needles } }`.
