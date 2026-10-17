@@ -48,10 +48,7 @@ local ask_code = helpers.ask_code
 local json_or_nil = helpers.json_or_nil
 local sleep = helpers.sleep
 local page_html = helpers.page_html
-
-local function present(selector)
-  return #fyde.html.select(page_html(), selector) > 0
-end
+local present = helpers.present
 
 local function page_text()
   local body = fyde.html.select(page_html(), "body")[1]
