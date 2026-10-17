@@ -34,15 +34,9 @@ local INVOICE_LINKS = "a[href$='.pdf'], a[href*='invoice'], a[href*='facture']"
 -- Log markers (grepped by tests/login_smoke.sh): `LOGIN_PAGE_FOUND` once the login form has
 -- been seen, `ALREADY_LOGGED_IN` when a restored session made the login step unnecessary.
 -- ---------------------------------------------------------------------------------------------
-local INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
-local MFA_FAILED = "MFA_FAILED"
-
-local function fail(code, detail)
-  if detail then
-    fyde.log.warn(code .. ": " .. detail)
-  end
-  error(code, 0)
-end
+local helpers = fyde.helpers
+local MFA_FAILED = helpers.MFA_FAILED
+local fail = helpers.fail
 
 local function contains(haystack, needle)
   return (haystack or ""):lower():find(needle:lower(), 1, true) ~= nil
