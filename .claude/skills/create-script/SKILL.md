@@ -144,6 +144,11 @@ Every capability the script can use is the `fyde` global table — nothing else 
   `fyde.progress.update(current, total, message)` — fine-grained progress within a step (e.g.
   while downloading N documents).
 - `fyde.log.info/warn/error/debug(message)` — goes into the run's debug report.
+- `fyde.helpers` — generic Lua helpers built on the above (`fail`/`ask_code` for the login
+  error contract, `trim`/`sanitize`/`absolute`/`url_encode`, `submit_form`/`save_pdf` for plain
+  HTTP, `wait_state`/`fill_first`/`click_first`/`browser_save` for `fyde.browser`...;
+  see `../sdk/src/domains/scrapers/host/helpers.lua`). Alias what the script uses
+  (`local helpers = fyde.helpers` / `local fail = helpers.fail`) instead of rewriting them.
 - `fyde.input.ask(question)` — blocks for an interactively-supplied value (MFA code). Only use
   this if the login genuinely needs one; it can't be answered unattended by this loop (see
   step 4).
