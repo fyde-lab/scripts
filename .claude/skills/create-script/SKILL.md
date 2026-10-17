@@ -164,12 +164,12 @@ Every capability the script can use is the `fyde` global table — nothing else 
   XPath.
 - `fyde.json.decode(text)` / `fyde.json.encode(value)` — for sites with a JSON API instead of (or
   alongside) HTML forms.
-- `fyde.progress.step(name)` — announce a new high-level stage. `name` must be one of
-  `checking_session`, `logging_in`, `waiting_for_verification_code`, `waiting_for_captcha`,
-  `listing_documents`, `downloading_documents`, `done` (anything else raises: the app words each
-  step in the user's language, so there's no free text). Call it once when a stage starts, not
-  per item. `fyde.progress.update(current, total)` — fine-grained progress within a step (e.g.
-  while downloading N documents).
+- `fyde.progress.step(step)` — announce a new high-level stage. `step` must be one of
+  `"checking_session"`, `"logging_in"`, `"waiting_for_verification_code"`,
+  `"waiting_for_captcha"`, `"listing_documents"`, `"downloading_documents"`, `"done"` — anything
+  else raises (the app words each one in the user's language, so there's no free text; put
+  details like a section name in `fyde.log.info` instead). `fyde.progress.update(current,
+  total)` — fine-grained progress within a step (e.g. while downloading N documents).
 - `fyde.log.info/warn/error/debug(message)` — goes into the run's debug report.
 - `fyde.helpers` — generic Lua helpers built on the above (`fail`/`ask_code` for the login
   error contract, `trim`/`sanitize`/`absolute`/`url_encode`, `submit_form`/`save_pdf` for plain
