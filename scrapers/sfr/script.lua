@@ -16,18 +16,6 @@ local BAD_CREDENTIALS = { "identifiant ou mot de passe", "mot de passe est incor
 local BAD_CODE = { "code incorrect", "code invalide", "code erron", "expir" }
 local MFA = "input[name='otp'], #otp"
 
--- luacheck: push ignore 211
--- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper - see README.md).
---
--- Login error contract: a rejected username/password always fails the run with exactly
--- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
--- `MFA_FAILED` (both raised with `error(code, 0)`, so the message carries no position prefix).
--- Any other failure is a free-form error message.
---
--- Log markers (grepped by tests/login_smoke.sh): `LOGIN_PAGE_FOUND` once the login form has
--- been seen, `ALREADY_LOGGED_IN` when a restored session made the login step unnecessary.
--- ---------------------------------------------------------------------------------------------
 local helpers = fyde.helpers
 local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local MFA_FAILED = helpers.MFA_FAILED
@@ -43,20 +31,7 @@ local wait_state = helpers.wait_state
 local open_and_wait = helpers.open_and_wait
 local fill_first = helpers.fill_first
 local click_first = helpers.click_first
-
--- Clicks `selector` (a download link/button) and saves what the browser downloads.
-local function browser_save(selector, filename, fields)
-  local ok, bytes = pcall(function()
-    return fyde.browser:download(selector, 60000)
-  end)
-  if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
-    fyde.save_document(sanitize(filename), bytes, fields)
-    return true
-  end
-  fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
-  return false
-end
--- luacheck: pop
+local browser_save = helpers.browser_save
 
 local LOGGED_IN = { "logged_in", selector = "a[href*='openid-connect/logout'], a[href*='sfr.fr/cas/logout']" }
 local LOGIN_FORM = "#username"

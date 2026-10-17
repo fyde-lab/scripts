@@ -28,18 +28,6 @@ local BAD_CREDENTIALS = { "identifiant ou mot de passe", "mot de passe incorrect
 local DATADOME = { "datadome", text = { "captcha-delivery.com" } }
 local DATADOME_TIMEOUT_MS = 180000
 
--- luacheck: push ignore 211
--- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper - see README.md).
---
--- Login error contract: a rejected username/password always fails the run with exactly
--- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
--- `MFA_FAILED` (both raised with `error(code, 0)`, so the message carries no position prefix).
--- Any other failure is a free-form error message.
---
--- Log markers (grepped by tests/login_smoke.sh): `LOGIN_PAGE_FOUND` once the login form has
--- been seen, `ALREADY_LOGGED_IN` when a restored session made the login step unnecessary.
--- ---------------------------------------------------------------------------------------------
 local helpers = fyde.helpers
 local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local MFA_FAILED = helpers.MFA_FAILED
@@ -47,29 +35,13 @@ local fail = helpers.fail
 local contains = helpers.contains
 local contains_any = helpers.contains_any
 local trim = helpers.trim
-local sanitize = helpers.sanitize
 local ask_code = helpers.ask_code
-local has = helpers.has
 local save_pdf = helpers.save_pdf
 local page_html = helpers.page_html
 local present = helpers.present
 local page_text = helpers.page_text
 local wait_state = helpers.wait_state
 local click_first = helpers.click_first
-
--- Clicks `selector` (a download link/button) and saves what the browser downloads.
-local function browser_save(selector, filename, fields)
-  local ok, bytes = pcall(function()
-    return fyde.browser:download(selector, 60000)
-  end)
-  if ok and type(bytes) == "string" and bytes:sub(1, 4) == "%PDF" then
-    fyde.save_document(sanitize(filename), bytes, fields)
-    return true
-  end
-  fyde.log.warn("could not download " .. filename .. ": " .. tostring(ok and "not a PDF" or bytes))
-  return false
-end
--- luacheck: pop
 
 -- Summarises the current page (its controls and text) for an error message, so a failure on
 -- this client-rendered site says what was rendered instead of the expected element.
