@@ -47,19 +47,6 @@ local sanitize = helpers.sanitize
 local ask_code = helpers.ask_code
 local json_or_nil = helpers.json_or_nil
 
--- Downloads `url` and saves it as `filename` when it really is a PDF; returns true on success.
-local function save_pdf(url, filename, fields, headers)
-  local resp = fyde.http.download(url, headers)
-  local content_type = resp.content_type or ""
-  local is_pdf = content_type:find("pdf", 1, true) or (resp.body or ""):sub(1, 4) == "%PDF"
-  if resp.status == 200 and is_pdf then
-    fyde.save_document(sanitize(filename), resp.body, fields)
-    return true
-  end
-  fyde.log.warn(string.format("skipping %s (status %d, content-type %s)", filename, resp.status, content_type))
-  return false
-end
-
 -- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
 -- exists.
 local function sleep(ms)
