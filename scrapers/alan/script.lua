@@ -40,16 +40,7 @@ local fail = helpers.fail
 local contains_any = helpers.contains_any
 local trim = helpers.trim
 local sanitize = helpers.sanitize
-
--- Asks the user for a one-time code through fyde.input.ask; an unanswered/empty prompt (or no
--- input handler at all, e.g. an unattended run) is an MFA failure.
-local function ask_code(question)
-  local ok, code = pcall(fyde.input.ask, question)
-  if not ok or type(code) ~= "string" or trim(code) == "" then
-    fail(MFA_FAILED, "no one-time code was provided")
-  end
-  return (code:gsub("%s", ""))
-end
+local ask_code = helpers.ask_code
 
 -- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
 -- exists.
