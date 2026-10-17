@@ -35,19 +35,7 @@ local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local fail = helpers.fail
 local sanitize = helpers.sanitize
 local absolute = helpers.absolute
-local read_form = helpers.read_form
-
--- Fills `values` into the form matching `selector` on `page` and posts it.
-local function submit_form(page, selector, values, headers)
-  local action, fields = read_form(page, selector)
-  if not action then
-    error("no form matching '" .. selector .. "' on " .. tostring(page.url))
-  end
-  for name, value in pairs(values) do
-    fields[name] = value
-  end
-  return fyde.http.post_form(action, fields, headers)
-end
+local submit_form = helpers.submit_form
 
 local function has(page_or_html, selector)
   local html = type(page_or_html) == "table" and page_or_html.body or page_or_html
