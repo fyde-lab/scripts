@@ -36,12 +36,7 @@ local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local fail = helpers.fail
 local contains_any = helpers.contains_any
 local has = helpers.has
-
-local function sleep(ms)
-  pcall(function()
-    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
-  end)
-end
+local sleep = helpers.sleep
 
 local function page_html()
   local ok, html = pcall(function()
