@@ -713,8 +713,9 @@ fn status_table() -> Result<()> {
 /// (`TABLE`/`STRING`/`MATH`/`UTF8`, with `dofile`/`loadfile`/`load` stripped)
 /// `../sdk/src/domains/scrapers/service.rs`'s `sandboxed_lua` builds for a
 /// real run, then checks the returned table has a `run` function - without
-/// calling it, so this needs neither the `fyde` host table nor a network
-/// connection.
+/// calling it, so this needs no network connection, and of the `fyde` host
+/// table only `fyde.helpers` (which scripts alias at their top level), built
+/// from the sdk's own Lua source.
 fn check_script(name: &str, script: &str) -> Result<()> {
     let lua = mlua::Lua::new_with(
         mlua::StdLib::TABLE | mlua::StdLib::STRING | mlua::StdLib::MATH | mlua::StdLib::UTF8,
@@ -725,6 +726,15 @@ fn check_script(name: &str, script: &str) -> Result<()> {
     globals.set("dofile", mlua::Value::Nil)?;
     globals.set("loadfile", mlua::Value::Nil)?;
     globals.set("load", mlua::Value::Nil)?;
+
+    let helpers: mlua::Table = lua
+        .load(fyde_sdk::SCRAPER_HELPERS_LUA)
+        .set_name("fyde.helpers")
+        .eval()
+        .context("loading fyde.helpers")?;
+    let fyde = lua.create_table()?;
+    fyde.set("helpers", helpers)?;
+    globals.set("fyde", fyde)?;
 
     let table: mlua::Table = lua
         .load(script)
