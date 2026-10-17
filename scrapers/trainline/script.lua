@@ -30,16 +30,6 @@ local helpers = fyde.helpers
 local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local MFA_FAILED = helpers.MFA_FAILED
 local fail = helpers.fail
-local contains = helpers.contains
-
-local function contains_any(haystack, needles)
-  for _, needle in ipairs(needles) do
-    if contains(haystack, needle) then
-      return true
-    end
-  end
-  return false
-end
 
 local function trim(s)
   return ((s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
