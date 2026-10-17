@@ -854,12 +854,8 @@ fn load_manifest(script_dir: &Path, scraper_name: &str) -> Result<ScraperManifes
 /// that callback.
 fn print_progress(event: &ProgressEvent) {
     match event {
-        ProgressEvent::Step { name } => tracing::info!("==> {name}"),
-        ProgressEvent::Update {
-            current,
-            total,
-            message,
-        } => tracing::info!("    [{current}/{total}] {message}"),
+        ProgressEvent::Step { step } => tracing::info!("==> {} ({step})", step.user_message("en")),
+        ProgressEvent::Update { current, total } => tracing::info!("    [{current}/{total}]"),
     }
 }
 
