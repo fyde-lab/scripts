@@ -278,7 +278,7 @@ local SECTIONS = {
     slug = "ifu",
     url = BASE .. "/documents/ifu",
     years = true,
-    fields = function(row)
+    fields = function()
       return { type = "tax_certificate", category = "taxes", subcategory = "tax_certificates" }
     end,
   },
