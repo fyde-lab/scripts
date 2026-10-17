@@ -42,19 +42,7 @@ local sanitize = helpers.sanitize
 local absolute = helpers.absolute
 local submit_form = helpers.submit_form
 local has = helpers.has
-
--- Downloads `url` and saves it as `filename` when it really is a PDF; returns true on success.
-local function save_pdf(url, filename, fields, headers)
-  local resp = fyde.http.download(url, headers)
-  local content_type = resp.content_type or ""
-  local is_pdf = content_type:find("pdf", 1, true) or (resp.body or ""):sub(1, 4) == "%PDF"
-  if resp.status == 200 and is_pdf then
-    fyde.save_document(sanitize(filename), resp.body, fields)
-    return true
-  end
-  fyde.log.warn(string.format("skipping %s (status %d, content-type %s)", filename, resp.status, content_type))
-  return false
-end
+local save_pdf = helpers.save_pdf
 
 -- Minimal text-only PDF writer, for sites that have
 -- no downloadable document and whose data has to be rendered into one: each entry of `lines`

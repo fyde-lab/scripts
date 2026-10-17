@@ -25,18 +25,6 @@ local SUBMIT = "form#authenticationForm button#loginBt"
 local BAD_CREDENTIALS = { "mot de passe incorrect", "identifiants sont incorrects" }
 local CAPTCHA = "iframe[src*='captcha'], iframe[src*='challenges.cloudflare.com'], iframe[src*='datadome']"
 
--- luacheck: push ignore 211
--- ---------------------------------------------------------------------------------------------
--- Shared block (identical in every scraper - see README.md).
---
--- Login error contract: a rejected username/password always fails the run with exactly
--- `INVALID_CREDENTIALS`, and a rejected, expired or unanswered OTP/MFA step with exactly
--- `MFA_FAILED` (both raised with `error(code, 0)`, so the message carries no position prefix).
--- Any other failure is a free-form error message.
---
--- Log markers (grepped by tests/login_smoke.sh): `LOGIN_PAGE_FOUND` once the login form has
--- been seen, `ALREADY_LOGGED_IN` when a restored session made the login step unnecessary.
--- ---------------------------------------------------------------------------------------------
 local helpers = fyde.helpers
 local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local fail = helpers.fail
@@ -45,20 +33,6 @@ local contains_any = helpers.contains_any
 local sanitize = helpers.sanitize
 local absolute = helpers.absolute
 local has = helpers.has
-
--- Downloads `url` and saves it as `filename` when it really is a PDF; returns true on success.
-local function save_pdf(url, filename, fields, headers)
-  local resp = fyde.http.download(url, headers)
-  local content_type = resp.content_type or ""
-  local is_pdf = content_type:find("pdf", 1, true) or (resp.body or ""):sub(1, 4) == "%PDF"
-  if resp.status == 200 and is_pdf then
-    fyde.save_document(sanitize(filename), resp.body, fields)
-    return true
-  end
-  fyde.log.warn(string.format("skipping %s (status %d, content-type %s)", filename, resp.status, content_type))
-  return false
-end
--- luacheck: pop
 
 -- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
 -- exists.
