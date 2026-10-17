@@ -31,21 +31,10 @@ local LOGIN_FORM = "form[name='BLAuthenticationForm']"
 -- ---------------------------------------------------------------------------------------------
 local helpers = fyde.helpers
 local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
-local MFA_FAILED = helpers.MFA_FAILED
 local fail = helpers.fail
 local contains = helpers.contains
 local trim = helpers.trim
 local sanitize = helpers.sanitize
-
--- Asks the user for a one-time code through fyde.input.ask; an unanswered/empty prompt (or no
--- input handler at all, e.g. an unattended run) is an MFA failure.
-local function ask_code(question)
-  local ok, code = pcall(fyde.input.ask, question)
-  if not ok or type(code) ~= "string" or trim(code) == "" then
-    fail(MFA_FAILED, "no one-time code was provided")
-  end
-  return (code:gsub("%s", ""))
-end
 
 local function absolute(base, href)
   if not href or href == "" then
