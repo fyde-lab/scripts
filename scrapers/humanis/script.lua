@@ -37,11 +37,6 @@ local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local fail = helpers.fail
 local sanitize = helpers.sanitize
 
-local function has(page_or_html, selector)
-  local html = type(page_or_html) == "table" and page_or_html.body or page_or_html
-  return #fyde.html.select(html or "", selector) > 0
-end
-
 local function json_or_nil(body)
   local ok, value = pcall(fyde.json.decode, body or "")
   if ok then
