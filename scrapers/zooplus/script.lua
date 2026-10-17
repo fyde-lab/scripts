@@ -34,11 +34,7 @@ local contains_any = helpers.contains_any
 local trim = helpers.trim
 local sanitize = helpers.sanitize
 local absolute = helpers.absolute
-
-local function has(page_or_html, selector)
-  local html = type(page_or_html) == "table" and page_or_html.body or page_or_html
-  return #fyde.html.select(html or "", selector) > 0
-end
+local has = helpers.has
 
 local function json_or_nil(body)
   local ok, value = pcall(fyde.json.decode, body or "")

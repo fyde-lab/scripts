@@ -37,11 +37,6 @@ local sanitize = helpers.sanitize
 local url_encode = helpers.url_encode
 local base64url_decode = helpers.base64url_decode
 
-local function has(page_or_html, selector)
-  local html = type(page_or_html) == "table" and page_or_html.body or page_or_html
-  return #fyde.html.select(html or "", selector) > 0
-end
-
 local function json_or_nil(body)
   local ok, value = pcall(fyde.json.decode, body or "")
   if ok then
