@@ -44,17 +44,6 @@ local page_text = helpers.page_text
 local wait_state = helpers.wait_state
 local open_and_wait = helpers.open_and_wait
 
--- Fills the first present selector of each candidate list.
-local function fill_first(selectors, value)
-  for _, selector in ipairs(selectors) do
-    if present(selector) then
-      fyde.browser:fill(selector, value)
-      return selector
-    end
-  end
-  error("none of " .. table.concat(selectors, ", ") .. " is on the page")
-end
-
 local function click_first(selectors)
   for _, selector in ipairs(selectors) do
     if present(selector) then
