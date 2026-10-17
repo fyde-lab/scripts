@@ -30,12 +30,7 @@ local contains_any = helpers.contains_any
 local sanitize = helpers.sanitize
 local absolute = helpers.absolute
 local has = helpers.has
-
-local function sleep(ms)
-  pcall(function()
-    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
-  end)
-end
+local sleep = helpers.sleep
 
 local function page_html()
   local ok, html = pcall(function()

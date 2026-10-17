@@ -71,14 +71,7 @@ local fail = helpers.fail
 local contains_any = helpers.contains_any
 local sanitize = helpers.sanitize
 local ask_code = helpers.ask_code
-
--- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
--- exists.
-local function sleep(ms)
-  pcall(function()
-    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
-  end)
-end
+local sleep = helpers.sleep
 
 local function page_html()
   local ok, html = pcall(function()

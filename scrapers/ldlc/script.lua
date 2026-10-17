@@ -38,14 +38,7 @@ local trim = helpers.trim
 local sanitize = helpers.sanitize
 local json_or_nil = helpers.json_or_nil
 local save_pdf = helpers.save_pdf
-
--- `wait_for` only waits for a selector to appear, so sleeping means waiting on one that never
--- exists.
-local function sleep(ms)
-  pcall(function()
-    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
-  end)
-end
+local sleep = helpers.sleep
 
 local function page_html()
   local ok, html = pcall(function()

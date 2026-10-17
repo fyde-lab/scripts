@@ -34,12 +34,7 @@ local fail = helpers.fail
 local contains_any = helpers.contains_any
 local ask_code = helpers.ask_code
 local has = helpers.has
-
-local function sleep(ms)
-  pcall(function()
-    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
-  end)
-end
+local sleep = helpers.sleep
 
 local function page_html()
   local ok, html = pcall(function()

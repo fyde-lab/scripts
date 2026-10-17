@@ -280,11 +280,7 @@ local function month_number(word)
   return MONTHS[lower]
 end
 
-local function sleep(ms)
-  pcall(function()
-    fyde.browser:wait_for("#__fyde_scraper_sleep__", ms)
-  end)
-end
+local sleep = fyde.helpers.sleep
 
 -- At most `n` bytes of `s`, never cutting a UTF-8 character in half (the host rejects invalid
 -- UTF-8 in a log line).
