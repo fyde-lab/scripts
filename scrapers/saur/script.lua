@@ -32,6 +32,7 @@ local helpers = fyde.helpers
 local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local fail = helpers.fail
 local sanitize = helpers.sanitize
+local base64url_decode = helpers.base64url_decode
 
 local function absolute(base, href)
   if not href or href == "" then
@@ -111,25 +112,6 @@ local function save_pdf(url, filename, fields, headers)
   return false
 end
 -- luacheck: pop
-
-local function base64url_decode(s)
-  local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-  s = s:gsub("-", "+"):gsub("_", "/"):gsub("[^%w%+/]", "")
-  local bits = s:gsub(".", function(c)
-    local v = alphabet:find(c, 1, true) - 1
-    local out = ""
-    for i = 6, 1, -1 do
-      out = out .. ((v >> (i - 1)) & 1)
-    end
-    return out
-  end)
-  return (bits:gsub("%d%d%d?%d?%d?%d?%d?%d?", function(byte)
-    if #byte ~= 8 then
-      return ""
-    end
-    return string.char(tonumber(byte, 2))
-  end))
-end
 
 
 local function get(path)
