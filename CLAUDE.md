@@ -68,7 +68,7 @@ Committed next to `script.lua` (and `logo.png`). Fields (struct `ScraperManifest
 - `follow_redirects` (default `true`) — set `false` to inspect a redirect (`Location`) yourself.
 - `allowed_domains` — only these hosts (and subdomains) are reachable by `fyde.http` /
   `fyde.browser:open`; anything else fails the run. The sdk fails closed (an omitted or empty
-  list allows nothing, whatever `src/main.rs`'s comment says), so every scraper must list its
+  list allows nothing), so every scraper must list its
   real sites, including third-party ones the login needs (e.g. `challenges.cloudflare.com`).
 - `parameters` — what the user must supply (`label`, `placeholder`, `type`, `required`,
   `secret`), published with the script; `login_smoke.sh` builds fake credentials from it.
