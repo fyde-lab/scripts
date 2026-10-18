@@ -28,12 +28,14 @@ instead.
 
 ## 0. Before starting
 
-Read `scrapers/<name>/script.lua` in full and skim this repo's `CLAUDE.md` section about that
-script (the "Architecture" section documents, per script, what's confirmed vs. `TODO` vs.
-architecturally blocked — e.g. Datadome on edf, no login flow for cesu/pajemploi,
-client-side-rendered invoices on scaleway). If `CLAUDE.md` already flags the site as a probable
-hard wall (no JS engine, bot detection), say so up front and ask the user whether to still
-attempt it — don't burn iterations rediscovering a documented blocker.
+Read `scrapers/<name>/script.lua` in full — its header comment says what's confirmed vs. not
+vs. blocked — plus its `manifest.json` `status` (`state`, `antibot_*`, `notes`) and this repo's
+`CLAUDE.md` ("Scraper contract", "Host gotchas"). If the script or manifest already flags the
+site as a hard wall (bot detection that blocks even `fyde.browser`, no login flow), say so up
+front and ask the user whether to still attempt it — don't burn iterations rediscovering a
+documented blocker. Also check the script against the current host contract first: a
+free-text `fyde.progress.step("...")` (only the `ProgressStep` names in `CLAUDE.md` are
+accepted now) or a missing host in `allowed_domains` fails the run before anything else.
 
 ## 1. Ask the user for `secret.json` and a token budget
 
@@ -86,7 +88,7 @@ BIN=target/debug/fyde-scripts
 if [ ! -x "$BIN" ] || [ -n "$(find ../sdk/src ../sdk/Cargo.toml ../sdk/build.rs src Cargo.toml -newer "$BIN" -type f 2>/dev/null)" ]; then
   cargo build
 fi
-"$BIN" <name> --dev
+"$BIN" run <name> --dev
 ```
 
 Before running, note the current newest file (if any) under `data/reports/<name>_*.json` (e.g.
@@ -138,16 +140,15 @@ repo's scripts:
   is actually fine, or misses a real logout.
 - A URL changed (redirect target, path, query params) — compare against the HAR's or the run
   report's HTTP entry's actual `url`/`status`.
-- The script expects a prior session/cookie to already be authenticated (several of these
-  scripts — see `CLAUDE.md` — have no automated login and rely on a previously-restored
-  session). If the failure is "logged out" on a script that never logs in itself, that may be
+- The script expects a prior session/cookie to already be authenticated (a script with no
+  automated login relies on a previously-restored session — its header comment says so). If the failure is "logged out" on a script that never logs in itself, that may be
   expected and not a bug in the script at all — say so rather than inventing a login flow that
   doesn't exist yet.
-- Architecturally blocked (Datadome, client-rendered SPA, no JS engine) — if the HAR or the HTTP
-  entries show a bot-detection challenge page or the expected content simply isn't in the HTML
-  this host fetched, this isn't fixable by editing the Lua script. Stop and report that, per
-  `CLAUDE.md`'s own framing for the affected scripts — don't keep tweaking selectors against a
-  page that was never going to contain the data.
+- The content is rendered client-side or behind a JS challenge (Datadome, Cloudflare...) — if
+  the HTTP entries show a challenge page, or the expected content simply isn't in the HTML
+  `fyde.http` fetched, move that part to `fyde.browser` (a real webview that runs the page's
+  JS). Only if the webview is blocked too is it architecturally blocked: stop and report that
+  rather than tweaking selectors against a page that was never going to contain the data.
 
 You cannot exercise authenticated requests yourself (no credentials, no browser) — your evidence
 is entirely the HAR plus the report's HTTP entries. Don't guess at a fix that isn't grounded in
@@ -201,9 +202,9 @@ re-run once more per the mechanics above after any change here.
   and (if applicable) documents + metadata still come through. Report what was wrong and what
   changed, and stop — don't keep iterating past a good run "to be safe."
 - **Stuck**: the same failure survives a genuine fix attempt with a different hypothesis, or the
-  blocker is architectural (bot detection, no JS engine, no login flow to reverse-engineer). Say
-  plainly what's blocking it and why further script edits won't help, per `CLAUDE.md`'s own
-  framing for that site — don't loop indefinitely on a dead end.
+  blocker is architectural (bot detection that blocks even `fyde.browser`, no login flow to
+  reverse-engineer). Say plainly what's blocking it and why further script edits won't help —
+  don't loop indefinitely on a dead end.
 - **Token budget hit**: per step 1, the moment `baseline - current` from the
   `<total_tokens>N tokens left</total_tokens>` reminder exceeds the budget the user gave you,
   stop wherever you are (even mid-step) and report which step you reached and what's left.

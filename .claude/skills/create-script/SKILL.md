@@ -33,8 +33,8 @@ before, switch to reasoning the way `fix-script` does rather than re-deriving it
 You must not fetch, browse, or otherwise load any page of the target site yourself (no
 `WebFetch`, no `claude-in-chrome`/browser tools, no ad-hoc `curl`). The only things you're
 allowed to look at are the HAR file the user gives you in step 2 and the script's own runs —
-the only thing you're allowed to edit is `scrapers/<name>/script.lua` (and
-`scrapers/<name>/manifest.json`). This keeps every byte you reason about something either the
+the only things you're allowed to edit are `scrapers/<name>/` (`script.lua`, `manifest.json`)
+and `secret.json.example`. This keeps every byte you reason about something either the
 user's own real browser session captured, or the script itself actually fetched through
 `fyde.http`, under the same cookie jar/session it'll run with unattended — a page you loaded by
 hand (different cookies, different IP, a logged-in browser session) can look nothing like what
@@ -46,16 +46,23 @@ than looking it up yourself.
 
 - Check `scrapers/<name>/` doesn't already exist. If it does, this is a fix/extend job for
   `fix-script`, not a new script.
-- Skim this repo's `CLAUDE.md` for whether the site is already known to be a hard wall (Datadome,
-  client-rendered SPA, no JS engine). This host has **no JS engine and no real browser** — it's
-  plain HTTP (`fyde.http`) + server-side HTML parsing (`fyde.html.select`, a CSS selector engine).
-  If the HAR you get in step 2 shows the login or document pages are rendered client-side by JS,
-  say so up front rather than discovering it after burning several iterations.
-- Create `scrapers/<name>/script.lua` with a header comment (site name/URL, one line on what it
-  scrapes) and a minimal skeleton, leaving the body to steps 4+:
+- Skim this repo's `CLAUDE.md` ("Host gotchas") for known walls. Pick the transport from the
+  HAR in step 2:
+  - **`fyde.http`** (plain HTTP with a Chrome TLS fingerprint + server-side HTML parsing with
+    `fyde.html.select`) when the login and document pages work as plain requests — preferred:
+    faster, and needs no display.
+  - **`fyde.browser`** (a real embedded WebKit webview that runs the page's JS) when the login
+    or documents are rendered client-side, or sit behind a JS challenge/captcha/bot-mitigation
+    script (Datadome, Cloudflare Turnstile, F5...). Some antibot walls still block it; record
+    what you find in the manifest's `antibot_name`/`antibot_status`.
+- Create `scrapers/<name>/script.lua` with a header comment (site name/URL, what it scrapes, and
+  what is/isn't confirmed) and a minimal skeleton, leaving the body to steps 4+:
 
   ```lua
   local M = {}
+
+  local helpers = fyde.helpers
+  local fail = helpers.fail
 
   function M.run(params)
     fyde.progress.step("checking_session")
@@ -97,20 +104,27 @@ you), and the document-fetch entry's URL shape if present. Treat specific values
 (session cookies, CSRF tokens, the actual password if the user didn't redact it) as
 **ephemeral and not to be hardcoded** — they belong to that one browser session, not to the
 script; only the URLs/field names/structure are durable. If the HAR shows the login is a
-JS-driven SPA call you can't just replay as a plain `fyde.http` request, or sits behind an
-OPAQUE-style/WebAuthn flow this host can't drive, that's a hard wall — stop and report it per
-`CLAUDE.md`'s framing for other blocked sites rather than building further steps behind it.
+JS-driven SPA call or a JS challenge you can't just replay as a plain `fyde.http` request, plan
+for `fyde.browser` instead. A WebAuthn/passkey-only login, or an antibot that blocks the webview
+too, is a hard wall — stop and report it rather than building further steps behind it.
 
 ## 3. Write `manifest.json`
 
-Create `scrapers/<name>/manifest.json` per this repo's `CLAUDE.md`: a `{"name", "description",
+Create `scrapers/<name>/manifest.json` per this repo's `CLAUDE.md` (copy a recent one, e.g.
+`scrapers/zooplus/manifest.json`, as a template): a `{"name", "description",
 "short_description", "homepage", "wreq_emulation", "debug_http_dump", "follow_redirects",
-"allowed_domains", "status"}` object.
+"allowed_domains", "parameters", "status"}` object. Add a `logo.png` next to it if the user
+provides one (`publish` sends it as the banner).
 
-- `status` — `{"state": "wip", "login_page_found", "invalid_credentials_detected",
-  "login_ok", "documents_fetched"}`, each check `passed`/`failed`/`not_tested`/`not_applicable`
-  (plus an optional `notes` string; see `README.md`'s Status section). Start every check at
-  `not_tested` and update them, and `state`, as the steps below pass or fail.
+- `status` — `{"state": "wip", "last_updated", "login_page_found",
+  "invalid_credentials_detected", "login_ok", "documents_fetched", "antibot_name",
+  "antibot_status", "notes"}`, each check `passed`/`failed`/`not_tested`/`not_applicable` (see
+  `README.md`'s Status section). Start every check at `not_tested`, update them and `state` as
+  the steps below pass or fail, set `last_updated` to today on every change, and re-run
+  `cargo run -- status-table` afterwards.
+- `parameters` — one entry per value `run(parameters)` reads (`label`, `placeholder`, `type`,
+  `required`, `secret: true` for passwords), keyed like the `secret.json.example` entry from
+  step 1. `tests/login_smoke.sh` builds its fake credentials from the placeholders.
 - `name`/`description`/`short_description`/`homepage` — marketplace metadata; write something
   accurate for the site now, even though nothing reads it until `publish`.
 - `wreq_emulation` — leave `true` (the default) unless the HAR or an early run's report shows
@@ -122,22 +136,32 @@ Create `scrapers/<name>/manifest.json` per this repo's `CLAUDE.md`: a `{"name", 
   itself (e.g. a `Location` header) rather than being carried straight to its target.
 - `allowed_domains` — set explicitly from every host you actually saw requests hit in the HAR
   (e.g. `["impots.gouv.fr"]` covering both `cfspart.impots.gouv.fr` and
-  `cfspart-idp.impots.gouv.fr`). Don't leave this unrestricted — a call to any other host fails
-  closed, which is the point.
+  `cfspart-idp.impots.gouv.fr`), including third-party hosts the login needs (an SSO domain,
+  `challenges.cloudflare.com`...). **An empty or missing list blocks every host**, and a call to
+  any host not listed fails the run.
 
 ## Reference: the fyde host API
 
 Every capability the script can use is the `fyde` global table — nothing else is reachable (no
-`io`, `os`, sockets). Full reference, ported 1:1 from `../sdk/src/domains/scrapers/host/*.rs`:
+`io`, `os`, `require`, sockets). Source of truth: `../sdk/src/domains/scrapers/host/`.
 
 - `fyde.http.get(url, headers?)`, `fyde.http.post_form(url, form_table, headers?)`,
-  `fyde.http.download(url, headers?)` — each returns `{ status, url, body, content_type? }`
-  (`download` omits `url`, adds `content_type`). The cookie jar persists automatically across
-  calls within a run, and across runs via `fyde.session`/the restored session store — never
-  manage cookies by hand.
+  `fyde.http.post_json(url, value, headers?)` — each returns `{ status, url, body }`.
+  `fyde.http.download(url, headers?)` (GET only) returns `{ status, content_type, body }`. The
+  cookie jar persists automatically within a run and across successful runs; you can't read a
+  cookie's value. `fyde.http.set_cookie(url, "name=value; Path=/")` plants a cookie a site
+  would set from inline JS (a manual `Cookie` header bypasses the jar).
+- `fyde.browser` — a real webview, **called with colon syntax**: `:open(url)`,
+  `:wait_for(selector, timeout_ms?)`, `:fill(selector, value)`, `:click(selector)`, `:html()`
+  (the current DOM, to feed `fyde.html.select`), `:download(selector, timeout_ms?)` (clicks a
+  link/button and returns the downloaded bytes). The window is invisible unless the run passes
+  `--visible`. Submit forms by clicking the real submit control. Cookies the browser gets reach
+  `fyde.http` only on the next run, so download through the browser in the same run
+  (`helpers.browser_save`). A long `wait_for` issued while a click navigates dies with the old
+  page — poll with `helpers.wait_state` instead.
 - `fyde.html.select(html, css_selector)` — returns an array of
-  `{ text = "...", html = "<outer html>", attrs = { href = "...", ... } }`, one per match. This
-  is your only way to read a page's structure; there's no JS, no XPath.
+  `{ text = "...", html = "<outer html>", attrs = { href = "...", ... } }`, one per match. No
+  XPath.
 - `fyde.json.decode(text)` / `fyde.json.encode(value)` — for sites with a JSON API instead of (or
   alongside) HTML forms.
 - `fyde.progress.step(name)` — announce a new high-level stage. `name` must be one of
@@ -174,6 +198,12 @@ Every capability the script can use is the `fyde` global table — nothing else 
   `period_start`/`period_end`, `total_amount`, `due_on`, `net_pay`, `tax_year`... — seeded by
   `../server/migrations/0012_create_attributes.sql`): a value of any other type than the one
   defined there is rejected on upload.
+- Contract every script must follow: log `ALREADY_LOGGED_IN` (`fyde.log.info`) when the
+  restored session is still valid and the login is skipped, and `LOGIN_PAGE_FOUND` once the
+  login form/endpoint is recognised (`tests/login_smoke.sh` greps both); a rejected
+  username/password fails with exactly `fail(helpers.INVALID_CREDENTIALS)`, a rejected, expired
+  or unanswered one-time code with exactly `fail(helpers.MFA_FAILED)` (`helpers.ask_code` asks
+  for one and fails that way on no answer).
 - `fyde.session` — a plain Lua table you can read/write; whatever's in it when `run` returns is
   persisted and restored verbatim on the next run. Use it only for state beyond what the cookie
   jar already gives you for free (cookies restore automatically already).
@@ -194,7 +224,7 @@ BIN=target/debug/fyde-scripts
 if [ ! -x "$BIN" ] || [ -n "$(find ../sdk/src ../sdk/Cargo.toml ../sdk/build.rs src Cargo.toml -newer "$BIN" -type f 2>/dev/null)" ]; then
   cargo build
 fi
-"$BIN" <name> --dev
+"$BIN" run <name> --dev
 ```
 
 Note the newest `data/reports/<name>_*.json` before running (`ls -t data/reports/<name>_*.json
@@ -221,7 +251,8 @@ Using only the HAR from step 2 as ground truth (never guessed from memory of how
 - An `is_logged_in(html)` (or equivalent JSON-shape) check: a pattern match on a known
   logged-in marker vs. a login-page marker — see `didaxis/script.lua`'s version for the pattern.
   Call this **first**, before attempting login, so a restored session that's already
-  authenticated skips the login POST entirely — this is what step 6 verifies.
+  authenticated skips the login POST entirely (logging `ALREADY_LOGGED_IN`) — this is what
+  step 6 verifies. Log `LOGIN_PAGE_FOUND` once you've recognised the login form.
 - The `login(params)` function itself: a `fyde.http.post_form` (or `post_json`, if the HAR shows
   a JSON API) to that action URL, with the field names found there mapped to
   `params.username`/`params.password` (or whatever the site's own field names are — keep
@@ -229,8 +260,13 @@ Using only the HAR from step 2 as ground truth (never guessed from memory of how
   own terminology strongly suggests otherwise, as `impots` does with `fiscal-number`). Run
   `is_logged_in` again right after the POST to confirm it actually worked — a 200 with the login
   form still in the body means the credentials were rejected or the field names are wrong.
+  Recognise the site's own "wrong password" message and `fail(helpers.INVALID_CREDENTIALS)` on
+  it. With `fyde.browser`, the same flow is `helpers.open_and_wait` → `fill_first` →
+  `click_first` → `wait_state` on logged-in / error / MFA markers.
 
-If the login needs an MFA/OTP step, wire `fyde.input.ask` in for it, but don't try to drive it
+If the login needs an MFA/OTP step, wire `helpers.ask_code` in for it (announce it with
+`fyde.progress.step("waiting_for_verification_code")`; a rejected code is
+`fail(helpers.MFA_FAILED)`), but don't try to drive it
 through this unattended loop — tell the user once you reach this point so they can supply it
 interactively for a one-off manual verification.
 
@@ -270,12 +306,11 @@ Once a logged-in session is confirmed stable across runs, use `fyde.html.select`
 authenticated page(s) to locate the documents section(s) — a dashboard link, a dedicated
 "documents"/"bills"/"payslips" page per `didaxis/script.lua`'s `SECTIONS` pattern (and per
 whatever the HAR's document-fetch entry, if present, already showed). For each extracted
-document link: resolve it to an absolute URL, `fyde.http.download(url)` it, check
-`status == 200` and that `content_type` isn't HTML (an HTML response usually means a
-logged-out redirect or wrong URL, not a real file), then `fyde.save_document(filename, body)`
-with a sanitized filename (see `didaxis/script.lua`'s `sanitize` helper: strip control chars,
-collapse whitespace, replace path-unsafe characters, cap length). Log a warning (not an error)
-for any single document that fails to download, so one bad link doesn't abort the whole run.
+document: `helpers.save_pdf(helpers.absolute(page.url, href), filename, fields)` over HTTP
+(it only saves a 200 that really is a PDF, under a `sanitize`d name, so a logged-out HTML
+redirect is skipped with a warning instead of saved), or `helpers.browser_save(selector,
+filename, fields)` for a download only the webview can trigger. One document failing must log
+a warning, not abort the run.
 
 **Advance when:** the report (and `data/documents/<name>/`) shows at least one real document
 saved, with content-type/byte-size consistent with a real file, not an HTML error page saved
@@ -302,7 +337,7 @@ error from an invalid value (`fyde.save_document` rejects an unrecognized `type`
   (guessed selectors not visible in the HAR/test account, etc.), and stop.
 - **Stuck on a given step**: the same failure survives a genuinely different hypothesis at that
   step (per `fix-script`'s diagnosis framing — selector drift, wrong URL, logged-out marker,
-  bot-detection, no JS engine). Say plainly which step is blocked and why, rather than guessing
+  bot-detection that blocks even `fyde.browser`). Say plainly which step is blocked and why, rather than guessing
   further at the same step indefinitely.
 - **Token budget hit**: per step 1, the moment `baseline - current` from the
   `<total_tokens>N tokens left</total_tokens>` reminder exceeds the budget the user gave you,
@@ -310,5 +345,6 @@ error from an invalid value (`fyde.save_document` rejects an unrecognized `type`
 - **Needs the user**: missing `secret.json` fields, a missing/incomplete HAR, an MFA/question
   prompt, or any page you need to see authenticated that you have no way to fetch yourself.
 
-Never commit or push as part of this loop unless asked — leave the new script as working-tree
+Before reporting success, run `luacheck scrapers/<name>/` (CI runs `luacheck scrapers/`) and
+`cargo run -- check`. Never commit or push as part of this loop unless asked — leave the new script as working-tree
 changes (plus the `secret.json.example` and `manifest.json` additions) for the user to review.
