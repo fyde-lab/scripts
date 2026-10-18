@@ -118,7 +118,7 @@ function M.run(params)
   open_and_wait(ORDERS_URL, { { "orders", selector = "#orderdetails, " .. ORDER_SELECT } }, 30000)
   local options = fyde.html.select(page_html(), ORDER_SELECT .. " option")
   for i, option in ipairs(options) do
-    fyde.progress.update(i, #options, option.text)
+    fyde.progress.update(i, #options)
     if i > 1 then
       -- The page submits its own form when the select changes (the original implementation called
       -- form.submit() itself; `fill` dispatches the same change event).

@@ -313,7 +313,7 @@ function M.run(params)
   fyde.log.info(string.format("%d document(s) found", #docs))
 
   for i, doc in ipairs(docs) do
-    fyde.progress.update(i, #docs, doc.text)
+    fyde.progress.update(i, #docs)
 
     local url = resolve_url(documents_url, doc.href)
     local download = fyde.http.download(url)

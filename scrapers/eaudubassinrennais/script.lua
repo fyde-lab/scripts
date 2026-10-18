@@ -134,7 +134,7 @@ function M.run(params)
     fyde.log.info(string.format("%s: %d document(s) found", section.slug, #bills))
 
     for i, bill in ipairs(bills) do
-      fyde.progress.update(i, #bills, bill.date)
+      fyde.progress.update(i, #bills)
 
       local url = resolve_url(section.url, bill.href)
       local download = fyde.http.download(url)

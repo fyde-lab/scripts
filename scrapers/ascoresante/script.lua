@@ -55,7 +55,7 @@ function M.run(params)
     if link and link.attrs.href then
       local date = trim(cells[2].text)
       local number = trim(cells[3].text)
-      fyde.progress.update(i, #rows, date)
+      fyde.progress.update(i, #rows)
       local details = fyde.http.get(absolute(page.url, link.attrs.href))
       local pdf = fyde.html.select(details.body, "div.row > div.col-sm-4 a")[1]
       if pdf and pdf.attrs.href then

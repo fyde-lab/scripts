@@ -412,7 +412,7 @@ function M.run(params)
   fyde.progress.step("downloading_documents")
   local saved = 0
   for i, invoice in ipairs(invoices) do
-    fyde.progress.update(i, #invoices, tostring(invoice.date) .. " " .. invoice.line)
+    fyde.progress.update(i, #invoices)
     if save_invoice(invoice) then
       saved = saved + 1
     elseif i == 3 and saved == 0 then
