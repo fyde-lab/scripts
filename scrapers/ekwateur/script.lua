@@ -24,7 +24,7 @@ local has = helpers.has
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(LOGIN_URL)
   local csrf = fyde.html.select(page.body, "input[name='_csrf_token']")[1]
   if not csrf then
@@ -43,7 +43,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(BILLS_URL)
   if has(page, "td.table__body__file, a[href*='deconnexion'], a[href*='logout']") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -53,7 +53,7 @@ function M.run(params)
     page = fyde.http.get(BILLS_URL)
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   for _, row in ipairs(fyde.html.select(page.body, "tr")) do
     local link = fyde.html.select(row.html, "td.table__body__file > a")[1]
     local cells = fyde.html.select(row.html, "td")
@@ -73,7 +73,7 @@ function M.run(params)
     category = "housing",
     subcategory = "energy",
   })
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

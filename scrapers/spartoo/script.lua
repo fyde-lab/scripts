@@ -22,7 +22,7 @@ local has = helpers.has
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(BASE .. "/securelogin.php?from=compte")
   if not has(page, ".loginContent form") then
     error("Spartoo login form not found on " .. page.url)
@@ -35,14 +35,14 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if has(fyde.http.get(BASE .. "/compte.php"), "a.deconnect") then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   local page = fyde.http.get(HISTORY_URL)
   for _, row in ipairs(fyde.html.select(page.body, "tbody tr:not(.headingTable)")) do
     local link = fyde.html.select(row.html, "a[onclick]")[1]
@@ -59,7 +59,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

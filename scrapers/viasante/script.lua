@@ -38,7 +38,7 @@ local function contracts()
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(BASE .. "/api/identity/login")
   if not has(page, LOGIN_FORM .. " input[name='password']") then
     error("Viasanté login form not found on " .. page.url)
@@ -56,7 +56,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local list = contracts()
   if list then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -68,7 +68,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Downloading documents")
+  fyde.progress.step("downloading_documents")
   for _, contract in ipairs(list) do
     local number = tostring(math.tointeger(tonumber(contract.numContrat)) or contract.numContrat)
     local person = tostring(contract.souscripteur and contract.souscripteur.numPers or "")
@@ -86,7 +86,7 @@ function M.run(params)
         }, { ["Content-Type"] = "application/json" })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

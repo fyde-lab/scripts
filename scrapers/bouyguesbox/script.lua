@@ -44,7 +44,7 @@ local function get_token()
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(CAS_URL)
   if not has(page, "input[name='password']") then
     error("Bouygues Telecom CAS login form not found on " .. page.url)
@@ -57,7 +57,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local token, user = get_token()
   if token then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -73,7 +73,7 @@ function M.run(params)
     return json_or_nil(fyde.http.get(API .. path, auth).body) or {}
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   local person = api("/personnes/" .. tostring(user))
   local accounts = api(person._links and person._links.factures and person._links.factures.href or "/")
   for _, account in ipairs(accounts.comptesFacturation or {}) do
@@ -94,7 +94,7 @@ function M.run(params)
       end
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

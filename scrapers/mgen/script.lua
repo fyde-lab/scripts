@@ -35,7 +35,7 @@ local open_and_wait = helpers.open_and_wait
 local browser_save = helpers.browser_save
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if open_and_wait(LOGIN_URL, { LOGGED_IN, { "login", selector = LOGIN_FORM .. " #password" } }, 30000) ~= "login" then
     error("MGEN login form not found")
   end
@@ -54,14 +54,14 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if open_and_wait(ACCOUNT_URL, { LOGGED_IN, { "login", selector = LOGIN_FORM } }, 30000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading reimbursement statements")
+  fyde.progress.step("downloading_documents")
   open_and_wait(ACCOUNT_URL, { { "table", selector = "#tableDernierRemboursement, #noRembFocus" } }, 30000)
   local seen = {}
   for _ = 1, 50 do
@@ -86,7 +86,7 @@ function M.run(params)
     fyde.browser:click("#tableDernierRemboursement_next")
     sleep(2000)
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

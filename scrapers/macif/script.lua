@@ -39,7 +39,7 @@ local LOGGED_IN = { "logged_in", selector = "#profil-avatar, .mcf-navbar__nav, b
 local LOGIN_FORM = "#login"
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if not present(LOGIN_FORM) then
     open_and_wait(LOGIN_URL, { LOGGED_IN, { "login", selector = LOGIN_FORM } }, 30000)
   end
@@ -84,14 +84,14 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if open_and_wait(CHECK_URL, { LOGGED_IN, { "login", selector = LOGIN_FORM } }, 45000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading documents")
+  fyde.progress.step("downloading_documents")
   open_and_wait(DOCS_URL, { { "docs", selector = "#avisecheances a[href], #attestations a[href], a[href*='.pdf']" } }, 45000)
   local count = 0
   for _, link in ipairs(fyde.html.select(page_html(), "#avisecheances a[href], #attestations a[href], a[href*='.pdf']")) do
@@ -107,7 +107,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

@@ -56,7 +56,7 @@ end
 
 local function login(params)
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   fyde.browser:fill("#username", params.username)
   fyde.browser:fill("#password", params.password)
   fyde.browser:click(CAPTCHA_BUTTON)
@@ -90,7 +90,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   fyde.browser:open(AUTHORIZE_URL)
   local state
   for _ = 1, 45 do

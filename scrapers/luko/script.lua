@@ -39,7 +39,7 @@ local function invoices()
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   fyde.http.get("https://fr.luko.eu/")
   fyde.log.info("LOGIN_PAGE_FOUND")
   local data, status = gql("Login", "mutation Login($credentials: credentials!) {\n  login(cred: $credentials) {\nok\nuser {\nid\nemail\nconnection {\njwtToken\n}\n }\n}\n}\n",
@@ -55,7 +55,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local list = invoices()
   if list then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -64,7 +64,7 @@ function M.run(params)
     list = invoices() or {}
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   for _, invoice in ipairs(list) do
     if invoice.downloadUrl then
       local date = tostring(invoice.date):sub(1, 10)
@@ -77,7 +77,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Downloading contract documents")
+  fyde.progress.step("downloading_documents")
   local data = gql("GetContractDocuments", DOCUMENTS)
   local contract = data.data and data.data.contracts and data.data.contracts[1] or {}
   local docs = {}
@@ -99,7 +99,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

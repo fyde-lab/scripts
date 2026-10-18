@@ -40,7 +40,7 @@ local function on_sso(page)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(LOGIN_URL)
   if not has(page, IDENTIFIER_FORM) then
     error("Fulli login form not found on " .. page.url)
@@ -59,7 +59,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   -- With a session, the login link no longer hands over to the SSO.
   local page = fyde.http.get(LOGIN_URL)
   if not on_sso(page) then
@@ -68,7 +68,7 @@ function M.run(params)
     page = login(params)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   local seen, count = {}, 0
   for _, link in ipairs(fyde.html.select(page.body, "a[href]")) do
     local href = link.attrs.href or ""
@@ -88,7 +88,7 @@ function M.run(params)
   if count == 0 then
     fyde.log.warn("no invoice link found on " .. page.url)
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

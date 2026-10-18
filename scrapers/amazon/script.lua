@@ -44,7 +44,7 @@ local browser_save = helpers.browser_save
 local LOGGED_IN = { "logged_in", selector = "#nav-greeting-name, a[href*='/gp/flex/sign-out']" }
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if open_and_wait(SIGNIN_URL, { { "email", selector = EMAIL_FIELD } }, 30000) ~= "email" then
     error("Amazon sign-in form not found")
   end
@@ -114,14 +114,14 @@ local function save_order_invoices(card)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if open_and_wait(BASE, { LOGGED_IN, { "login", selector = "#nav-link-accountList, " .. EMAIL_FIELD } }, 30000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   open_and_wait(ORDERS_URL, { { "orders", selector = "#time-filter, #orderFilter, .js-order-card" } }, 30000)
   local periods = {}
   for _, option in ipairs(fyde.html.select(page_html(), "#time-filter option, #orderFilter option")) do
@@ -144,7 +144,7 @@ function M.run(params)
       url = BASE .. next_link.attrs.href
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

@@ -23,7 +23,7 @@ local json_or_nil = helpers.json_or_nil
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(LOGIN_URL)
   local token = fyde.html.select(page.body, "input[name='_csrf_token']")[1]
   if not token then
@@ -37,7 +37,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(TRIPS_URL)
   if has(page, "tbody .trip-expand__origin") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -46,7 +46,7 @@ function M.run(params)
     page = fyde.http.get(TRIPS_URL)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   for _ = 1, 100 do
     for _, origin in ipairs(fyde.html.select(page.body, "tbody .trip-expand__origin")) do
       local uuid = (origin.attrs["data-target"] or ""):gsub("^#trip%-", "")
@@ -67,7 +67,7 @@ function M.run(params)
     end
     page = fyde.http.get(TRIPS_URL .. next_link.attrs.href)
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

@@ -38,7 +38,7 @@ end
 
 -- `page` is the SSO login page the orders page redirected to.
 local function login(params, page)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if not has(page, LOGIN_FORM) then
     error("Auchan login form not found on " .. page.url)
   end
@@ -58,7 +58,7 @@ local function login(params, page)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(ORDERS_URL)
   if not on_sso(page) then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -67,7 +67,7 @@ function M.run(params)
     page = fyde.http.get(ORDERS_URL)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   local seen, count = {}, 0
   for _, link in ipairs(fyde.html.select(page.body, "a[href]")) do
     local href = link.attrs.href or ""
@@ -87,7 +87,7 @@ function M.run(params)
   if count == 0 then
     fyde.log.warn("no invoice link found on " .. page.url)
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

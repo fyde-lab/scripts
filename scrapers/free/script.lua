@@ -35,7 +35,7 @@ local function bills_page()
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(LOGIN_PAGE)
   if not has(page, "input[name='pass'], input[name='login']") then
     error("Free login form not found on " .. page.url)
@@ -51,7 +51,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = bills_page()
   if page then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -63,7 +63,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   for _, item in ipairs(fyde.html.select(page.body, ".pane li")) do
     local link = fyde.html.select(item.html, "a")[1]
     local href = link and link.attrs.href or ""
@@ -80,7 +80,7 @@ function M.run(params)
       fyde.log.info("bill " .. id .. " predates 2012 and has no file")
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

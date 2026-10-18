@@ -30,7 +30,7 @@ local function is_logged_in(page)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   fyde.http.get(BASE .. "/account")
   local page = fyde.http.get(BASE .. "/web/sso/login")
   local action = page.body:match('"actionUrl"%s*:%s*"([^"]+)"')
@@ -53,7 +53,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(ORDERS_URL)
   if is_logged_in(page) then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -62,7 +62,7 @@ function M.run(params)
     page = fyde.http.get(ORDERS_URL)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   for _, option in ipairs(fyde.html.select(page.body, "#year-selector-filter option")) do
     local year_page = fyde.http.get(absolute(BASE, option.attrs.value))
     for _, row in ipairs(fyde.html.select(year_page.body, ".order-overview-table__row")) do
@@ -82,7 +82,7 @@ function M.run(params)
       end
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

@@ -78,7 +78,7 @@ local function wait_past_captcha(states, timeout_ms)
   if state ~= "captcha" then
     return state
   end
-  fyde.progress.step("Waiting for the " .. BRAND .. " anti-robot check to be solved in the browser window")
+  fyde.progress.step("waiting_for_captcha")
   fyde.log.warn(BRAND .. " shows a visual captcha; it must be solved by hand in the browser window (--visible)")
   state = wait_state(states, CAPTCHA_TIMEOUT_MS)
   if not state then
@@ -88,7 +88,7 @@ local function wait_past_captcha(states, timeout_ms)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   fyde.browser:open(LOGIN_URL)
   sleep(1500)
   local state = wait_past_captcha({
@@ -158,14 +158,14 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if open_and_wait(HOME_URL, { LOGGED_IN, { "login", selector = "#login, #password, [data-testid='choose-other-account']" } }, 45000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   sleep(3000)
   local contracts, seen = {}, {}
   for _, link in ipairs(fyde.html.select(page_html(), "a[href*='/facture-paiement/']")) do
@@ -193,7 +193,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

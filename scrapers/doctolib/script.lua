@@ -29,7 +29,7 @@ local function documents()
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(BASE .. "/sessions/new")
   local csrf = fyde.html.select(page.body, "meta[name='csrf-token']")[1]
   if not csrf then
@@ -59,7 +59,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local docs = documents()
   if docs then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -68,7 +68,7 @@ function M.run(params)
     docs = documents() or {}
   end
 
-  fyde.progress.step("Downloading documents")
+  fyde.progress.step("downloading_documents")
   for _, doc in ipairs(docs) do
     if doc.url then
       save_pdf(BASE .. doc.url, tostring(doc.shared_at) .. "_" .. tostring(doc.name) .. "_" .. tostring(doc.created_by) .. ".pdf", {
@@ -79,7 +79,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

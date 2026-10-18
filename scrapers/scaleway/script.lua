@@ -27,7 +27,7 @@ local json_or_nil = helpers.json_or_nil
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local body = { email = params.username, password = params.password }
   local resp = fyde.http.post_json(API .. "/account/v2/login", body)
   if resp.status >= 500 then
@@ -57,7 +57,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local function me(token, issuer)
     local resp = fyde.http.get(API .. "/iam/v1alpha1/users/" .. tostring(issuer), { ["X-Session-Token"] = token })
     return resp.status == 200 and json_or_nil(resp.body) or nil
@@ -73,7 +73,7 @@ function M.run(params)
     user = me(token, issuer) or {}
   end
   local headers = { ["X-Session-Token"] = token }
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   local list = json_or_nil(fyde.http.get(API .. "/billing/v1/invoices?organization_id=" .. tostring(user.organization_id), headers).body) or {}
   for _, invoice in ipairs(list.invoices or {}) do
     if invoice.state == "paid" then
@@ -87,7 +87,7 @@ function M.run(params)
         }, headers)
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

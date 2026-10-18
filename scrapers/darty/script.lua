@@ -27,7 +27,7 @@ local has = helpers.has
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(LOGIN_URL, HEADERS)
   if page.status >= 400 or not has(page, "input[type='password'], input[name='password']") then
     error("Darty login form not found on " .. page.url .. " (HTTP " .. page.status .. ")")
@@ -47,7 +47,7 @@ local function table_page(n)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local check = fyde.http.get(CONTROLLER .. "ec/products", HEADERS)
   if check.status == 200 and not check.url:find("/espace_client/connexion", 1, true) then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -55,7 +55,7 @@ function M.run(params)
     login(params)
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   local first = table_page(1)
   local pages = 1
   for _, a in ipairs(fyde.html.select(first.body, "a[data-page]")) do
@@ -91,7 +91,7 @@ function M.run(params)
       end
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

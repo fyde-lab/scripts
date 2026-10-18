@@ -24,7 +24,7 @@ local submit_form = helpers.submit_form
 local has = helpers.has
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(LOGIN_URL)
   if not has(page, LOGIN_FORM .. " input[name='password']") then
     error("ÉS login form not found on " .. page.url)

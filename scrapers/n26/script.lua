@@ -49,7 +49,7 @@ local function api_get(path, token)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local status, body = token_request({ grant_type = "password", username = params.username, password = params.password })
   if status >= 500 then
     error("N26 answered HTTP " .. status .. " (vendor down)")
@@ -78,7 +78,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local token = fyde.session.n26_token
   if token and api_get("/api/me", token) == 200 then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -87,7 +87,7 @@ function M.run(params)
     fyde.session.n26_token = token
   end
 
-  fyde.progress.step("Downloading statements")
+  fyde.progress.step("downloading_documents")
   local _, statements = api_get("/api/statements", token)
   for _, statement in ipairs(type(statements) == "table" and statements or {}) do
     local id = statement.id
@@ -101,7 +101,7 @@ function M.run(params)
       }, { Authorization = "Bearer " .. token, Accept = "application/pdf" })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

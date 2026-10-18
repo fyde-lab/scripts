@@ -29,7 +29,7 @@ local json_or_nil = helpers.json_or_nil
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   fyde.http.get(BASE)
   fyde.log.info("LOGIN_PAGE_FOUND")
   local payload = fyde.json.encode({ sLogin = params.username, sMotDePasse = params.password, fResterConnecte = true })
@@ -49,7 +49,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local home = fyde.http.get(BASE)
   local mag = home.url:match("[?&]mag=([^&]+)")
   if mag then
@@ -58,7 +58,7 @@ function M.run(params)
     mag = login(params)
   end
 
-  fyde.progress.step("Downloading order forms")
+  fyde.progress.step("downloading_documents")
   local details = json_or_nil(fyde.http.get("https://api-pointsretrait.leclercdrive.fr/API_PointsRetrait/ApiPointsRetrait/PointsRetraitParNoPointLivraison/na/drive/" .. mag).body) or {}
   local store = details.sReponse and details.sReponse[1] and details.sReponse[1].sUrlSiteCourses
   if not store then
@@ -89,7 +89,7 @@ function M.run(params)
       end
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

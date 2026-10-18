@@ -74,7 +74,7 @@ local function mfa(csrf, answer)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local read = json_or_nil(fyde.http.get(AUTH_READ_URL, { accept = "application/json" }).body)
   local csrf = read and read.csrf_token
   if not csrf then
@@ -120,14 +120,14 @@ end
 local DELIVERED = { DELIVERED = true, PICKED_UP_BY_CUSTOMER = true }
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if is_logged_in() then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading receipts")
+  fyde.progress.step("downloading_documents")
   for _, order in ipairs(list_orders()) do
     if DELIVERED[order.status] and order.id then
       local number = tostring(order.id)
@@ -141,7 +141,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

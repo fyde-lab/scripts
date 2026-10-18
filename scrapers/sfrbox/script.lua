@@ -27,7 +27,7 @@ local has = helpers.has
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(BOUNCE_URL)
   if has(page, ".g-recaptcha") then
     error("SFR asks for a captcha (CHALLENGE_ASKED)")
@@ -68,7 +68,7 @@ local function bill_from(html, container, label)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(BILLS_URL)
   if page.url:find("/facture-fixe/consultation", 1, true) and has(page, "#lastFacture, table.sr-multi-payment") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -80,7 +80,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   bill_from(page.body, "#lastFacture", "derniere")
   for _, row in ipairs(fyde.html.select(page.body, "table.sr-multi-payment tbody tr")) do
     local cells = fyde.html.select(row.html, "td")
@@ -90,7 +90,7 @@ function M.run(params)
       bill_from(detail.body, ".sr-container-wrapper-m", trim(cells[1].text))
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

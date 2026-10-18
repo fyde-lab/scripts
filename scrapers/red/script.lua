@@ -55,7 +55,7 @@ local function wait_session_state(states, timeout_ms)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if not present(LOGIN_FORM) then
     fyde.browser:open(LOGIN_URL)
     wait_session_state({ { "login", selector = LOGIN_FORM }, LOGGED_IN }, 30000)
@@ -94,7 +94,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   fyde.browser:open(CHECK_URL)
   if wait_session_state({ { "login", selector = LOGIN_FORM }, LOGGED_IN }, 45000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -102,7 +102,7 @@ function M.run(params)
     login(params)
   end
 
-  fyde.progress.step("Downloading documents")
+  fyde.progress.step("downloading_documents")
   open_and_wait(DOCS_URL, { { "docs", selector = "#lastFacture a[href*='pdf'], #historique a[href*='pdf'], a[href*='telecharger'], a.sr-chevron" } }, 45000)
   for _ = 1, 20 do
     if not present("#plusFac") then
@@ -125,7 +125,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

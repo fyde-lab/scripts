@@ -131,7 +131,7 @@ local TIMEOUT_MS = 30000
 local TURNSTILE_TIMEOUT_MS = 60000
 
 local function wait_for_turnstile()
-  fyde.progress.step("Waiting for the Cloudflare check")
+  fyde.progress.step("waiting_for_captcha")
   local ok = pcall(function()
     fyde.browser:wait_for(TURNSTILE_TOKEN, TURNSTILE_TIMEOUT_MS)
   end)
@@ -141,7 +141,7 @@ local function wait_for_turnstile()
 end
 
 local function submit_otp()
-  fyde.progress.step("Requesting an SMS verification code")
+  fyde.progress.step("waiting_for_verification_code")
   fyde.browser:click(SMS_CHANNEL_BUTTON)
   if wait_state({ { "boxes", selector = OTP_BOXES } }, TIMEOUT_MS) ~= "boxes" then
     error("the SMS code form never showed up - page says: " .. page_text())
@@ -173,7 +173,7 @@ local function login(params)
   fyde.log.info("LOGIN_PAGE_FOUND")
   wait_for_turnstile()
 
-  fyde.progress.step("Logging in as " .. params.username)
+  fyde.progress.step("logging_in")
   fyde.browser:fill(USERNAME_FIELD, params.username)
   fyde.browser:fill(PASSWORD_FIELD, params.password)
   fyde.browser:click(SUBMIT_CONTROL)
@@ -238,23 +238,23 @@ local function save(page, href, filename, fields)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if open_and_wait(HOME_URL, { LOGGED_IN, LOGIN_FORM }, TIMEOUT_MS) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading the attestation and the tiers payant card")
+  fyde.progress.step("downloading_documents")
   for _, doc in ipairs(DOCUMENTS) do
     save(doc.page, doc.href, doc.filename, doc.fields)
   end
 
-  fyde.progress.step("Listing reimbursements")
+  fyde.progress.step("listing_documents")
   local refunds = list_refunds()
   fyde.log.info(#refunds .. " reimbursement statement(s) found")
 
-  fyde.progress.step("Downloading reimbursement statements")
+  fyde.progress.step("downloading_documents")
   for i, refund in ipairs(refunds) do
     fyde.progress.update(i, #refunds, refund.label or refund.id)
     save(refund_page(refund.id), refund_href(refund.id), "mon-decompte-" .. refund.id .. ".pdf", {
@@ -263,7 +263,7 @@ function M.run(params)
     })
   end
 
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

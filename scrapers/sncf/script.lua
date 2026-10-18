@@ -76,7 +76,7 @@ local function wait_past_datadome(states, timeout_ms)
   if state ~= "datadome" then
     return state
   end
-  fyde.progress.step("Waiting for the SNCF Connect captcha to be solved in the browser window")
+  fyde.progress.step("waiting_for_captcha")
   fyde.log.warn("Datadome captcha shown; it must be solved by hand in the browser window (--visible)")
   -- Polls with `wait_for` alone: `html()` can take its full 10s timeout on the captcha page, and
   -- the sandbox has no clock, so each round must have a known upper bound (5s, +1s driver slack)
@@ -99,7 +99,7 @@ local function wait_past_datadome(states, timeout_ms)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   for _, button in ipairs(fyde.html.select(page_html(), ".MuiCardContent-root > div > button")) do
     if contains(button.text, "Se connecter") then
       fyde.browser:click(".MuiCardContent-root > div > button")
@@ -139,7 +139,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   fyde.browser:open(ACCOUNT_URL)
   local state = wait_past_datadome({ LOGGED_IN, { "login", selector = ".MuiCardContent-root > div > button, #login" } }, 45000)
   if state == "logged_in" then
@@ -148,7 +148,7 @@ function M.run(params)
     login(params)
   end
 
-  fyde.progress.step("Downloading trip proofs")
+  fyde.progress.step("downloading_documents")
   fyde.browser:open(TRIPS_URL)
   wait_past_datadome({ { "trips", selector = "#nav-tab-1" } }, 30000)
   if present("#nav-tab-1") then
@@ -172,7 +172,7 @@ function M.run(params)
   if count == 0 then
     fyde.log.warn("no trip proof URL found in the trips page")
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M
