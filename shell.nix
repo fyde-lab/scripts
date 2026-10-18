@@ -22,7 +22,7 @@ pkgs.mkShell {
     sccache
 
     # ../sdk is a path dependency; its build.rs needs this to compile
-    # ../api-protos/*.proto via tonic-prost-build.
+    # the buf.build/fyde-lab/api protos via tonic-prost-build.
     protobuf
 
     # ../sdk's build also vendors a patched BoringSSL (btls-sys) for wreq's
