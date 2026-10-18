@@ -28,7 +28,7 @@ local function history()
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   fyde.http.get("https://www.opngo.com")
   fyde.log.info("LOGIN_PAGE_FOUND")
   local resp = fyde.http.post_form(APP, {
@@ -47,7 +47,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local rows = history()
   if rows then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -56,7 +56,7 @@ function M.run(params)
     rows = history() or {}
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   for _, row in ipairs(rows) do
     if row.rowType == "sessionRow" and (tonumber(row.totalCharge) or 0) ~= 0 then
       save_pdf(APP .. "?data=" .. tostring(row.txID) .. "&format=json&initWith=session&language=fr&operation=invoice_check&usageMethod=Web&version=2.7",
@@ -68,7 +68,7 @@ function M.run(params)
         })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

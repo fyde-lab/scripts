@@ -25,7 +25,7 @@ local has = helpers.has
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(BASE .. "authentification?back=my-account")
   if not has(page, "input[name='passwd']") then
     error("Malentille login form not found on " .. page.url)
@@ -44,7 +44,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(HISTORY_URL)
   if has(page, "#block-history") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -53,7 +53,7 @@ function M.run(params)
     page = fyde.http.get(HISTORY_URL)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   for _, row in ipairs(fyde.html.select(page.body, "#block-history tbody tr")) do
     local link = fyde.html.select(row.html, ".history_invoice a")[1]
     local date = fyde.html.select(row.html, ".history_date")[1]
@@ -69,7 +69,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

@@ -24,7 +24,7 @@ local has = helpers.has
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(BASE .. "/login")
   if not has(page, "form#loginForm") then
     error("Gaz de Bordeaux login form not found on " .. page.url)
@@ -42,7 +42,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(BASE .. "/invoice")
   if has(page, "a[href='/logout']") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -51,7 +51,7 @@ function M.run(params)
     page = fyde.http.get(BASE .. "/invoice")
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   for _, item in ipairs(fyde.html.select(page.body, "form#BillsForm div.grid-item")) do
     local link = fyde.html.select(item.html, "a.btn-info")[1]
     local date = fyde.html.select(item.html, "span.invoice-code")[1]
@@ -67,7 +67,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

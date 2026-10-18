@@ -26,7 +26,7 @@ local function api(path, token)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(BASE)
   if page.status >= 500 then
     error("Trainline answered HTTP " .. page.status)
@@ -65,7 +65,7 @@ local function previous_month(pnrs)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local token = fyde.session.trainline_token
   local status, page
   if token then
@@ -78,7 +78,7 @@ function M.run(params)
     page = select(2, api("api/v5_1/pnrs", token))
   end
 
-  fyde.progress.step("Downloading proofs")
+  fyde.progress.step("downloading_documents")
   local seen = {}
   for _ = 1, 200 do
     if not (page and page.proofs and #page.proofs > 0) then
@@ -102,7 +102,7 @@ function M.run(params)
     end
     page = select(2, api("api/v5_1/pnrs?date=" .. next_date, token))
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

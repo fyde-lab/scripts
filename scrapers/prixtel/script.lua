@@ -34,7 +34,7 @@ local browser_save = helpers.browser_save
 local LOGGED_IN = { "logged_in", text = { "D\195\169connexion", "Mes factures" } }
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if not present("input[type='password']") then
     error("Prixtel login form not found")
   end
@@ -54,14 +54,14 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if open_and_wait(BASE, { LOGGED_IN, { "login", selector = "input[type='password']" } }, 30000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   open_and_wait(BASE .. "/factures", { { "bills", text = { "T\195\169l\195\169charger" } } }, 30000)
   local count = 0
   for _, control in ipairs(fyde.html.select(page_html(), "a[href], button[id]")) do
@@ -76,7 +76,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

@@ -24,7 +24,7 @@ local has = helpers.has
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(LOGIN_URL)
   if not has(page, "input[name='pass'], input[name='login']") then
     error("Eau du Grand Lyon login form not found on " .. page.url)
@@ -37,7 +37,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(BILLS_URL)
   if has(page, "tr td a[href]") and not has(page, "input[name='pass']") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -46,7 +46,7 @@ function M.run(params)
     page = fyde.http.get(BILLS_URL)
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   for _, row in ipairs(fyde.html.select(page.body, "tr")) do
     local cells = fyde.html.select(row.html, "td")
     local link = cells[5] and fyde.html.select(cells[5].html, "a")[1]
@@ -62,7 +62,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

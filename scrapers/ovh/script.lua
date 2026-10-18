@@ -107,13 +107,13 @@ function M.run(params)
       fail(INVALID_CREDENTIALS, "missing " .. field)
     end
   end
-  fyde.progress.step("Checking the API credentials")
+  fyde.progress.step("logging_in")
   local api = client(params)
   local bills = api("/me/bill")
   -- There is no session here: valid API credentials are the "already logged in" state.
   fyde.log.info("ALREADY_LOGGED_IN")
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   for _, id in ipairs(type(bills) == "table" and bills or {}) do
     local bill = api("/me/bill/" .. id)
     if bill and bill.pdfUrl then
@@ -127,7 +127,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

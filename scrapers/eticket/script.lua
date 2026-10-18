@@ -36,7 +36,7 @@ local function query(path, token)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local resp = fyde.http.get("https://eticket-app.qiis.fr/api/v1/auth/login?login=" .. url_encode(params.username)
     .. "&password=" .. url_encode(params.password) .. "&requestFirebaseCustomToken=true")
   if resp.status >= 500 then
@@ -58,7 +58,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local token = fyde.session.eticket_id_token
   local auth = token and claims(token) or {}
   local base = auth.metaManagerId and ("/meta/" .. auth.metaManagerId .. "/family/" .. tostring(auth.familyId))
@@ -73,7 +73,7 @@ function M.run(params)
     base = "/meta/" .. auth.metaManagerId .. "/family/" .. tostring(auth.familyId)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   local _, invoices = query(base .. "/invoice", token)
   for _, invoice in pairs(type(invoices) == "table" and invoices or {}) do
     if type(invoice) == "table" and invoice.attachment and invoice.attachment.url then
@@ -88,7 +88,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Downloading documents")
+  fyde.progress.step("downloading_documents")
   local _, documents = query(base .. "/document/native", token)
   for _, doc in pairs(type(documents) == "table" and documents or {}) do
     if type(doc) == "table" and doc.dlUrl then
@@ -99,7 +99,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

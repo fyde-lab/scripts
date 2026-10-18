@@ -37,7 +37,7 @@ local browser_save = helpers.browser_save
 local LOGGED_IN = { "logged_in", selector = "#header-deconnexion" }
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if open_and_wait(LOGIN_URL, { LOGGED_IN, { "login", selector = "input[type=email], input[type=password]" } }, 30000) ~= "login" then
     error("ENGIE login form not found")
   end
@@ -61,14 +61,14 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if open_and_wait(HOME_URL, { LOGGED_IN, { "login", selector = "input[type=password], input[type=email]" } }, 45000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   open_and_wait(BILLS_URL, { { "bills", selector = "a[href*='.pdf'], a[href*='facture']" } }, 45000)
   local count = 0
   for _, link in ipairs(fyde.html.select(page_html(), "a[href*='.pdf'], a[href*='/document/']")) do
@@ -86,7 +86,7 @@ function M.run(params)
     category = "housing",
     subcategory = "energy",
   })
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

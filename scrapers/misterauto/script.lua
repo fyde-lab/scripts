@@ -24,7 +24,7 @@ local has = helpers.has
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(BASE)
   if not has(page, "#login_form") then
     error("Mister Auto login form not found on " .. page.url)
@@ -37,7 +37,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(ORDERS_URL)
   if has(page, "#cmd_table") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -49,7 +49,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   local group_date
   for _, row in ipairs(fyde.html.select(page.body, "#cmd_table tbody tr")) do
     local cells = fyde.html.select(row.html, "td")
@@ -72,7 +72,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

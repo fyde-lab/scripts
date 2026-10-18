@@ -29,7 +29,7 @@ local function get(path)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local resp = fyde.http.post_json(API .. "/admin/v2/auth", {
     username = params.username,
     password = params.password,
@@ -67,7 +67,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local status, list
   if fyde.session.saur_token and fyde.session.saur_billing then
     status, list = get("/inv/billing_agreements/" .. fyde.session.saur_billing .. "/product_invoices")
@@ -79,7 +79,7 @@ function M.run(params)
     list = select(2, get("/inv/billing_agreements/" .. fyde.session.saur_billing .. "/product_invoices"))
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   for _, invoice in ipairs(type(list) == "table" and list or {}) do
     local file = select(2, get("/inv/customer_accounts/" .. tostring(fyde.session.saur_account) .. "/product_invoices/" .. tostring(invoice.reference) .. "/download"))
     local data = file and file.gedDocuments and file.gedDocuments[1] and file.gedDocuments[1].data
@@ -94,7 +94,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

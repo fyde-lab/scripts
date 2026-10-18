@@ -205,7 +205,7 @@ local function confirm_with_code(html)
     error("Bouygues Telecom is asking for a confirmation code, but no delivery channel was found")
   end
 
-  fyde.progress.step("Requesting a confirmation code")
+  fyde.progress.step("waiting_for_verification_code")
   html = submit_cas_form(html, choice.attrs.value)
 
   -- Confirmed on a real login: the code page is `#fm1` again with a hidden `token` field
@@ -214,7 +214,7 @@ local function confirm_with_code(html)
   local question = "Bouygues Telecom confirmation code sent to " .. choice.attrs.value .. ":"
   for _ = 1, 3 do
     local code = ask_code(question)
-    fyde.progress.step("Submitting the confirmation code")
+    fyde.progress.step("waiting_for_verification_code")
     html = submit_cas_form(html, code)
     if not fyde.html.select(html, "#codeOtp")[1] then
       return html
@@ -235,7 +235,7 @@ local function login(params, html)
     error("neither logged in nor showing the login iframe (" .. LOGIN_IFRAME .. ") on " .. BILLS_URL)
   end
 
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   fyde.browser:open(frame.attrs.src)
   if not poll(function(page)
     return has(page, CAS_FORM)
@@ -395,7 +395,7 @@ local function save_invoice(invoice)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local logged_in, html = open_bills()
   if logged_in then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -403,13 +403,13 @@ function M.run(params)
     login(params, html)
   end
 
-  fyde.progress.step("Listing invoices")
+  fyde.progress.step("listing_documents")
   local invoices = parse_invoices(load_all_invoices())
   if #invoices == 0 then
     error("no invoice found on " .. BILLS_URL)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   local saved = 0
   for i, invoice in ipairs(invoices) do
     fyde.progress.update(i, #invoices, tostring(invoice.date) .. " " .. invoice.line)

@@ -36,7 +36,7 @@ local browser_save = helpers.browser_save
 local LOGGED_IN = { "logged_in", selector = "a.accessPage[href*='factures-et-paiements.html'], a[href*='moduleopenidc.html?logout'], .timeline-header__download" }
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if wait_state({ { "email", selector = ".auth #email, #email" } }, 30000) ~= "email" then
     error("EDF login form not found (bot protection?)")
   end
@@ -72,14 +72,14 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   if open_and_wait(HOME_URL, { LOGGED_IN, { "login", selector = "#email" } }, 45000) == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     login(params)
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   open_and_wait(BILLS_URL, { { "bills", selector = "#facture, #factureSelection" } }, 45000)
   if present("#facture") then
     fyde.browser:click("#facture")
@@ -97,7 +97,7 @@ function M.run(params)
       subcategory = "energy",
     })
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

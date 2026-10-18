@@ -22,7 +22,7 @@ local has = helpers.has
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(ACCOUNT .. "/pages/connection/Login.aspx")
   local appkey = fyde.html.select(page.body, "#PostForm input[name='appkey']")[1]
   if not appkey then
@@ -44,7 +44,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(BILLS_URL)
   if has(page, "#firstFact, #facture") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -53,7 +53,7 @@ function M.run(params)
     page = fyde.http.get(BILLS_URL)
   end
 
-  fyde.progress.step("Downloading bills")
+  fyde.progress.step("downloading_documents")
   for _, block in ipairs(fyde.html.select(page.body, "#firstFact, #facture > div")) do
     local link = fyde.html.select(block.html, "a.linkBtn")[1]
     local title = fyde.html.select(block.html, "h2 span, h3")[1]
@@ -68,7 +68,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

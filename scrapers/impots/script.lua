@@ -226,7 +226,7 @@ function M.run(params)
   -- before this script even starts, so a still-valid idp session cookie from a previous run can
   -- also mean this GET already lands us on the authenticated homepage, completing the OIDC
   -- dance silently and skipping the rest of the login flow below entirely.
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local home = fyde.http.get(PART_BASE .. "/")
   local login_page_url = home.url
 
@@ -235,7 +235,7 @@ function M.run(params)
     fyde.log.info("ALREADY_LOGGED_IN")
   else
     fyde.log.info("LOGIN_PAGE_FOUND")
-    fyde.progress.step("Resolving account type for " .. spi)
+    fyde.progress.step("logging_in")
     local context_code = get_context(spi, login_page_url)
     if context_code == "EXISTEPAS" then
       -- No account for this fiscal number: a wrong username.
@@ -252,7 +252,7 @@ function M.run(params)
     end
     fyde.log.info("account recognized as a password account, logging in")
 
-    fyde.progress.step("Logging in as " .. spi)
+    fyde.progress.step("logging_in")
     local login_resp = submit_password(spi, password, login_page_url)
     if login_resp.status >= 400 then
       error("login request failed with HTTP status " .. login_resp.status)
@@ -289,7 +289,7 @@ function M.run(params)
     fyde.log.info("login succeeded")
   end
 
-  fyde.progress.step("Finding the Documents section")
+  fyde.progress.step("listing_documents")
   -- home.url (not PART_BASE) is the real base: the homepage GET actually redirects through
   -- monprofil-webapp/monCompte into the legacy /enp/ app, landing on /enp/accueilensupres.do.
   -- Resolving the page's relative href against the wrong base silently produces a working but
@@ -333,7 +333,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

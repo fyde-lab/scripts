@@ -28,7 +28,7 @@ local fill_first = helpers.fill_first
 local click_first = helpers.click_first
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if open_and_wait(LOGIN_URL, { { "login", selector = LOGIN_FORM .. " input[type='password']" } }, 30000) ~= "login" then
     error("mySilae login form not found")
   end

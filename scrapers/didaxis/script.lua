@@ -184,7 +184,7 @@ function M.run(params)
   -- ../sdk/src/domains/scrapers/cookies/) before this script even starts, so a still-valid
   -- cookie can land us on an already-authenticated section page here, skipping the login POST
   -- entirely.
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local check = fyde.http.get(SECTIONS[1].url)
   if is_logged_in(check.body) then
     fyde.log.info("restored session is still valid, skipping login")
@@ -194,7 +194,7 @@ function M.run(params)
       error("didaxis login page not found on " .. check.url)
     end
     fyde.log.info("LOGIN_PAGE_FOUND")
-    fyde.progress.step("Logging in as " .. username)
+    fyde.progress.step("logging_in")
     local login_resp = login(username, password)
     if login_resp.status >= 400 then
       error("login request failed with HTTP status " .. login_resp.status)
@@ -210,7 +210,7 @@ function M.run(params)
   end
 
   for i, section in ipairs(SECTIONS) do
-    fyde.progress.step(string.format("Section %s (%d/%d)", section.slug, i, #SECTIONS))
+    fyde.progress.step("downloading_documents")
 
     local page
     if i == 1 then
@@ -249,7 +249,7 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

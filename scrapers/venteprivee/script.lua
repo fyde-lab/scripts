@@ -66,7 +66,7 @@ local function open(url, timeout_ms)
 end
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local html = has(page_html(), PASSWORD) and page_html() or open(LOGIN_URL, 20000)
   if not has(html, PASSWORD) then
     error("Veepee login form not found on " .. LOGIN_URL)
@@ -97,7 +97,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local html = open(ORDERS_URL, 20000)
   if logged_in(html) then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -107,7 +107,7 @@ function M.run(params)
     error("Veepee: neither the login form nor the orders page showed up on " .. ORDERS_URL)
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   -- The orders list renders client-side: give it a few seconds to show its order links.
   local orders, seen = {}, {}
   for _ = 1, 10 do
@@ -162,7 +162,7 @@ function M.run(params)
       fyde.log.warn("no invoice link for order " .. order.id)
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

@@ -32,7 +32,7 @@ local click_first = helpers.click_first
 local browser_save = helpers.browser_save
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   if present(".already-an-account-button") then
     fyde.browser:click(".already-an-account-button")
   end
@@ -54,7 +54,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local state = open_and_wait(LOGIN_URL, { LOGGED_IN, { "login", selector = ".already-an-account-button, #username" } }, 30000)
   if state == "logged_in" then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -62,7 +62,7 @@ function M.run(params)
     login(params)
   end
 
-  fyde.progress.step("Downloading documents")
+  fyde.progress.step("downloading_documents")
   open_and_wait(DOCS_URL, { { "docs", selector = ".list-documents-flex-container" } }, 30000)
   sleep(3000)
   local html = page_html()
@@ -76,7 +76,7 @@ function M.run(params)
       subcategory = "complementary_health",
     })
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M

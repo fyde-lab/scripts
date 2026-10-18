@@ -23,7 +23,7 @@ local json_or_nil = helpers.json_or_nil
 local save_pdf = helpers.save_pdf
 
 local function login(params)
-  fyde.progress.step("Logging in")
+  fyde.progress.step("logging_in")
   local page = fyde.http.get(BASE .. "/connexion/")
   if page.status >= 500 then
     error("O2 answered HTTP " .. page.status)
@@ -40,7 +40,7 @@ local function login(params)
 end
 
 function M.run(params)
-  fyde.progress.step("Checking for an existing session")
+  fyde.progress.step("checking_session")
   local page = fyde.http.get(BASE .. "/factures/")
   if has(page, "#agence_id") then
     fyde.log.info("ALREADY_LOGGED_IN")
@@ -49,7 +49,7 @@ function M.run(params)
     page = fyde.http.get(BASE .. "/factures/")
   end
 
-  fyde.progress.step("Downloading invoices")
+  fyde.progress.step("downloading_documents")
   local agency = fyde.html.select(page.body, "#agence_id")[1]
   agency = agency and trim(agency.text) or ""
   for _, option in ipairs(fyde.html.select(page.body, ".year_invoice option")) do
@@ -65,7 +65,7 @@ function M.run(params)
       })
     end
   end
-  fyde.progress.step("Done")
+  fyde.progress.step("done")
 end
 
 return M
