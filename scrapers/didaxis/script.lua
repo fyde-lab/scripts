@@ -209,9 +209,8 @@ function M.run(params)
     fyde.log.info("login succeeded")
   end
 
+  fyde.progress.step("downloading_documents")
   for i, section in ipairs(SECTIONS) do
-    fyde.progress.step("downloading_documents")
-
     local page
     if i == 1 then
       page = check

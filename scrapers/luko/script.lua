@@ -77,7 +77,6 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("downloading_documents")
   local data = gql("GetContractDocuments", DOCUMENTS)
   local contract = data.data and data.data.contracts and data.data.contracts[1] or {}
   local docs = {}

@@ -122,8 +122,8 @@ function M.run(params)
     fyde.log.info("login succeeded")
   end
 
+  fyde.progress.step("downloading_documents")
   for _, section in ipairs(SECTIONS) do
-    fyde.progress.step("downloading_documents")
     local page = fyde.http.get(section.url)
     if not is_logged_in(page.body) then
       fyde.log.warn("session was logged out while browsing " .. section.slug .. ", stopping")

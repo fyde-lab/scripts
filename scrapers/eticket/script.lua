@@ -88,7 +88,6 @@ function M.run(params)
     end
   end
 
-  fyde.progress.step("downloading_documents")
   local _, documents = query(base .. "/document/native", token)
   for _, doc in pairs(type(documents) == "table" and documents or {}) do
     if type(doc) == "table" and doc.dlUrl then

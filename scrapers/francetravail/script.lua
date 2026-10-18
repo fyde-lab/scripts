@@ -106,7 +106,7 @@ local function poll(check, timeout_ms)
 end
 
 function M.run(params)
-  fyde.progress.step("logging_in")
+  fyde.progress.step("checking_session")
   fyde.browser:open(HOME_URL)
   pcall(function()
     fyde.browser:wait_for(IDENTIFIANT_FIELD, FORM_LOAD_TIMEOUT_MS)
@@ -125,7 +125,7 @@ function M.run(params)
     error("France Travail page did not load")
   end
 
-  -- Checking for an existing session: mirrors didaxis/caf's "Checking for an existing session"
+  -- Checking for an existing session: mirrors didaxis/caf's "checking_session"
   -- pattern, but fyde.browser has no cookie-jar bridge to fyde.http and no way to read the
   -- current URL (see host/browser.rs's doc comment) - the login form's own marker being present
   -- right after opening HOME_URL is the only signal available here. **Unconfirmed**: whether a
