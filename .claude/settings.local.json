@@ -1,7 +1,7 @@
 {
   "permissions": {
     "deny": [
-      "Read(./documents/**)",
+      "Read(./data/documents/**)",
       "Read(./data/cookies/**)",
       "Read(./data/session/**)",
       "Read(./secret.json)",
