@@ -91,7 +91,8 @@ host table (`log`, `http`, `html`, `json`, `progress`, `input`, `save_document`,
 - call `fyde.progress.step` only with a `ProgressStep` name — `checking_session`,
   `logging_in`, `waiting_for_verification_code`, `waiting_for_captcha`, `listing_documents`,
   `downloading_documents`, `done` — any other string raises (the app words steps in the user's
-  language). `fyde.progress.update(current, total)` takes no message;
+  language); call it once when a stage starts, not per item. `fyde.progress.update(current,
+  total)` takes no message;
 - pass every `fyde.save_document` a `type` and a `category`/`subcategory` from README.md's
   "Document metadata" list (the sdk rejects a mismatched pair);
 - keep a header comment stating what it scrapes and what is/isn't confirmed or blocked.
