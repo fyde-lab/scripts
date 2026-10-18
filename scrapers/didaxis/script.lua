@@ -228,7 +228,7 @@ function M.run(params)
     fyde.log.info(string.format("%s: %d document(s) found", section.slug, #docs))
 
     for j, doc in ipairs(docs) do
-      fyde.progress.update(j, #docs, doc.text)
+      fyde.progress.update(j, #docs)
 
       local url = resolve_url(section.url, doc.href)
       local download = fyde.http.download(url)

@@ -393,7 +393,7 @@ local function fetch_payments()
     per_date[date .. kind] = (per_date[date .. kind] or 0) + 1
     local suffix = per_date[date .. kind] > 1 and ("-" .. per_date[date .. kind]) or ""
     local shown = (year and day) and string.format("%02d/%02d/%s", day, month, year) or "date inconnue"
-    fyde.progress.update(n, #links, shown)
+    fyde.progress.update(n, #links)
     if download_pdf("a[href='" .. href .. "']", "ameli-paiement-" .. date .. "-" .. kind .. suffix .. ".pdf", {
       name = "D\195\169compte ameli du " .. shown .. ((label and label ~= "") and (" - " .. label) or ""),
       type = "reimbursement_statement",
@@ -454,7 +454,7 @@ local function fetch_attestations()
   fyde.progress.step("downloading_documents")
   local saved = 0
   for n, option in ipairs(options) do
-    fyde.progress.update(n, #options, option.name)
+    fyde.progress.update(n, #options)
     if n > 1 then
       open_attestation_page()
     end
@@ -544,7 +544,7 @@ local function fetch_monthly_statements()
       period = period .. "-" .. k
     end
     seen_month[period] = true
-    fyde.progress.update(k, count, period)
+    fyde.progress.update(k, count)
     if download_pdf(depth and nth_in_rows(depth, k) or MONTHLY_DOWNLOAD, "ameli-releve-mensuel-" .. period .. ".pdf", {
       name = "Relev\195\169 mensuel ameli - " .. (year and string.format("%02d/%s", month, year) or period),
       type = "reimbursement_statement",

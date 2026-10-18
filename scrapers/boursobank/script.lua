@@ -366,7 +366,7 @@ local function download_rows(section, rows)
     if row.account ~= "" and not row.name:find(row.account, 1, true) then
       title = row.name .. " - " .. row.account
     end
-    fyde.progress.update(i, #rows, title)
+    fyde.progress.update(i, #rows)
     local download = fyde.http.download(row.url)
     local content_type = download.content_type or ""
     if download.status == 200 and not content_type:find("html", 1, true) then

@@ -57,7 +57,7 @@ function M.run(params)
     local link = fyde.html.select(row.html, "a")[1]
     if link and cells[3] and trim(cells[3].text) == "Paid" then
       local id, date = trim(cells[1].text), trim(cells[2].text)
-      fyde.progress.update(i, #rows, id)
+      fyde.progress.update(i, #rows)
       save_pdf(absolute(BASE, link.attrs.href), sanitize(date) .. "_" .. id .. "_autolib.pdf", {
         name = "Facture Autolib " .. date,
         type = "invoice",

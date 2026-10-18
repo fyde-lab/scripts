@@ -256,7 +256,7 @@ function M.run(params)
 
   fyde.progress.step("downloading_documents")
   for i, refund in ipairs(refunds) do
-    fyde.progress.update(i, #refunds, refund.label or refund.id)
+    fyde.progress.update(i, #refunds)
     save(refund_page(refund.id), refund_href(refund.id), "mon-decompte-" .. refund.id .. ".pdf", {
       name = "Décompte Mercer - " .. (refund.label or ("remboursement " .. refund.id)),
       type = "reimbursement_statement",
