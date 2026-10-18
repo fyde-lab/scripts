@@ -310,7 +310,7 @@ local function download_and_save(ids, slug, label, fields)
 end
 
 function M.run(params)
-  fyde.progress.step("logging_in")
+  fyde.progress.step("checking_session")
   -- A real browser follows LOGIN_URL's cross-domain OAuth redirect chain (and runs the SPA's own
   -- PKCE-generating JS) on its own - there's no manual Location-header chasing to do here.
   fyde.browser:open(LOGIN_URL)
@@ -386,7 +386,6 @@ function M.run(params)
     log_page_for_diagnosis("no Mes déclarations link")
   end
 
-  fyde.progress.step("listing_documents")
   local current_html = fyde.browser:html()
   if click_menu_link(current_html, "page_empl_avantage_fiscal") then
     sleep_ms(3000)

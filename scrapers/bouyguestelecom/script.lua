@@ -214,7 +214,6 @@ local function confirm_with_code(html)
   local question = "Bouygues Telecom confirmation code sent to " .. choice.attrs.value .. ":"
   for _ = 1, 3 do
     local code = ask_code(question)
-    fyde.progress.step("waiting_for_verification_code")
     html = submit_cas_form(html, code)
     if not fyde.html.select(html, "#codeOtp")[1] then
       return html

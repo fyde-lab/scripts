@@ -410,8 +410,8 @@ function M.run(params)
     fyde.log.info("login succeeded")
   end
 
+  fyde.progress.step("downloading_documents")
   for _, section in ipairs(SECTIONS) do
-    fyde.progress.step("downloading_documents")
     local rows = list_section(section)
     local saved = download_rows(section, rows)
     fyde.log.info(string.format("%s: %d/%d document(s) saved", section.slug, saved, #rows))

@@ -217,7 +217,6 @@ local function login(params)
       error("the one-time passcode form never showed up after requesting a code", 0)
     end
 
-    fyde.progress.step("waiting_for_verification_code")
     submit_otp()
   elseif browser_has(OTP_FIRST_DIGIT) then
     fyde.progress.step("waiting_for_verification_code")
@@ -558,7 +557,7 @@ local function fetch_monthly_statements()
 end
 
 function M.run(params)
-  fyde.progress.step("logging_in")
+  fyde.progress.step("checking_session")
   -- A real browser follows LOGIN_URL's redirect chain (through ameliconnect.ameli.fr's OAuth2
   -- flow) on its own; unlike the old fyde.http-based version, there's no manual Location-header
   -- chasing to do here.

@@ -156,7 +156,6 @@ local function login(params)
   local token = fetch_public_token()
 
   fyde.log.info("LOGIN_PAGE_FOUND")
-  fyde.progress.step("logging_in")
   local connexion_resp = fyde.http.post_json(CONNEXION_URL, {
     identifiant = params.nir,
     motDePasse = params.password,
@@ -203,7 +202,6 @@ local function login(params)
       error("requesting the one-time code failed: " .. envoi_resp.body)
     end
 
-    fyde.progress.step("waiting_for_verification_code")
     local asked, answer = pcall(fyde.input.ask, "CAF emailed a one-time code - enter it:")
     local otp = asked and tostring(answer):gsub("%D", "") or ""
     if #otp == 0 then
@@ -308,7 +306,7 @@ function M.run(params)
   -- ../sdk/src/domains/scrapers/cookies/) before this script even starts - the portal session this flow establishes
   -- (LtpaToken2/JSESSIONID/CFSESSIONID, see header comment) can still be valid, which would land
   -- us on the real dashboard here without ever hitting CAF's login API or OTP step again. Mirrors
-  -- didaxis/script.lua's "Checking for an existing session" pattern.
+  -- didaxis/script.lua's "checking_session" pattern.
   fyde.progress.step("checking_session")
   local dashboard_resp = fyde.http.get(DASHBOARD_URL)
   if dashboard_resp.body:find(LOGGED_IN_TITLE_MARKER, 1, true) then

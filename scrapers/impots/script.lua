@@ -252,7 +252,6 @@ function M.run(params)
     end
     fyde.log.info("account recognized as a password account, logging in")
 
-    fyde.progress.step("logging_in")
     local login_resp = submit_password(spi, password, login_page_url)
     if login_resp.status >= 400 then
       error("login request failed with HTTP status " .. login_resp.status)
