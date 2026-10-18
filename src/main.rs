@@ -172,9 +172,9 @@ struct ScraperManifest {
     /// `allowed_domains` parameter) - a call to any other host fails before
     /// it reaches the network, which stops the script right there since
     /// nothing here wraps a `fyde.http`/`fyde.browser` call in `pcall`.
-    /// Defaults to empty (unrestricted) when omitted, but every scraper
-    /// under `scrapers/` sets this explicitly to the real site(s) it talks
-    /// to.
+    /// Defaults to empty when omitted, and an empty list blocks every host,
+    /// so every scraper under `scrapers/` sets this explicitly to the real
+    /// site(s) it talks to.
     #[serde(default)]
     allowed_domains: Vec<String>,
     /// What the script needs from the user before it can run (e.g. a login
