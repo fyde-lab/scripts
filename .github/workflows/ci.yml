@@ -13,10 +13,11 @@ env:
   # nixpkgs refuses to evaluate it without this.
   NIXPKGS_ALLOW_UNFREE: 1
 
-# fyde-scripts is part of the multi-repo fyde project (see ../CLAUDE.md):
-# it depends on ../sdk via a `path` dependency, which in turn depends on
-# ../api-protos, so every job that touches Cargo checks out all three repos
-# as siblings under the runner's workspace, mirroring the local dev layout.
+# fyde-scripts depends on ../sdk via a `path` dependency, so every job that
+# touches Cargo checks out both repos as siblings under the runner's
+# workspace, mirroring the local dev layout. ../sdk's build.rs fetches its
+# protos from the Buf Schema Registry (buf.build/fyde-lab/api), not from a
+# sibling checkout.
 jobs:
   lua-lint:
     runs-on: ubuntu-latest
@@ -61,14 +62,8 @@ jobs:
           repository: fyde-lab/sdk
           path: sdk
 
-      - uses: actions/checkout@v4
-        with:
-          repository: fyde-lab/api-protos
-          path: api-protos
-
-      # ../sdk's build.rs shells out to `buf export` to pull api-protos'
-      # published module - shell.nix itself doesn't provide `buf` (it comes
-      # from the top-level monorepo shell.nix locally; see ../CLAUDE.md).
+      # ../sdk's build.rs shells out to `buf export` to pull the published
+      # buf.build/fyde-lab/api module - shell.nix itself doesn't provide `buf`.
       - uses: bufbuild/buf-setup-action@v1
 
       - uses: cachix/install-nix-action@v30
@@ -93,11 +88,6 @@ jobs:
         with:
           repository: fyde-lab/sdk
           path: sdk
-
-      - uses: actions/checkout@v4
-        with:
-          repository: fyde-lab/api-protos
-          path: api-protos
 
       - uses: cachix/install-nix-action@v30
         with:
@@ -132,14 +122,8 @@ jobs:
           repository: fyde-lab/sdk
           path: sdk
 
-      - uses: actions/checkout@v4
-        with:
-          repository: fyde-lab/api-protos
-          path: api-protos
-
-      # ../sdk's build.rs shells out to `buf export` to pull api-protos'
-      # published module - shell.nix itself doesn't provide `buf` (it comes
-      # from the top-level monorepo shell.nix locally; see ../CLAUDE.md).
+      # ../sdk's build.rs shells out to `buf export` to pull the published
+      # buf.build/fyde-lab/api module - shell.nix itself doesn't provide `buf`.
       - uses: bufbuild/buf-setup-action@v1
 
       - uses: cachix/install-nix-action@v30
@@ -175,14 +159,8 @@ jobs:
           repository: fyde-lab/sdk
           path: sdk
 
-      - uses: actions/checkout@v4
-        with:
-          repository: fyde-lab/api-protos
-          path: api-protos
-
-      # ../sdk's build.rs shells out to `buf export` to pull api-protos'
-      # published module - shell.nix itself doesn't provide `buf` (it comes
-      # from the top-level monorepo shell.nix locally; see ../CLAUDE.md).
+      # ../sdk's build.rs shells out to `buf export` to pull the published
+      # buf.build/fyde-lab/api module - shell.nix itself doesn't provide `buf`.
       - uses: bufbuild/buf-setup-action@v1
 
       - uses: cachix/install-nix-action@v30
