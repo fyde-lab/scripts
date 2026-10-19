@@ -32,6 +32,11 @@
 -- (numbered ?page=N), tax documents (/documents/ifu, one request per fiscal year) and RIBs
 -- (/documents/compte-bancaire). Every run re-downloads everything listed.
 --
+-- Attributes (issuer, issued_on, account, reference, period_start/end, tax_year, total_amount)
+-- come only from what each listing row shows - titles, account/organisme and date columns -
+-- never from the PDFs. The coffre-fort's amount column read "0,00 €" on every row seen so far,
+-- so total_amount is only set when it's non-zero.
+--
 -- Every capability this script uses comes from the `fyde` host table, implemented by
 -- fyde-sdk's scrapers domain (see ../sdk/src/domains/scrapers/host/*.rs).
 
@@ -221,12 +226,21 @@ local function parse_rows(html)
         or fyde.html.select(row_html, "td.documents__type")[1]
       local date = fyde.html.select(row_html, "td.documents__date")[1]
       date = date and trim(date.text) or ""
+      -- Only the coffre-fort has an amount column.
+      local amount = fyde.html.select(row_html, "td.document__amount")[1]
+      amount = amount and trim(amount.text) or ""
       local name = trim(link.text)
       -- ifu's link text repeats the date after the title.
       if date ~= "" and name:sub(-#date) == date then
         name = trim(name:sub(1, -#date - 1))
       end
-      table.insert(rows, { name = name, url = url, account = account and trim(account.text) or "", date = date })
+      table.insert(rows, {
+        name = name,
+        url = url,
+        account = account and trim(account.text) or "",
+        date = date,
+        amount = amount,
+      })
     end
   end
   return rows
@@ -234,6 +248,51 @@ end
 
 local function lower_has(text, needle)
   return text:lower():find(needle, 1, true) ~= nil
+end
+
+local ISSUER = "BoursoBank"
+
+--- The first `DD/MM/YYYY` date in `text`, as `YYYY-MM-DD` (nil if there's none).
+local function iso_date(text)
+  local day, month, year = text:match("(%d%d)/(%d%d)/(%d%d%d%d)")
+  return day and string.format("%s-%s-%s", year, month, day)
+end
+
+--- A coffre-fort amount cell ("1 234,56 €") in euro cents (nil if it isn't one).
+local function euro_cents(text)
+  local compact = text:gsub("\226\128\175", ""):gsub("\194\160", ""):gsub("%s", "")
+  local units, cents = compact:match("^(%-?%d+),(%d%d)€$")
+  return units and tonumber(units .. cents)
+end
+
+-- `fyde.save_document` attribute values (see ../sdk/src/domains/documents/attributes/lua.rs).
+-- Each returns nil when there's no value, so the attribute is simply left out.
+local function string_attr(value)
+  if value and value ~= "" then
+    return { type = "string", value = value }
+  end
+  return nil
+end
+
+local function date_attr(value)
+  return value and { type = "date", value = value }
+end
+
+local function integer_attr(value)
+  value = value and tonumber(value)
+  return value and { type = "integer", value = value }
+end
+
+local function amount_attr(minor_units)
+  return minor_units and { type = "amount", value = { minor_units = minor_units, currency = "EUR" } }
+end
+
+--- Sets `attributes`' period to the whole calendar `year` (a "YYYY" string), if any.
+local function set_year_period(attributes, year)
+  if year then
+    attributes.period_start = date_attr(year .. "-01-01")
+    attributes.period_end = date_attr(year .. "-12-31")
+  end
 end
 
 -- The sections doc-downloaders/scrapers/boursorama scrapes, in the same order. `next(html,
@@ -251,7 +310,24 @@ local SECTIONS = {
       return next_url and html_unescape(next_url)
     end,
     fields = function(row)
-      return { type = lower_has(row.name, "contrat") and "contract" or "statement" }
+      local issued_on = iso_date(row.date)
+      local attributes = {
+        issuer = string_attr(ISSUER),
+        account = string_attr(row.account),
+        issued_on = date_attr(issued_on),
+      }
+      -- "Relevé du 30/09/2026" (its date is stripped from `row.name`, see parse_rows): a monthly
+      -- statement, dated the month's last business day (27/02/2026, 28/11/2025...).
+      if issued_on and row.name:match("^Relevé du") then
+        attributes.period_start = date_attr(issued_on:sub(1, 8) .. "01")
+        attributes.period_end = date_attr(issued_on)
+      end
+      -- "Frais de 2025": the annual fee summary.
+      set_year_period(attributes, row.name:match("^Frais de (%d%d%d%d)"))
+      return {
+        type = lower_has(row.name, "contrat") and "contract" or "statement",
+        attributes = attributes,
+      }
     end,
   },
   {
@@ -269,7 +345,22 @@ local SECTIONS = {
       elseif lower_has(row.name, "factur") then
         doc_type = "invoice"
       end
-      return { type = doc_type }
+      local attributes = {
+        -- The "Organisme" column (e.g. "Crédit Agricole").
+        issuer = string_attr(row.account),
+        -- From the title ("Relevé n°003 du 03/04/2026", "Relevés de Facturation -
+        -- 2024(16/01/2025)"): the date column is only when it reached the coffre-fort.
+        issued_on = date_attr(iso_date(row.name)),
+        -- The statement number, or the contract number of "<n> / souscription Livret A(...)".
+        reference = string_attr(row.name:match("n°(%d+)") or row.name:match("^(%d+) / ")),
+      }
+      set_year_period(attributes, row.name:match("^Relevés de Facturation %- (%d%d%d%d)"))
+      -- Every row seen so far shows "0,00 €", a placeholder rather than a real total.
+      local cents = euro_cents(row.amount)
+      if cents and cents ~= 0 then
+        attributes.total_amount = amount_attr(cents)
+      end
+      return { type = doc_type, attributes = attributes }
     end,
   },
   {
@@ -278,8 +369,20 @@ local SECTIONS = {
     slug = "ifu",
     url = BASE .. "/documents/ifu",
     years = true,
-    fields = function()
-      return { type = "tax_certificate", category = "taxes", subcategory = "tax_certificates" }
+    fields = function(row)
+      return {
+        type = "tax_certificate",
+        category = "taxes",
+        subcategory = "tax_certificates",
+        attributes = {
+          issuer = string_attr(ISSUER),
+          issued_on = date_attr(iso_date(row.date)),
+          -- "IFU de 2025" (its date stripped, see parse_rows) is about 2025's income.
+          tax_year = integer_attr(row.name:match("^IFU de (%d%d%d%d)")),
+          -- "Attestation pour contrat non soumis à l'IFI - <contract number>".
+          reference = string_attr(row.name:match("IFI %- (%d+)$")),
+        },
+      }
     end,
   },
   {
@@ -291,8 +394,16 @@ local SECTIONS = {
     keep = function(row)
       return row.url:find("/telecharger", 1, true) ~= nil
     end,
-    fields = function()
-      return { type = "rib" }
+    fields = function(row)
+      return {
+        type = "rib",
+        attributes = {
+          issuer = string_attr(ISSUER),
+          -- "Compte Perso - <account number>".
+          account = string_attr(row.account),
+          issued_on = date_attr(iso_date(row.date)),
+        },
+      }
     end,
   },
 }
