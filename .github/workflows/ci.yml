@@ -13,11 +13,10 @@ env:
   # nixpkgs refuses to evaluate it without this.
   NIXPKGS_ALLOW_UNFREE: 1
 
-# fyde-scripts depends on ../sdk via a `path` dependency, so every job that
-# touches Cargo checks out both repos as siblings under the runner's
-# workspace, mirroring the local dev layout. ../sdk's build.rs fetches its
-# protos from the Buf Schema Registry (buf.build/fyde-lab/api), not from a
-# sibling checkout.
+# fyde-scripts depends on fyde-sdk as a git dependency on fyde-lab/sdk's
+# master branch (pinned by Cargo.lock), which cargo fetches itself - no
+# sibling checkout needed. The sdk's build.rs fetches its protos from the
+# Buf Schema Registry (buf.build/fyde-lab/api).
 jobs:
   lua-lint:
     runs-on: ubuntu-latest
@@ -57,12 +56,7 @@ jobs:
         with:
           path: scripts
 
-      - uses: actions/checkout@v4
-        with:
-          repository: fyde-lab/sdk
-          path: sdk
-
-      # ../sdk's build.rs shells out to `buf export` to pull the published
+      # fyde-sdk's build.rs shells out to `buf export` to pull the published
       # buf.build/fyde-lab/api module - shell.nix itself doesn't provide `buf`.
       - uses: bufbuild/buf-setup-action@v1
 
@@ -83,11 +77,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: scripts
-
-      - uses: actions/checkout@v4
-        with:
-          repository: fyde-lab/sdk
-          path: sdk
 
       - uses: cachix/install-nix-action@v30
         with:
@@ -117,12 +106,7 @@ jobs:
         with:
           path: scripts
 
-      - uses: actions/checkout@v4
-        with:
-          repository: fyde-lab/sdk
-          path: sdk
-
-      # ../sdk's build.rs shells out to `buf export` to pull the published
+      # fyde-sdk's build.rs shells out to `buf export` to pull the published
       # buf.build/fyde-lab/api module - shell.nix itself doesn't provide `buf`.
       - uses: bufbuild/buf-setup-action@v1
 
@@ -154,12 +138,7 @@ jobs:
         with:
           path: scripts
 
-      - uses: actions/checkout@v4
-        with:
-          repository: fyde-lab/sdk
-          path: sdk
-
-      # ../sdk's build.rs shells out to `buf export` to pull the published
+      # fyde-sdk's build.rs shells out to `buf export` to pull the published
       # buf.build/fyde-lab/api module - shell.nix itself doesn't provide `buf`.
       - uses: bufbuild/buf-setup-action@v1
 

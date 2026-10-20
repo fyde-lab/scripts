@@ -2,7 +2,11 @@
 
 `fyde-scripts` holds the Lua scraper scripts (`scrapers/<name>/script.lua`) run by `../sdk`'s
 `scrapers` domain, plus `src/main.rs`, a small Rust CLI that runs them locally. Depends on
-`../sdk` via a `path` dependency.
+`fyde-sdk` as a git dependency on `fyde-lab/sdk`'s `master` branch, pinned to a commit by
+`Cargo.lock`: run `cargo update -p fyde-sdk` to pick up newer sdk commits. To build against a
+local `../sdk` checkout instead, add `[patch."https://github.com/fyde-lab/sdk.git"]
+fyde-sdk = { path = "../sdk" }` to `Cargo.toml` (don't commit it). `../sdk/...` paths below
+point at that repo's sources.
 
 ## Critical rules
 
