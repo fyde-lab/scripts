@@ -11,9 +11,13 @@
 --
 -- Every capability this script uses comes from the `fyde` host table, implemented by
 -- fyde-sdk's scrapers domain (see ../sdk/src/domains/scrapers/host/*.rs):
--- fyde.log, fyde.http, fyde.html, fyde.progress, fyde.save_document.
+-- fyde.log, fyde.http, fyde.html, fyde.progress, fyde.save_document, fyde.helpers.
 
 local M = {}
+
+local helpers = fyde.helpers
+local already_saved = helpers.already_saved
+local mark_saved = helpers.mark_saved
 
 -- Login error contract shared with every scraper (see
 -- README.md): a rejected username/password fails with exactly INVALID_CREDENTIALS, a rejected
@@ -137,21 +141,26 @@ function M.run(params)
       fyde.progress.update(i, #bills)
 
       local url = resolve_url(section.url, bill.href)
-      local download = fyde.http.download(url)
-
-      if download.status == 200 and not download.content_type:find("html", 1, true) then
-        local filename = section.slug .. "/" .. sanitize(bill.date) .. "_" .. sanitize(bill.ref) .. ".pdf"
-        fyde.save_document(filename, download.body, {
-          name = "Facture " .. bill.date,
-          type = "invoice",
-          category = "housing",
-          subcategory = "water",
-        })
+      if already_saved(url) then
+        fyde.log.debug("skipping bill '" .. bill.date .. "': already saved by a previous run")
       else
-        fyde.log.warn(string.format(
-          "failed to download bill '%s' (status %d, content-type %s)",
-          bill.date, download.status, download.content_type
-        ))
+        local download = fyde.http.download(url)
+
+        if download.status == 200 and not download.content_type:find("html", 1, true) then
+          local filename = section.slug .. "/" .. sanitize(bill.date) .. "_" .. sanitize(bill.ref) .. ".pdf"
+          fyde.save_document(filename, download.body, {
+            name = "Facture " .. bill.date,
+            type = "invoice",
+            category = "housing",
+            subcategory = "water",
+          })
+          mark_saved(url)
+        else
+          fyde.log.warn(string.format(
+            "failed to download bill '%s' (status %d, content-type %s)",
+            bill.date, download.status, download.content_type
+          ))
+        end
       end
     end
   end

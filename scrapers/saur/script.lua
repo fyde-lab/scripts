@@ -21,6 +21,8 @@ local INVALID_CREDENTIALS = helpers.INVALID_CREDENTIALS
 local fail = helpers.fail
 local base64url_decode = helpers.base64url_decode
 local json_or_nil = helpers.json_or_nil
+local already_saved = helpers.already_saved
+local mark_saved = helpers.mark_saved
 
 
 local function get(path)
@@ -81,17 +83,21 @@ function M.run(params)
 
   fyde.progress.step("downloading_documents")
   for _, invoice in ipairs(type(list) == "table" and list or {}) do
-    local file = select(2, get("/inv/customer_accounts/" .. tostring(fyde.session.saur_account) .. "/product_invoices/" .. tostring(invoice.reference) .. "/download"))
-    local data = file and file.gedDocuments and file.gedDocuments[1] and file.gedDocuments[1].data
-    local pdf = data and base64url_decode(data)
-    if pdf and pdf:sub(1, 4) == "%PDF" then
-      local date = tostring(invoice.settlementDate or invoice.dueDate or ""):sub(1, 10)
-      fyde.save_document(date .. "_saur_" .. string.format("%.2f", tonumber(invoice.amountIncludingTaxes) or 0) .. "Eur_" .. tostring(invoice.reference) .. ".pdf", pdf, {
-        name = "Facture SAUR " .. date,
-        type = "invoice",
-        category = "housing",
-        subcategory = "water",
-      })
+    local path = "/inv/customer_accounts/" .. tostring(fyde.session.saur_account) .. "/product_invoices/" .. tostring(invoice.reference) .. "/download"
+    if not already_saved(API .. path) then
+      local file = select(2, get(path))
+      local data = file and file.gedDocuments and file.gedDocuments[1] and file.gedDocuments[1].data
+      local pdf = data and base64url_decode(data)
+      if pdf and pdf:sub(1, 4) == "%PDF" then
+        local date = tostring(invoice.settlementDate or invoice.dueDate or ""):sub(1, 10)
+        fyde.save_document(date .. "_saur_" .. string.format("%.2f", tonumber(invoice.amountIncludingTaxes) or 0) .. "Eur_" .. tostring(invoice.reference) .. ".pdf", pdf, {
+          name = "Facture SAUR " .. date,
+          type = "invoice",
+          category = "housing",
+          subcategory = "water",
+        })
+        mark_saved(API .. path)
+      end
     end
   end
   fyde.progress.step("done")

@@ -21,6 +21,8 @@ local fail = helpers.fail
 local base64url_decode = helpers.base64url_decode
 local has = helpers.has
 local json_or_nil = helpers.json_or_nil
+local already_saved = helpers.already_saved
+local mark_saved = helpers.mark_saved
 
 
 local function invoices(token)
@@ -67,7 +69,7 @@ function M.run(params)
 
   fyde.progress.step("downloading_documents")
   for _, item in ipairs(list) do
-    if item.urlPdf then
+    if item.urlPdf and not already_saved(API .. item.urlPdf) then
       local file = json_or_nil(fyde.http.get(API .. item.urlPdf, { Authorization = "Bearer " .. token }).body)
       local pdf = file and file.content and base64url_decode(file.content)
       if pdf and pdf:sub(1, 4) == "%PDF" then
@@ -78,6 +80,7 @@ function M.run(params)
           category = "transport",
           subcategory = "road",
         })
+        mark_saved(API .. item.urlPdf)
       else
         fyde.log.warn("invoice " .. tostring(item.numero) .. " did not decode to a PDF")
       end

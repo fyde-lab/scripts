@@ -10,9 +10,13 @@
 --
 -- Every capability this script uses comes from the `fyde` host table, implemented by
 -- fyde-sdk's scrapers domain (see ../sdk/src/domains/scrapers/host/*.rs):
--- fyde.log, fyde.http, fyde.html, fyde.progress, fyde.save_document.
+-- fyde.log, fyde.http, fyde.html, fyde.progress, fyde.save_document, fyde.helpers.
 
 local M = {}
+
+local helpers = fyde.helpers
+local already_saved = helpers.already_saved
+local mark_saved = helpers.mark_saved
 
 local BASE = "https://eolys.didaxis.fr"
 
@@ -230,20 +234,25 @@ function M.run(params)
       fyde.progress.update(j, #docs)
 
       local url = resolve_url(section.url, doc.href)
-      local download = fyde.http.download(url)
-
-      if download.status == 200 and not download.content_type:find("html", 1, true) then
-        local filename = section.slug .. "/" .. sanitize(doc.text) .. ".pdf"
-        fyde.save_document(filename, download.body, {
-          name = doc.text,
-          type = section.fields.type,
-          subcategory = section.fields.subcategory,
-        })
+      if already_saved(url) then
+        fyde.log.debug("skipping '" .. doc.text .. "': already saved by a previous run")
       else
-        fyde.log.warn(string.format(
-          "failed to download '%s' (status %d, content-type %s)",
-          doc.text, download.status, download.content_type
-        ))
+        local download = fyde.http.download(url)
+
+        if download.status == 200 and not download.content_type:find("html", 1, true) then
+          local filename = section.slug .. "/" .. sanitize(doc.text) .. ".pdf"
+          fyde.save_document(filename, download.body, {
+            name = doc.text,
+            type = section.fields.type,
+            subcategory = section.fields.subcategory,
+          })
+          mark_saved(url)
+        else
+          fyde.log.warn(string.format(
+            "failed to download '%s' (status %d, content-type %s)",
+            doc.text, download.status, download.content_type
+          ))
+        end
       end
     end
   end

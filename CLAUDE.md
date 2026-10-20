@@ -95,6 +95,11 @@ host table (`log`, `http`, `html`, `json`, `progress`, `input`, `save_document`,
   total)` takes no message;
 - pass every `fyde.save_document` a `type` and a `category`/`subcategory` from README.md's
   "Document metadata" list (the sdk rejects a mismatched pair);
+- skip documents a previous run already saved: `helpers.save_pdf` does it by URL (pass
+  `{ refresh = true }` as its 5th argument for a fixed URL whose document changes, e.g. a
+  dated certificate); a script downloading by itself checks `helpers.already_saved(url)`
+  first and calls `helpers.mark_saved(url)` after `fyde.save_document` (both keyed in
+  `fyde.session.saved_urls`);
 - keep a header comment stating what it scrapes and what is/isn't confirmed or blocked.
 
 Shared helpers come from `fyde.helpers` (`../sdk/src/domains/scrapers/host/helpers.lua`): alias
