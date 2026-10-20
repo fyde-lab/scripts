@@ -72,7 +72,7 @@ function M.run(params)
     type = "proof_of_residence",
     category = "housing",
     subcategory = "energy",
-  })
+  }, nil, { refresh = true }) -- a fixed URL serving a certificate dated today: always re-fetch
   fyde.progress.step("done")
 end
 

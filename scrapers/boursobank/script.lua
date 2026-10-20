@@ -42,6 +42,10 @@
 
 local M = {}
 
+local helpers = fyde.helpers
+local already_saved = helpers.already_saved
+local mark_saved = helpers.mark_saved
+
 local BASE = "https://clients.boursobank.com"
 local URL_LOGIN = BASE .. "/connexion/saisie-mot-de-passe"
 local URL_KEYBOARD = BASE .. "/connexion/clavier-virtuel"
@@ -478,19 +482,25 @@ local function download_rows(section, rows)
       title = row.name .. " - " .. row.account
     end
     fyde.progress.update(i, #rows)
-    local download = fyde.http.download(row.url)
-    local content_type = download.content_type or ""
-    if download.status == 200 and not content_type:find("html", 1, true) then
-      local fields = section.fields(row)
-      fields.name = title
-      if not fields.category then
-        fields.category, fields.subcategory = "money", "banking"
-      end
-      fyde.save_document(unique_filename(title), download.body, fields)
+    if already_saved(row.url) then
+      fyde.log.debug(section.slug .. ": skipping '" .. title .. "': already saved by a previous run")
       saved = saved + 1
     else
-      fyde.log.warn(string.format("%s: failed to download '%s' (status %d, content-type %s)",
-        section.slug, title, download.status, content_type))
+      local download = fyde.http.download(row.url)
+      local content_type = download.content_type or ""
+      if download.status == 200 and not content_type:find("html", 1, true) then
+        local fields = section.fields(row)
+        fields.name = title
+        if not fields.category then
+          fields.category, fields.subcategory = "money", "banking"
+        end
+        fyde.save_document(unique_filename(title), download.body, fields)
+        mark_saved(row.url)
+        saved = saved + 1
+      else
+        fyde.log.warn(string.format("%s: failed to download '%s' (status %d, content-type %s)",
+          section.slug, title, download.status, content_type))
+      end
     end
   end
   return saved

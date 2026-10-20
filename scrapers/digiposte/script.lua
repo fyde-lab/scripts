@@ -34,6 +34,8 @@ local contains_any = helpers.contains_any
 local sanitize = helpers.sanitize
 local ask_code = helpers.ask_code
 local json_or_nil = helpers.json_or_nil
+local already_saved = helpers.already_saved
+local mark_saved = helpers.mark_saved
 local sleep = helpers.sleep
 local page_html = helpers.page_html
 local present = helpers.present
@@ -100,14 +102,20 @@ local function save_folder(folder_id, token)
   local resp = fyde.http.post_json(API .. "/documents/search?direction=DESCENDING&max_results=1000&sort=CREATION_DATE",
     { folder_id = folder_id, locations = { "SAFE", "INBOX" } }, { Authorization = "Bearer " .. token })
   for _, doc in ipairs((json_or_nil(resp.body) or {}).documents or {}) do
-    local file = fyde.http.post_form("https://secure.digiposte.fr/rest/content/document", { ["document_ids[]"] = doc.id })
-    if file.status == 200 and (file.body or ""):sub(1, 4) == "%PDF" then
-      fyde.save_document(sanitize(doc.filename or doc.title or doc.id) .. (tostring(doc.filename):match("%.pdf$") and "" or ".pdf"), file.body, {
-        name = doc.title or doc.filename,
-        -- A digital safe holds anything: only payslips, the one category it names, are classified.
-        type = doc.category == "Bulletin de paie" and "payslip" or nil,
-        subcategory = doc.category == "Bulletin de paie" and "payslips" or nil,
-      })
+    -- The content endpoint is a POST taking the id in its form, so the document id is part of
+    -- the key the saved-document tracking uses in place of a URL.
+    local key = "https://secure.digiposte.fr/rest/content/document#" .. tostring(doc.id)
+    if not already_saved(key) then
+      local file = fyde.http.post_form("https://secure.digiposte.fr/rest/content/document", { ["document_ids[]"] = doc.id })
+      if file.status == 200 and (file.body or ""):sub(1, 4) == "%PDF" then
+        fyde.save_document(sanitize(doc.filename or doc.title or doc.id) .. (tostring(doc.filename):match("%.pdf$") and "" or ".pdf"), file.body, {
+          name = doc.title or doc.filename,
+          -- A digital safe holds anything: only payslips, the one category it names, are classified.
+          type = doc.category == "Bulletin de paie" and "payslip" or nil,
+          subcategory = doc.category == "Bulletin de paie" and "payslips" or nil,
+        })
+        mark_saved(key)
+      end
     end
   end
 end
