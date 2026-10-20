@@ -79,13 +79,13 @@ so the report's HTTP entries include response bodies regardless of what `secret.
 
 Run the compiled binary directly rather than `cargo run` — this loop re-runs many times per
 session (only `script.lua` changes between iterations, not Rust code), and `cargo run`
-re-checks the whole dependency graph, including `../sdk`, on every invocation, which is slow
-even when nothing actually changed. Only rebuild when the binary is missing or `../sdk` (or
-this crate's own sources) changed since the last build:
+re-checks the whole dependency graph, including fyde-sdk, on every invocation, which is slow
+even when nothing actually changed. Only rebuild when the binary is missing or this crate's
+sources or `Cargo.lock` (which pins the fyde-sdk commit) changed since the last build:
 
 ```sh
 BIN=target/debug/fyde-scripts
-if [ ! -x "$BIN" ] || [ -n "$(find ../sdk/src ../sdk/Cargo.toml ../sdk/build.rs src Cargo.toml -newer "$BIN" -type f 2>/dev/null)" ]; then
+if [ ! -x "$BIN" ] || [ -n "$(find src Cargo.toml Cargo.lock -newer "$BIN" -type f 2>/dev/null)" ]; then
   cargo build
 fi
 "$BIN" run <name> --dev

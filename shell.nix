@@ -21,7 +21,7 @@ pkgs.mkShell {
     rustToolchain
     sccache
 
-    # ../sdk is a path dependency; its build.rs needs this to compile
+    # fyde-sdk's build.rs needs this to compile
     # the buf.build/fyde-lab/api protos via tonic-prost-build.
     protobuf
 
@@ -39,8 +39,8 @@ pkgs.mkShell {
     # ../sdk/src/domains/scrapers/host/browser.rs). webkitgtk_4_1/gtk3 are
     # wry's WebKitGTK backend on Linux; dbus is tao's optional single-
     # instance/app-id support, pulled in by its "dbus" feature. Must mirror
-    # ../sdk/shell.nix's own copy of these - this crate depends on ../sdk as
-    # a path dependency, so it links the same wry/tao code.
+    # ../sdk/shell.nix's own copy of these - this crate depends on fyde-sdk,
+    # so it links the same wry/tao code.
     pkg-config
     webkitgtk_4_1
     gtk3
