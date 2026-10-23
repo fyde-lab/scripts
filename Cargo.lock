@@ -381,6 +381,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bip39"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4559bb9225f8401dcea601cf8dc9ed81ea0dadd9cf7755fdefdd93ef7961e19e"
+dependencies = [
+ "bitcoin_hashes",
+ "serde",
+ "unicode-normalization",
+ "zeroize",
+]
+
+[[package]]
 name = "bit-set"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -394,6 +406,15 @@ name = "bit-vec"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
+
+[[package]]
+name = "bitcoin_hashes"
+version = "0.14.101"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bca4c7abb40c8817d77403c880988cfd484f23ab2365726afb2f798363e2c4a2"
+dependencies = [
+ "hex-conservative",
+]
 
 [[package]]
 name = "bitflags"
@@ -1853,7 +1874,7 @@ dependencies = [
 [[package]]
 name = "fyde-sdk"
 version = "0.1.0"
-source = "git+https://github.com/fyde-lab/sdk.git?branch=master#b29719ee01c13425aafb7401e68b66bcd250f04f"
+source = "git+https://github.com/fyde-lab/sdk.git?branch=master#4ca9899dac84d98e0d2e17de7fae6714f4387fff"
 dependencies = [
  "aes-gcm",
  "android-native-keyring-store",
@@ -1861,6 +1882,7 @@ dependencies = [
  "argon2",
  "async-trait",
  "base64",
+ "bip39",
  "cookie",
  "dbus-secret-service-keyring-store",
  "encoding_rs",
@@ -1870,6 +1892,7 @@ dependencies = [
  "mlua",
  "office_oxide",
  "opaque-ke",
+ "passwd-strength",
  "pdf_oxide",
  "prost",
  "rand 0.10.3",
@@ -2317,6 +2340,15 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
+name = "hex-conservative"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db3fef046dca3ca91ee1408a8c1b80ab777e80a4d308d1bf4e7adb3fcb047e08"
+dependencies = [
+ "arrayvec",
+]
 
 [[package]]
 name = "hkdf"
@@ -3636,6 +3668,15 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "windows-link",
+]
+
+[[package]]
+name = "passwd-strength"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c7b8694bc1030bba8602262276a670e40c232f35468934f0d2577cf1cccd6cd"
+dependencies = [
+ "regex",
 ]
 
 [[package]]
