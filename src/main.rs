@@ -6,8 +6,8 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser, Subcommand};
 use fyde_sdk::{
-    Client, ClientConfig, ErrorCode, LogLevel, LoginOutcome, ProgressEvent, ScriptParameter,
-    ScriptParameterType, ScriptType, Storage, init_dev_scrapers,
+    Client, ClientConfig, ErrorCode, LogLevel, LoginOutcome, OnScraperProgress, OnScraperQuestion,
+    ProgressEvent, ScriptParameter, ScriptParameterType, ScriptType, Storage, init_dev_scrapers,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -781,9 +781,10 @@ async fn run_scraper(args: &RunArgs, scraper_name: &str) -> Result<()> {
     let manifest = load_manifest(&script_dir, scraper_name)?;
     let debug_http_dump = manifest.debug_http_dump || args.dev;
 
-    let on_progress: Arc<dyn Fn(ProgressEvent) + Send + Sync> =
-        Arc::new(|event| print_progress(&event));
-    let on_question: Arc<dyn Fn(String) -> String + Send + Sync> = Arc::new(ask);
+    // This runner drives one scraper per service, so the run name the SDK
+    // passes first is always `scraper_name`.
+    let on_progress: OnScraperProgress = Arc::new(|_name: &str, event| print_progress(&event));
+    let on_question: OnScraperQuestion = Arc::new(|_name: &str, question| ask(question));
 
     let scrapers = init_dev_scrapers(
         args.storage.clone(),
