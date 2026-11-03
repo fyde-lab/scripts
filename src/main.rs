@@ -105,6 +105,13 @@ struct RunArgs {
     /// window is only ever created lazily on first use.
     #[arg(long)]
     visible: bool,
+
+    /// Script version to run each scraper as, exposed to it as
+    /// `fyde.script_version`. `fyde.helpers` keys the URLs it remembers as
+    /// already saved by version, so bumping this makes a run fetch every
+    /// document again, as a newly published version of the script would.
+    #[arg(long, default_value_t = 0)]
+    script_version: u64,
 }
 
 #[derive(Parser)]
@@ -800,6 +807,7 @@ async fn run_scraper(args: &RunArgs, scraper_name: &str) -> Result<()> {
         .run(
             scraper_name,
             &script,
+            args.script_version,
             parameters,
             debug_http_dump,
             manifest.wreq_emulation,

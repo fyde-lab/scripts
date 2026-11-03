@@ -23,7 +23,7 @@ point at that repo's sources.
 ## Commands
 
 ```sh
-cargo run -- run didaxis impots              # run scrapers in order (--dev, --visible, --documents-dir, --storage, --secrets)
+cargo run -- run didaxis impots              # run scrapers in order (--dev, --visible, --script-version, --documents-dir, --storage, --secrets)
 cargo run -- check                           # load every script in the sandbox without running it (no network)
 cargo run -- list                            # every scraper with its manifest name/short description
 cargo run -- status [name...]                # print manifest `status` objects
@@ -103,7 +103,8 @@ host table (`log`, `http`, `html`, `json`, `progress`, `input`, `save_document`,
   `{ refresh = true }` as its 5th argument for a fixed URL whose document changes, e.g. a
   dated certificate); a script downloading by itself checks `helpers.already_saved(url)`
   first and calls `helpers.mark_saved(url)` after `fyde.save_document` (both keyed in
-  `fyde.session.saved_urls`);
+  `fyde.session.saved_urls` by script version, so a newly published version refetches
+  everything; `run --script-version N` simulates one locally);
 - keep a header comment stating what it scrapes and what is/isn't confirmed or blocked.
 
 Shared helpers come from `fyde.helpers` (`../sdk/src/domains/scrapers/host/helpers.lua`): alias
