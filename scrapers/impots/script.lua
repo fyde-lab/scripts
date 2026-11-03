@@ -36,7 +36,19 @@
 --      form again, landing on the authenticated particulier space.
 -- From there, scraping mirrors the heuristics in demo-fyde's impots_scraper.js (its JS
 -- equivalent for a WebView-driven crawl): find the "Documents" nav link, visit it once, and
--- collect links that look like documents.
+-- read its document cards, one accordion tab per year.
+--
+-- Names and attributes come only from each card (title, year tab, description lines, amount
+-- badge), never from the PDFs; on a 2026-11-03 run every value used matched what its PDF
+-- prints (bar a 0 € income tax notice's payment deadline, only shown in the listing). Titles seen: "Avis d'impôt <Y> sur les revenus [et prélèvements sociaux] <R>",
+-- "Avis de situation déclarative à l'impôt <Y> sur les revenus <R> (le <date>, à <time>)",
+-- "Déclaration en ligne des revenus <R> (le <date>, à <time>)" (several per year, two on the
+-- same day), "Déclaration automatique : ... (revenus <R>)", "Avis de taxes foncières <Y>" /
+-- "Avis de taxe d'habitation-CAP <Y>" (with "<address>, <dept> <TOWN>" and the payment deadline
+-- underneath), "Impôt sur les revenus <R> – Montant de l’avance de réductions et crédits
+-- d’impôt" (with a "Montant : N €" badge), and the yearless "Lettre de relance taxes foncières
+-- ..." and "Mise en demeure de payer". tax_year is the year of income (<R>) for income tax and
+-- the tax's own year for local taxes; the reference numbers are only printed in the PDFs.
 --
 -- The login page also runs ShieldSquare/Radware bot-management (aperture.js / perfdrive.com /
 -- eupulse.shieldsquare.net) in the browser. `fyde.http` doesn't evaluate that script (it runs
@@ -80,18 +92,176 @@ local function matches_any(haystack, patterns)
   return false
 end
 
-local function sanitize(name)
-  name = name:gsub("%s+", " ")
-  name = name:match("^%s*(.-)%s*$")
-  name = name:gsub('[<>:"/\\|%?%*]', "_")
-  name = name:gsub("%c", "")
-  if #name > 150 then
-    name = name:sub(1, 150)
+local ISSUER = "Direction générale des Finances publiques"
+
+local MONTHS = {
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+}
+
+--- The first `DD/MM/YYYY` date in `text`, as `YYYY-MM-DD` (nil if there's none).
+local function iso_date(text)
+  local day, month, year = text:match("(%d%d)/(%d%d)/(%d%d%d%d)")
+  return day and string.format("%s-%s-%s", year, month, day)
+end
+
+--- "28 mai 2026 à 12h02" (or "1er mai ...") for a listing title's "le 28/05/2026, à 12:02".
+local function long_datetime(day, month, year, hour, minute)
+  day = tonumber(day)
+  return string.format(
+    "%s %s %s à %sh%s", day == 1 and "1er" or day, MONTHS[tonumber(month)], year, hour, minute
+  )
+end
+
+--- "BETTON" / "SAINT-ÉTIENNE" as "Betton" / "Saint-Étienne" (ASCII and Latin-1 capitals only).
+local function title_case(text)
+  local lower = text:lower():gsub("\195([\128-\158])", function(c)
+    return "\195" .. string.char(c:byte() + 32)
+  end)
+  return (lower:gsub("()([%a\195][\128-\191]?)", function(pos, letter)
+    local before = pos > 1 and lower:sub(pos - 1, pos - 1) or " "
+    if not before:match("[%s%-']") then
+      return letter
+    end
+    if #letter == 2 then
+      return "\195" .. string.char(letter:byte(2) - 32)
+    end
+    return letter:upper()
+  end))
+end
+
+--- An amount ("3518 €", "1 080,00 €") in euro cents (nil if it isn't one).
+local function euro_cents(text)
+  local compact = text:gsub("[^%d,%-]", "")
+  local units, decimals = compact:match("^(%-?%d+),(%d%d)$")
+  if units then
+    return tonumber(units .. decimals)
   end
-  if name == "" then
-    name = "document"
+  units = compact:match("^%-?%d+$")
+  return units and tonumber(units) * 100
+end
+
+-- `fyde.save_document` attribute values (see ../sdk/src/domains/documents/attributes/lua.rs).
+-- Each returns nil when there's no value, so the attribute is simply left out.
+local function string_attr(value)
+  if value and value ~= "" then
+    return { type = "string", value = value }
   end
-  return name
+end
+
+local function date_attr(value)
+  return value and { type = "date", value = value }
+end
+
+local function integer_attr(value)
+  value = value and tonumber(value)
+  return value and { type = "integer", value = math.tointeger(value) }
+end
+
+local function amount_attr(minor_units)
+  return minor_units and { type = "amount", value = { minor_units = minor_units, currency = "EUR" } }
+end
+
+--- Name, type, subcategory and attributes of a listing card, from its title, the year tab it
+--- sits under, and its optional description lines and amount badge.
+local function describe(card)
+  local title = card.title
+  local attributes = {
+    issuer = string_attr(ISSUER),
+    due_on = date_attr(card.due_on),
+  }
+  local doc = { name = title, type = "tax_notice", attributes = attributes }
+
+  local notice_year, income_year = title:match("^Avis d'impôt (%d%d%d%d) sur les revenus.- (%d%d%d%d)$")
+  if notice_year then
+    doc.subcategory = "income_tax"
+    attributes.tax_year = integer_attr(income_year)
+    return doc
+  end
+
+  local d, m, y, hh, mm
+  notice_year, income_year, d, m, y, hh, mm = title:match(
+    "^Avis de situation déclarative à l'impôt (%d%d%d%d) sur les revenus (%d%d%d%d) "
+      .. "%(le (%d%d)/(%d%d)/(%d%d%d%d), à (%d%d):(%d%d)%)$"
+  )
+  if notice_year then
+    doc.name = string.format(
+      "Avis de situation déclarative %s sur les revenus %s du %s",
+      notice_year, income_year, long_datetime(d, m, y, hh, mm)
+    )
+    doc.subcategory = "income_tax"
+    attributes.tax_year = integer_attr(income_year)
+    attributes.issued_on = date_attr(string.format("%s-%s-%s", y, m, d))
+    return doc
+  end
+
+  income_year, d, m, y, hh, mm = title:match(
+    "^Déclaration en ligne des revenus (%d%d%d%d) %(le (%d%d)/(%d%d)/(%d%d%d%d), à (%d%d):(%d%d)%)$"
+  )
+  if income_year then
+    doc.name = string.format(
+      "Déclaration en ligne des revenus %s du %s", income_year, long_datetime(d, m, y, hh, mm)
+    )
+    doc.type = "tax_return"
+    doc.subcategory = "income_tax"
+    attributes.tax_year = integer_attr(income_year)
+    attributes.issued_on = date_attr(string.format("%s-%s-%s", y, m, d))
+    return doc
+  end
+
+  -- "Déclaration automatique : vos informations connues de l'administration (revenus 2022)"
+  income_year = title:match("^Déclaration automatique.-%(revenus (%d%d%d%d)%)$")
+  if income_year then
+    doc.name = "Déclaration automatique des revenus " .. income_year
+    doc.type = "tax_return"
+    doc.subcategory = "income_tax"
+    attributes.tax_year = integer_attr(income_year)
+    return doc
+  end
+
+  -- "Impôt sur les revenus 2025 – Montant de l’avance de réductions et crédits d’impôt": the
+  -- January advance on the year's tax credits, paid to the taxpayer (hence a negative tax_amount).
+  income_year = title:match("^Impôt sur les revenus (%d%d%d%d) .-avance de réductions et crédits")
+  if income_year then
+    doc.name = "Avance de réductions et crédits d'impôt sur les revenus " .. income_year
+    doc.subcategory = "income_tax"
+    attributes.tax_year = integer_attr(income_year)
+    local cents = card.amount and euro_cents(card.amount)
+    attributes.tax_amount = amount_attr(cents and -cents)
+    return doc
+  end
+
+  -- "Avis de taxes foncières 2026", "Avis de taxe d'habitation-CAP 2022": local taxes, one notice
+  -- per property, so the property's town goes in the name.
+  local local_year = title:match("^Avis de taxes? .-(%d%d%d%d)$")
+  if local_year then
+    attributes.tax_year = integer_attr(local_year)
+    if card.town then
+      doc.name = title .. " - " .. title_case(card.town)
+    end
+    return doc
+  end
+
+  -- "Lettre de relance taxes foncières ...", "Mise en demeure de payer": no year in the title.
+  if not title:find("%d%d%d%d") then
+    doc.name = title .. " - " .. card.year
+  end
+  return doc
+end
+
+local used_filenames = {}
+
+--- `name` as a `.pdf` filename no other document of this run has (the dev documents client
+--- writes files by name, so two equal names would overwrite each other).
+local function unique_filename(name)
+  local base = helpers.sanitize(name)
+  local filename, n = base, 1
+  while used_filenames[filename] do
+    n = n + 1
+    filename = string.format("%s (%d)", base, n)
+  end
+  used_filenames[filename] = true
+  return filename .. ".pdf"
 end
 
 --- Resolves a possibly-relative href found on `page_url` into an absolute URL.
@@ -107,6 +277,22 @@ local function resolve_url(page_url, href)
   return dir .. href
 end
 
+--- Calls `request(...)`, once more if it fails before any response: both hosts close idle
+--- keep-alive connections within about a second, and a request sent on one as it closes fails
+--- with "client error (SendRequest)" (every request issued ~800ms after the previous one did,
+--- on 2026-11-03). Only for requests that are safe to repeat.
+local function retry_stale(request, ...)
+  local ok, result = pcall(request, ...)
+  if ok then
+    return result
+  end
+  if not tostring(result):find("SendRequest", 1, true) then
+    error(result, 0)
+  end
+  fyde.log.debug("connection closed by the site, retrying once: " .. tostring(result))
+  return request(...)
+end
+
 --- Extracts the `<CODE>` out of a `/GetContexte` response's
 --- `parent.postMessage('ctx,<CODE>', ...)` payload.
 local function parse_context_code(body)
@@ -118,7 +304,7 @@ end
 --- login page's own URL (see M.run) - a real browser sends it as the Referer on this POST
 --- since it's submitting a form from that page, and the idp may check it.
 local function get_context(spi, referer)
-  local resp = fyde.http.post_form(IDP_BASE .. "/GetContexte", {
+  local resp = retry_stale(fyde.http.post_form, IDP_BASE .. "/GetContexte", {
     url = "",
     lmAuth = "",
     authType = "",
@@ -198,22 +384,52 @@ local function find_documents_link(html, page_url)
   return nil
 end
 
+local function clean_text(text)
+  return helpers.trim((text:gsub("\194\160", " "):gsub("%s+", " ")))
+end
+
+--- Every document card of the Documents page, per year tab (`div.fr-collapse#<year>`; the page
+--- renders each card twice, in its mobile and desktop layouts, hence the dedup by href). A card
+--- is a title link, optional description lines ("<address>, <dept> <TOWN>" and/or "Date limite
+--- de paiement : DD/MM/YYYY") and an optional "Montant : N €" badge.
 local function extract_documents(html)
   local docs = {}
   local seen = {}
-  local anchors = fyde.html.select(html, "a[href]")
-  for _, anchor in ipairs(anchors) do
-    local href = anchor.attrs.href or ""
-    if href ~= "" and not matches_any(href, FORBIDDEN_PATTERNS) and matches_any(href, DOC_HREF_PATTERNS) then
-      if not seen[href] then
-        seen[href] = true
-        local text = anchor.text:match("^%s*(.-)%s*$")
-        if text == "" then
-          text = "document"
+  for _, section in ipairs(fyde.html.select(html, "div.fr-collapse")) do
+    local year = (section.attrs.id or ""):match("^(%d%d%d%d)$")
+    if year then
+      for _, card in ipairs(fyde.html.select(section.html, "div.unDocument")) do
+        local link = fyde.html.select(card.html, "a[href]")[1]
+        local href = link and link.attrs.href or ""
+        if href ~= "" and not seen[href] and not matches_any(href, FORBIDDEN_PATTERNS) then
+          seen[href] = true
+          local doc = { href = href, year = year, title = clean_text(link.text) }
+          local desc = fyde.html.select(card.html, "p.fr-card__desc")[1]
+          if desc then
+            doc.due_on = iso_date(desc.text:match("Date limite de paiement[^%d]*(%d%d/%d%d/%d%d%d%d)") or "")
+            local first_line = clean_text(desc.html:match("^<p[^>]*>(.-)<br") or "")
+            doc.town = first_line:match(",%s*%d+%s+(.+)$")
+          end
+          local badge = fyde.html.select(card.html, "p.badgeMontant")[1]
+          doc.amount = badge and badge.text:match(":%s*(.-€)")
+          if doc.title == "" then
+            doc.title = "Document " .. year
+          end
+          table.insert(docs, doc)
         end
-        table.insert(docs, { text = text, href = href })
       end
     end
+  end
+
+  local missed = 0
+  for _, anchor in ipairs(fyde.html.select(html, "a[href]")) do
+    local href = anchor.attrs.href
+    if not seen[href] and matches_any(href, DOC_HREF_PATTERNS) and not matches_any(href, FORBIDDEN_PATTERNS) then
+      missed = missed + 1
+    end
+  end
+  if missed > 0 then
+    fyde.log.warn(string.format("%d document link(s) outside any year tab's cards (page layout changed?)", missed))
   end
   return docs
 end
@@ -308,34 +524,37 @@ function M.run(params)
     error("session was logged out while opening the Documents section")
   end
 
-  -- No JS engine here, so the live site's year-selector <select> (which reloads its table via
-  -- client-side JS, not a plain link) can't be driven the way impots_scraper.js does it from a
-  -- real WebView. This only ever sees whatever year the page renders server-side by default,
-  -- same limitation as didaxis.lua's DataTable "show 100 rows" selector.
+  -- Every year tab (2017-2026 on a 2026-11-03 run, 45 documents) is rendered server-side in
+  -- this one response; the tabs only toggle visibility.
   local docs = extract_documents(page.body)
   fyde.log.info(string.format("%d document(s) found", #docs))
 
-  for i, doc in ipairs(docs) do
+  if #docs > 0 then
+    fyde.progress.step("downloading_documents")
+  end
+  for i, card in ipairs(docs) do
     fyde.progress.update(i, #docs)
 
-    local url = resolve_url(documents_url, doc.href)
+    local doc = describe(card)
+    local url = resolve_url(documents_url, card.href)
     if already_saved(url) then
-      fyde.log.debug("skipping '" .. doc.text .. "': already saved by a previous run")
+      fyde.log.debug("skipping '" .. doc.name .. "': already saved by a previous run")
     else
-      local download = fyde.http.download(url)
+      local download = retry_stale(fyde.http.download, url)
 
       if download.status == 200 and not download.content_type:find("html", 1, true) then
-        fyde.save_document("impots/" .. sanitize(doc.text) .. ".pdf", download.body, {
-          name = doc.text,
-          type = "tax_notice",
+        fyde.save_document(unique_filename(doc.name), download.body, {
+          name = doc.name,
+          type = doc.type,
           category = "taxes",
-          subcategory = "income_tax",
+          subcategory = doc.subcategory,
+          attributes = doc.attributes,
         })
         mark_saved(url)
       else
         fyde.log.warn(string.format(
           "failed to download '%s' (status %d, content-type %s)",
-          doc.text, download.status, download.content_type
+          doc.name, download.status, download.content_type
         ))
       end
     end

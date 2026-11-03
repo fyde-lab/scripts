@@ -167,7 +167,7 @@ tested, ➖ not applicable; antibot ✅ absent, ⚠️ present, ⛔ blocking, �
 | [`glisshop`](scrapers/glisshop/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`harmonie`](scrapers/harmonie/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ✅ | 2026-10-11 |
 | [`humanis`](scrapers/humanis/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Imperva | 2026-10-11 |
-| [`impots`](scrapers/impots/manifest.json) | ✅ verified | ✅ | ✅ | ✅ | ✅ | ⚠️ Reblaze | 2026-10-11 |
+| [`impots`](scrapers/impots/manifest.json) | ✅ verified | ✅ | ✅ | ✅ | ✅ | ⚠️ Reblaze | 2026-11-03 |
 | [`lamutuellegenerale`](scrapers/lamutuellegenerale/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ Imperva | 2026-10-11 |
 | [`ldlc`](scrapers/ldlc/manifest.json) | 🚧 wip | ✅ | ✅ | ❔ | ❔ | ⚠️ reCAPTCHA | 2026-10-11 |
 | [`leclercdrive`](scrapers/leclercdrive/manifest.json) | 🚧 wip | ✅ | ❌ | ❔ | ❔ | ⛔ DataDome | 2026-10-11 |
