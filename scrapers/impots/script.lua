@@ -38,9 +38,8 @@
 -- equivalent for a WebView-driven crawl): find the "Documents" nav link, visit it once, and
 -- read its document cards, one accordion tab per year.
 --
--- Names and attributes come only from each card (title, year tab, description lines, amount
--- badge), never from the PDFs; on a 2026-11-03 run every value used matched what its PDF
--- prints (bar a 0 € income tax notice's payment deadline, only shown in the listing). Titles seen: "Avis d'impôt <Y> sur les revenus [et prélèvements sociaux] <R>",
+-- Names and the listing's attributes come from each card (title, year tab, description lines,
+-- amount badge). Titles seen: "Avis d'impôt <Y> sur les revenus [et prélèvements sociaux] <R>",
 -- "Avis de situation déclarative à l'impôt <Y> sur les revenus <R> (le <date>, à <time>)",
 -- "Déclaration en ligne des revenus <R> (le <date>, à <time>)" (several per year, two on the
 -- same day), "Déclaration automatique : ... (revenus <R>)", "Avis de taxes foncières <Y>" /
@@ -48,7 +47,15 @@
 -- underneath), "Impôt sur les revenus <R> – Montant de l’avance de réductions et crédits
 -- d’impôt" (with a "Montant : N €" badge), and the yearless "Lettre de relance taxes foncières
 -- ..." and "Mise en demeure de payer". tax_year is the year of income (<R>) for income tax and
--- the tax's own year for local taxes; the reference numbers are only printed in the PDFs.
+-- the tax's own year for local taxes.
+--
+-- Each notice and letter is then read with fyde.pdf (see read_pdf): its reference, établissement
+-- date and amount (tax_amount: the balance due, negative when refunded) only exist there, and the
+-- year of income and payment deadline the listing gave are checked against it (a mismatch is
+-- logged, the PDF's value kept). On the 45 documents of a 2026-11-03 run, every notice and
+-- letter got its établissement date and amount, and every one but the payment demand its
+-- reference (the 2023 reminder letter's amount aside: its text comes out letter-spaced); no
+-- listing value disagreed with its PDF. Returns print none of these.
 --
 -- The login page also runs ShieldSquare/Radware bot-management (aperture.js / perfdrive.com /
 -- eupulse.shieldsquare.net) in the browser. `fyde.http` doesn't evaluate that script (it runs
@@ -174,6 +181,7 @@ local function describe(card)
 
   local notice_year, income_year = title:match("^Avis d'impôt (%d%d%d%d) sur les revenus.- (%d%d%d%d)$")
   if notice_year then
+    doc.kind, doc.year = "income_notice", notice_year
     doc.subcategory = "income_tax"
     attributes.tax_year = integer_attr(income_year)
     return doc
@@ -189,6 +197,7 @@ local function describe(card)
       "Avis de situation déclarative %s sur les revenus %s du %s",
       notice_year, income_year, long_datetime(d, m, y, hh, mm)
     )
+    doc.kind, doc.year = "situation_notice", notice_year
     doc.subcategory = "income_tax"
     attributes.tax_year = integer_attr(income_year)
     attributes.issued_on = date_attr(string.format("%s-%s-%s", y, m, d))
@@ -224,6 +233,7 @@ local function describe(card)
   income_year = title:match("^Impôt sur les revenus (%d%d%d%d) .-avance de réductions et crédits")
   if income_year then
     doc.name = "Avance de réductions et crédits d'impôt sur les revenus " .. income_year
+    doc.kind = "advance"
     doc.subcategory = "income_tax"
     attributes.tax_year = integer_attr(income_year)
     local cents = card.amount and euro_cents(card.amount)
@@ -235,6 +245,7 @@ local function describe(card)
   -- per property, so the property's town goes in the name.
   local local_year = title:match("^Avis de taxes? .-(%d%d%d%d)$")
   if local_year then
+    doc.kind, doc.year = "local_notice", local_year
     attributes.tax_year = integer_attr(local_year)
     if card.town then
       doc.name = title .. " - " .. title_case(card.town)
@@ -243,6 +254,7 @@ local function describe(card)
   end
 
   -- "Lettre de relance taxes foncières ...", "Mise en demeure de payer": no year in the title.
+  doc.kind, doc.year = "letter", card.year
   if not title:find("%d%d%d%d") then
     doc.name = title .. " - " .. card.year
   end
@@ -434,6 +446,120 @@ local function extract_documents(html)
   return docs
 end
 
+-- First-page areas read with fyde.pdf.text_in_rect, in points from the page's bottom-left corner,
+-- measured on every layout from 2017 to 2026: the title band ("Impôt et prélèvements sociaux sur
+-- les revenus de 2024"), the amount box ("Somme qui vous est remboursée 5 955,00 €") and the "Vos
+-- références" box. Most labels in these boxes are images: only their values are text, so the
+-- full text alone can't tell a refund from an amount due, nor the établissement date from the
+-- payment deadline printed next to it.
+local TITLE_BAND = { x = 100, y = 770, width = 360, height = 72 }
+local AMOUNT_BOX = { x = 215, y = 500, width = 340, height = 80 }
+local REFERENCES_BOX = { x = 10, y = 430, width = 205, height = 260 }
+
+local DATE = "(%d%d/%d%d/%d%d%d%d)"
+
+--- The euro amount printed right after `label` ("Somme à payer 1 260,00 €", "Total dû : 318,00
+--- €", "MONTANT DE VOTRE IMPÔT 0 €"), in cents.
+local function amount_after(text, label)
+  local raw = text:match(label .. "%s*:?%s*(%d[%d ,]*)%s*€")
+  return raw and euro_cents(raw)
+end
+
+--- Sets `doc.attributes[key]` from the PDF, warning when the listing said otherwise (the PDF is
+--- the document itself, so its value wins).
+local function from_pdf(doc, key, attribute)
+  if not attribute then
+    return
+  end
+  local listed = doc.attributes[key]
+  local function shown(a)
+    return type(a.value) == "table" and tostring(a.value.minor_units) or tostring(a.value)
+  end
+  if listed and shown(listed) ~= shown(attribute) then
+    fyde.log.warn(string.format(
+      "'%s': the listing gives %s = %s but the PDF %s, keeping the PDF's", doc.name, key, shown(listed), shown(attribute)
+    ))
+  end
+  doc.attributes[key] = attribute
+end
+
+--- The signed balance of an income tax notice (negative for a refund), in cents.
+local function income_balance(text, amount_box)
+  local refund = amount_after(amount_box, "Somme qui vous est remboursée")
+  if refund then
+    return -refund
+  end
+  local due = amount_after(amount_box, "Somme qu'il vous reste à payer")
+    or amount_after(text, "MONTANT DE VOTRE IMPÔT")
+    or amount_after(text, "Montant de votre impôt sur le revenu")
+  if due then
+    return due
+  end
+  -- 2020's amount box has no label: fall back on the detail pages' last line, in whole euros.
+  due = text:match("RESTANT A PAYER[%s%.]*(%d+)")
+  if due then
+    return tonumber(due) * 100
+  end
+  local back = text:match("SERA REMBOURSE.-EST DE[%s%.]*(%d+)")
+  return back and -tonumber(back) * 100
+end
+
+--- Completes and checks `doc`'s attributes from the PDF itself: the notice's reference, its
+--- établissement date, the amount due or refunded, and the year of income / payment deadline the
+--- listing already gave. Returns are left as they are: they print no reference or date of their
+--- own. A PDF that can't be read only costs these attributes.
+local function read_pdf(doc, body)
+  if not doc.kind then
+    return
+  end
+  local ok, err = pcall(function()
+    local text = fyde.pdf.text(body)
+    local function area(rect)
+      return clean_text(fyde.pdf.text_in_rect(body, 1, rect))
+    end
+
+    -- "Référence de l'avis" / "du document", e.g. "25 35 A226334 19" or "26 A2 5448416 24", whose
+    -- first group is the notice's year: often unlabelled, and the only number of that shape.
+    if doc.year then
+      local reference = text:match(
+        "%f[%w](" .. doc.year:sub(3, 4) .. " [%dA-Z]%d [%dA-Z]%d%d%d%d%d%d %d%d)%f[%D]"
+      )
+      from_pdf(doc, "reference", string_attr(reference))
+    end
+
+    local issued_on = text:match("Date d'établissement%s*:%s*" .. DATE)
+    if not issued_on and (doc.kind == "letter" or doc.kind == "advance") then
+      issued_on = text:match("%f[%w]Le " .. DATE)
+    end
+    if not issued_on and doc.kind ~= "advance" then
+      -- The "Vos références" box's first date, the "Adresse d'imposition au 01/01/..." aside:
+      -- établissement, then mise en recouvrement.
+      issued_on = area(REFERENCES_BOX):gsub("au " .. DATE, ""):match(DATE)
+    end
+    from_pdf(doc, "issued_on", date_attr(issued_on and iso_date(issued_on)))
+
+    if doc.kind == "income_notice" or doc.kind == "situation_notice" then
+      local income_year = area(TITLE_BAND):lower():match("revenus de [^%d]-(%d%d%d%d)")
+      from_pdf(doc, "tax_year", integer_attr(income_year))
+      local balance = income_balance(text, doc.kind == "income_notice" and area(AMOUNT_BOX) or "")
+      from_pdf(doc, "tax_amount", amount_attr(balance))
+    elseif doc.kind == "local_notice" then
+      local deadline = text:match("Date limite de paiement%s*:%s*" .. DATE)
+      from_pdf(doc, "due_on", date_attr(deadline and iso_date(deadline)))
+      from_pdf(doc, "tax_amount", amount_attr(amount_after(area(AMOUNT_BOX), "Somme à payer")))
+    elseif doc.kind == "letter" then
+      local due = amount_after(text, "Reste à payer") or amount_after(text, "Total dû")
+      from_pdf(doc, "tax_amount", amount_attr(due))
+    elseif doc.kind == "advance" then
+      local advance = euro_cents(text:match("montant de ([%d ]+) €") or "")
+      from_pdf(doc, "tax_amount", amount_attr(advance and -advance))
+    end
+  end)
+  if not ok then
+    fyde.log.warn("could not read '" .. doc.name .. "' as a PDF: " .. tostring(err))
+  end
+end
+
 function M.run(params)
   local spi = params["fiscal-number"]
   local password = params.password
@@ -543,6 +669,7 @@ function M.run(params)
       local download = retry_stale(fyde.http.download, url)
 
       if download.status == 200 and not download.content_type:find("html", 1, true) then
+        read_pdf(doc, download.body)
         fyde.save_document(unique_filename(doc.name), download.body, {
           name = doc.name,
           type = doc.type,
