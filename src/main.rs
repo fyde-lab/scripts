@@ -403,6 +403,8 @@ async fn publish(args: PublishArgs) -> Result<()> {
         url: args.server.clone(),
         client_name: "fyde-scripts".to_string(),
         storage: Storage::Memory,
+        // Publishing never runs a model, so nothing is ever downloaded there.
+        models_dir: std::env::temp_dir().join("fyde-scripts-models"),
         log_level: LogLevel::Info,
         on_log: None,
         on_document_change: None,
