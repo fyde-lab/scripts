@@ -7,7 +7,8 @@ use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser, Subcommand};
 use fyde_sdk::{
     Client, ClientConfig, ErrorCode, LogLevel, LoginOutcome, OnScraperProgress, OnScraperQuestion,
-    ProgressEvent, ScriptParameter, ScriptParameterType, ScriptType, Storage, init_dev_scrapers,
+    ProgressEvent, Script, ScriptParameter, ScriptParameterType, ScriptType, Storage,
+    init_dev_scrapers,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -30,8 +31,8 @@ enum Command {
     Run(RunArgs),
 
     /// Publishes every scraper's `script.lua` under `scrapers/` to a fyde
-    /// server's scripts service, as a public script, authenticating with a
-    /// real account via a full `fyde_sdk::Client` backed by an in-memory
+    /// server's scripts service, as a public script, authenticating with an
+    /// admin account (only an admin may publish a script) via a full `fyde_sdk::Client` backed by an in-memory
     /// database (there's nothing worth persisting locally for a one-off
     /// publish run).
     Publish(PublishArgs),
@@ -394,7 +395,10 @@ async fn run(args: RunArgs) -> Result<()> {
 
 /// Reads every `scrapers/<name>/script.lua` under the repo and publishes it
 /// to `args.server`'s scripts service as a public script, authenticated as
-/// `args.username`. Updates a script this account already published (matched
+/// `args.username`, which must be an admin: the server creates and updates
+/// scripts private, and only an admin publishes one (through
+/// `set_script_visibility`), so a script is published again after each
+/// update. Updates a script this account already published (matched
 /// on name among its enabled and the public scripts, skipping same-named ones
 /// the server won't let it update) instead of creating a duplicate, so the
 /// command can be re-run after editing a script.
@@ -506,7 +510,6 @@ async fn publish_scripts(client: &Client) -> Result<()> {
                 .update_script(
                     current.id(),
                     &manifest.name,
-                    true,
                     logo.clone(),
                     &script,
                     &manifest.description,
@@ -517,7 +520,8 @@ async fn publish_scripts(client: &Client) -> Result<()> {
                 )
                 .await
             {
-                Ok(_) => {
+                Ok(script) => {
+                    publish_script(client, &script, &scraper_name).await?;
                     updated = true;
                     break;
                 }
@@ -538,11 +542,10 @@ async fn publish_scripts(client: &Client) -> Result<()> {
         if updated {
             tracing::info!("updated {scraper_name}");
         } else {
-            client
+            let created = client
                 .scripts()
                 .create_script(
                     &manifest.name,
-                    true,
                     logo,
                     &script,
                     &manifest.description,
@@ -553,11 +556,32 @@ async fn publish_scripts(client: &Client) -> Result<()> {
                 )
                 .await
                 .with_context(|| format!("creating script {scraper_name}"))?;
+            publish_script(client, &created, &scraper_name).await?;
             tracing::info!("created {scraper_name}");
         }
     }
 
     Ok(())
+}
+
+/// Makes `script` (just created or updated, so private) public again.
+/// Only an admin may: any other account gets a hint instead of the bare
+/// permission error.
+async fn publish_script(client: &Client, script: &Script, scraper_name: &str) -> Result<()> {
+    match client
+        .scripts()
+        .set_script_visibility(script.id(), true)
+        .await
+    {
+        Ok(()) => Ok(()),
+        Err(err) if err.code() == ErrorCode::PermissionDenied => Err(err).with_context(|| {
+            format!(
+                "publishing script {scraper_name}: only an admin account may publish a script \
+                 (it was saved, private)"
+            )
+        }),
+        Err(err) => Err(err).with_context(|| format!("publishing script {scraper_name}")),
+    }
 }
 
 /// Loads every scraper's `script.lua` and reports any that fail to parse or

@@ -28,7 +28,7 @@ cargo run -- check                           # load every script in the sandbox 
 cargo run -- list                            # every scraper with its manifest name/short description
 cargo run -- status [name...]                # print manifest `status` objects
 cargo run -- status-table                    # regenerate README.md's status table
-cargo run -- publish --username U --password P [--server URL]   # publish every scraper as a public script
+cargo run -- publish --username U --password P [--server URL]   # publish every scraper as a public script (admin account only)
 tests/login_smoke.sh [name...]               # live-site smoke test with fake credentials (writes manifest status)
 ```
 
