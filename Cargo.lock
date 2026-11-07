@@ -1998,7 +1998,7 @@ dependencies = [
 [[package]]
 name = "fyde-sdk"
 version = "0.1.0"
-source = "git+https://github.com/fyde-lab/sdk.git?branch=master#b5748f8e59d412e729e1dc05b053b0dc1b4dc72b"
+source = "git+https://github.com/fyde-lab/sdk.git?branch=master#6496d21839870b388b2956e2475c55f7083a6605"
 dependencies = [
  "aes-gcm",
  "android-native-keyring-store",
