@@ -5,12 +5,11 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser, Subcommand};
-use fyde_sdk::{
-    Client, ClientConfig, ErrorCode, LogLevel, LoginOutcome, OnScraperProgress, OnScraperQuestion,
-    ProgressEvent, ScriptParameter, ScriptParameterType, ScriptType, Storage, init_dev_scrapers,
-};
+use fyde_sdk::{OnScraperProgress, OnScraperQuestion, ProgressEvent, init_dev_scrapers};
 use serde::Deserialize;
 use serde_json::Value;
+
+mod publish;
 
 /// Runs, or publishes to a fyde server, the Lua scraper scripts under
 /// `scrapers/`. Ported from `demo-rust-fyde`.
@@ -30,10 +29,9 @@ enum Command {
     Run(RunArgs),
 
     /// Publishes every scraper's `script.lua` under `scrapers/` to a fyde
-    /// server's scripts service, as a public script, authenticating with a
-    /// real account via a full `fyde_sdk::Client` backed by an in-memory
-    /// database (there's nothing worth persisting locally for a one-off
-    /// publish run).
+    /// server as a public script, through its admin API
+    /// (`admin.v1.AdminService`, called directly over gRPC): the account
+    /// must be an admin.
     Publish(PublishArgs),
 
     /// Loads every `scrapers/<name>/script.lua` through the same restricted
@@ -113,11 +111,11 @@ struct PublishArgs {
     #[arg(long, default_value = "http://127.0.0.1:40051")]
     server: String,
 
-    /// Username of the account to authenticate the publish as.
+    /// Username of the admin account to authenticate the publish as.
     #[arg(long)]
     username: String,
 
-    /// Password of the account to authenticate the publish as.
+    /// Password of the admin account to authenticate the publish as.
     #[arg(long)]
     password: String,
 }
@@ -189,31 +187,27 @@ struct ScraperManifest {
 }
 
 /// One entry of a [`ScraperManifest`]'s `parameters`, in the manifest's own
-/// JSON shape (`"type"` rather than [`ScriptParameter`]'s `parameter_type`,
-/// optional `placeholder`/`required`/`secret`).
+/// JSON shape (optional `placeholder`/`required`/`secret`).
 #[derive(Deserialize)]
 struct ManifestParameter {
     label: String,
     #[serde(default)]
     placeholder: String,
     #[serde(rename = "type")]
-    parameter_type: ScriptParameterType,
+    parameter_type: ManifestParameterType,
     #[serde(default)]
     required: bool,
     #[serde(default)]
     secret: bool,
 }
 
-impl From<ManifestParameter> for ScriptParameter {
-    fn from(parameter: ManifestParameter) -> Self {
-        ScriptParameter {
-            label: parameter.label,
-            placeholder: parameter.placeholder,
-            parameter_type: parameter.parameter_type,
-            required: parameter.required,
-            secret: parameter.secret,
-        }
-    }
+/// The kind of value a [`ManifestParameter`] expects.
+#[derive(Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum ManifestParameterType {
+    String,
+    Number,
+    Boolean,
 }
 
 /// A scraper's `manifest.json` `status` object (see `README.md`'s Status
@@ -366,7 +360,7 @@ async fn main() -> Result<()> {
 
     match cli.command {
         Some(Command::Run(args)) => run(args).await,
-        Some(Command::Publish(args)) => publish(args).await,
+        Some(Command::Publish(args)) => publish::publish(args).await,
         Some(Command::Check) => check(),
         Some(Command::List) => list(),
         Some(Command::Status(args)) => status(args),
@@ -387,174 +381,6 @@ async fn run(args: RunArgs) -> Result<()> {
 
     for scraper_name in &args.scrapers {
         run_scraper(&args, scraper_name).await?;
-    }
-
-    Ok(())
-}
-
-/// Reads every `scrapers/<name>/script.lua` under the repo and publishes it
-/// to `args.server`'s scripts service as a public script, authenticated as
-/// `args.username`. Updates a script this account already published (matched
-/// on name among its enabled and the public scripts, skipping same-named ones
-/// the server won't let it update) instead of creating a duplicate, so the
-/// command can be re-run after editing a script.
-async fn publish(args: PublishArgs) -> Result<()> {
-    let client = Client::init(ClientConfig {
-        url: args.server.clone(),
-        client_name: "fyde-scripts".to_string(),
-        storage: Storage::Memory,
-        // Publishing never runs a model, so nothing is ever downloaded there.
-        models_dir: std::env::temp_dir().join("fyde-scripts-models"),
-        log_level: LogLevel::Info,
-        on_log: None,
-        on_document_change: None,
-        on_scraper_progress: None,
-        on_scraper_question: None,
-    })
-    .await
-    .with_context(|| format!("connecting to {}", args.server))?;
-
-    let outcome = client
-        .users()
-        .login(
-            &args.username,
-            &args.password,
-            "fyde-scripts-publish",
-            false,
-            None,
-        )
-        .await
-        .with_context(|| format!("logging in as {}", args.username))?;
-    if let LoginOutcome::SessionLimitReached { max_sessions, .. } = outcome {
-        anyhow::bail!(
-            "{} already has {max_sessions} open session(s), its plan's limit: log one out before \
-             publishing",
-            args.username
-        );
-    }
-
-    // Close the session whether publishing succeeded or not, so a failed run
-    // doesn't leave one open against the account's plan limit. A logout
-    // failure after a publishing failure is only logged, to keep the error
-    // that actually stopped the run.
-    let published = publish_scripts(&client).await;
-    if let Err(err) = client
-        .users()
-        .logout()
-        .await
-        .with_context(|| format!("logging out {}", args.username))
-    {
-        if published.is_ok() {
-            return Err(err);
-        }
-        tracing::warn!("{err:#}");
-    }
-    published
-}
-
-/// Publishes every scraper through `client`, which must already be logged in;
-/// see [`publish`].
-async fn publish_scripts(client: &Client) -> Result<()> {
-    // Scripts this account may already have published: `list_user_scripts`
-    // only returns the ones it has *enabled*, which a script created here
-    // never is, so the public listing (every script `publish` creates is
-    // public) is what actually finds them again. Neither listing says who
-    // owns a script, so a name match is only a candidate - see below.
-    let mut existing = client
-        .scripts()
-        .list_user_scripts()
-        .await
-        .context("listing this account's enabled scripts")?;
-    for script in client
-        .scripts()
-        .list_public_scripts()
-        .await
-        .context("listing public scripts")?
-    {
-        if !existing.iter().any(|s| s.id() == script.id()) {
-            existing.push(script);
-        }
-    }
-
-    for scraper_name in list_scraper_names()? {
-        let script_dir = PathBuf::from("scrapers").join(&scraper_name);
-        let script_path = script_dir.join("script.lua");
-        let script = std::fs::read_to_string(&script_path)
-            .with_context(|| format!("reading Lua script {}", script_path.display()))?;
-        let manifest = load_manifest(&script_dir, &scraper_name)?;
-        let logo_path = script_dir.join("logo.png");
-        let logo = if logo_path.is_file() {
-            std::fs::read(&logo_path)
-                .with_context(|| format!("reading logo {}", logo_path.display()))?
-        } else {
-            Vec::new()
-        };
-
-        let parameters: HashMap<String, ScriptParameter> = manifest
-            .parameters
-            .into_iter()
-            .map(|(key, parameter)| (key, parameter.into()))
-            .collect();
-
-        // Update the first same-named script this account owns; the server
-        // refuses `update_script` on someone else's, so move on to the next
-        // candidate then, and only create a new script once none is ours.
-        let mut updated = false;
-        for current in existing.iter().filter(|s| s.name() == manifest.name) {
-            match client
-                .scripts()
-                .update_script(
-                    current.id(),
-                    &manifest.name,
-                    true,
-                    logo.clone(),
-                    &script,
-                    &manifest.description,
-                    &manifest.short_description,
-                    manifest.allowed_domains.clone(),
-                    ScriptType::Scraper,
-                    parameters.clone(),
-                )
-                .await
-            {
-                Ok(_) => {
-                    updated = true;
-                    break;
-                }
-                Err(err)
-                    if matches!(
-                        err.code(),
-                        ErrorCode::PermissionDenied | ErrorCode::NotFoundOnServer
-                    ) =>
-                {
-                    continue;
-                }
-                Err(err) => {
-                    return Err(err).with_context(|| format!("updating script {scraper_name}"));
-                }
-            }
-        }
-
-        if updated {
-            tracing::info!("updated {scraper_name}");
-        } else {
-            client
-                .scripts()
-                .create_script(
-                    &manifest.name,
-                    true,
-                    logo,
-                    &script,
-                    &manifest.description,
-                    &manifest.short_description,
-                    manifest.allowed_domains.clone(),
-                    ScriptType::Scraper,
-                    parameters,
-                )
-                .await
-                .with_context(|| format!("creating script {scraper_name}"))?;
-            tracing::info!("created {scraper_name}");
-        }
     }
 
     Ok(())

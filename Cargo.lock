@@ -1985,12 +1985,20 @@ name = "fyde-scripts"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "argon2",
  "clap",
  "fyde-sdk",
  "mlua",
+ "opaque-ke",
+ "prost",
+ "rand 0.8.8",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "tokio",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
  "tracing",
  "tracing-subscriber",
 ]

@@ -16,3 +16,20 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # the same restricted Lua 5.4 stdlib ../sdk/src/domains/scrapers/service.rs's
 # `sandboxed_lua` uses, without a full `fyde_sdk::init_dev_scrapers` instance.
 mlua = { version = "0.12.1", features = ["lua54", "vendored"] }
+# `publish` talks to the server's `users.v1` and `admin.v1` gRPC services
+# itself (see `src/publish.rs`), rather than through `fyde-sdk`'s `Client`.
+tonic = { version = "0.14.6", features = ["transport", "tls-ring", "tls-webpki-roots"] }
+tonic-prost = "0.14.6"
+prost = "0.14.4"
+# OPAQUE login, with the same ciphersuite as `fyde-sdk`/the server
+# (`publish::FydeCipherSuite`).
+opaque-ke = { version = "4.0.1", features = ["argon2"] }
+argon2 = "0.5.3"
+# `opaque-ke` pins `digest = "0.10"`, so its SHA-512 must come from sha2 0.10.
+sha2 = "0.10.9"
+# `opaque_ke::rand::rngs::OsRng` (rand 0.8, re-exported by `opaque-ke`) only
+# exists with this feature on.
+rand08 = { package = "rand", version = "0.8.5", features = ["getrandom"] }
+
+[build-dependencies]
+tonic-prost-build = "0.14.6"
