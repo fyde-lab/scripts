@@ -28,7 +28,7 @@ cargo run -- check                           # load every script in the sandbox 
 cargo run -- list                            # every scraper with its manifest name/short description
 cargo run -- status [name...]                # print manifest `status` objects
 cargo run -- status-table                    # regenerate README.md's status table
-cargo run -- publish --username U --password P [--server URL]   # publish every scraper as a public script
+cargo run -- publish --username U --password P [--server URL]   # publish every scraper as a public script (admin account)
 tests/login_smoke.sh [name...]               # live-site smoke test with fake credentials (writes manifest status)
 ```
 
@@ -40,7 +40,17 @@ nothing inside `run`, so it won't catch a bad `fyde.*` call.
 
 Dev shell: `shell.nix` via direnv (`use nix`) — pinned rustc, `protobuf`, and the
 `cmake`/`perl`/`go`/`clang` toolchain `../sdk`'s vendored BoringSSL needs. `../sdk`'s
-`build.rs` also needs `buf` on `PATH` (or `FYDE_PROTO_DIR=../server/protos`).
+`build.rs`, and this crate's own (`users.v1` + `admin.v1` clients for `publish`), also need
+`buf` on `PATH` (or `FYDE_PROTO_DIR=../server/protos`).
+
+## How `publish` works
+
+`src/publish.rs` doesn't use `fyde-sdk`: it calls the server's gRPC API directly. It logs in
+with OPAQUE over `users.v1` (same ciphersuite and Argon2id parameters as `../sdk`'s
+`users/crypto.rs`; keep them in sync), then writes through `admin.v1.AdminService`, which only
+an admin account may call: `CreateIcon` for each `logo.png`, then `UpdateScript` on the
+script already on the server with the manifest's `name` (type `scraper`, whoever owns it,
+from `ListScripts`) or `CreateScript`. It logs out at the end, even after a failure.
 
 ## How `run` works
 
